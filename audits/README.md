@@ -18,7 +18,7 @@ Naming: `YYYY-MM-DD-<short-sha>-ifx-internal-review.md` — see [internal/README
 
 | Report | Type | Review date | Git | Program scope |
 |--------|------|-------------|-----|---------------|
-| [2026-06-08-ifx-internal-review.md](./internal/2026-06-08-ifx-internal-review.md) | **Internal security assessment** (maintainer-led) | 2026-06-08 | initial commit on `main` | Localnet `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` · devnet `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
+| [2026-06-08-09a9114-ifx-internal-review.md](./internal/2026-06-08-09a9114-ifx-internal-review.md) | **Internal security assessment** (maintainer-led) | 2026-06-08 | [`09a9114`](https://github.com/ifx-run/ifx/commit/09a9114e167216da645f7da24e348fbe054fa2b0) | Localnet `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` · devnet `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
 
 ---
 

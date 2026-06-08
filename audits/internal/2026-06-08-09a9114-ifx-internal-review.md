@@ -1,4 +1,4 @@
-English | [中文](./2026-06-08-ifx-internal-review.zh-CN.md)
+English | [中文](./2026-06-08-09a9114-ifx-internal-review.zh-CN.md)
 
 # Internal security assessment — checklist results
 
@@ -7,11 +7,12 @@ Generated from [SECURITY-CHECKLIST.md](../SECURITY-CHECKLIST.md) via [AUDIT-WORK
 | Field | Value |
 |-------|--------|
 | **Review date** | 2026-06-08 |
-| **Git revision** | Initial commit on `main` — **same object as this file** (run `git rev-parse HEAD` after clone) |
+| **Commit (full)** | [`09a9114e167216da645f7da24e348fbe054fa2b0`](https://github.com/ifx-run/ifx/commit/09a9114e167216da645f7da24e348fbe054fa2b0) |
+| **Commit (short)** | `09a9114` (Initial commit on `main`) |
 | **Program ID (localnet)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
 | **Program ID (devnet)** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
 | **Checklist revision** | 2026-06 v3 |
-| **Phase 0 tree** | Program bytes identical to this release; local log `audits/scratch/32231f9/phase0.log` (gitignored) |
+| **Phase 0 log** | `audits/scratch/32231f9/phase0.log` (local; program tree matches `09a9114`) |
 
 ## Summary
 
@@ -23,7 +24,7 @@ Generated from [SECURITY-CHECKLIST.md](../SECURITY-CHECKLIST.md) via [AUDIT-WORK
 | N/A | 2 |
 | ⬜ | 0 |
 
-**Verdict:** No ❌ rows. Phase 0 (`security:preflight`, `npm test` **116 passing**, `cargo test` **33 passing**, `cargo audit` exit 0) passed on this program tree.
+**Verdict:** No ❌ rows. Phase 0 (`security:preflight`, `npm test` **116 passing**, `cargo test` **33 passing**, `cargo audit` exit 0) passed on commit `09a9114`.
 
 **Baseline note:** First internal review published for the current repository line. Program surface includes unified **`Cpi`** wire (empty `patches` = static invoke), **`IfElseArm`** sequential steps (1–254 per arm), and **`InvalidPatchedCpiPatches`** (6029) when `ifx_patched_cpi` has empty patches — covered in `tests/ifx_negative.ts` and `tests/ifx_wsol_if_else.ts`.
 

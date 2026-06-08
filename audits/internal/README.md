@@ -41,4 +41,4 @@ Follow [AUDIT-WORKFLOW.md](../AUDIT-WORKFLOW.md) Phase 5. Add a row to [audits/R
 
 | Date | Commit | Report |
 |------|--------|--------|
-| 2026-06-08 | initial commit | [2026-06-08-ifx-internal-review.md](./2026-06-08-ifx-internal-review.md) |
+| 2026-06-08 | `09a9114` | [2026-06-08-09a9114-ifx-internal-review.md](./2026-06-08-09a9114-ifx-internal-review.md) |
