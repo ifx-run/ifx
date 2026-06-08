@@ -1,0 +1,10 @@
+{
+  "name": "U8LenVec",
+  "docs": ["Borsh vector with u8 element count (max 255 items)."],
+  "serialization": "borsh",
+  "repr": null,
+  "type": {
+    "kind": "struct",
+    "fields": []
+  }
+}

@@ -1,0 +1,146 @@
+[English](./design.md) | 中文
+
+# Ifx 设计说明
+
+本文描述 **Ifx 的产品与技术设计**（与实现进度无关的原则与目标）。当前链上行为以 [implementation.zh-CN.md](./implementation.zh-CN.md) 为准。
+
+---
+
+## 1. 概述
+
+**Ifx** 是部署在 Solana 上的 **交易执行组织合约（execution orchestration program）**：
+
+- 在单笔交易内表达 **SSA 数据流**（静态单赋值）
+- 支持 **条件断言** 与 **条件 CPI**
+- 不实现 VM、脚本引擎或通用计算平台
+
+> 把交易从「指令序列」提升为可被 wallet / 风控 / 调试工具理解的 **DAG**。
+
+---
+
+## 2. 设计动机
+
+Solana 上常见痛点：
+
+- 缺少交易级临时变量与统一的条件编排
+- **新的链上逻辑**需要设计、安全审计与发布
+- 同一 tx 内的编排有时做成**一次性 program**，有时只在**客户端组 tx**
+- 逻辑只在客户端时，交易结构难以静态解释与审计
+
+Ifx 希望在链上用 **固定、可枚举** 的指令集表达这类逻辑，由 **SDK 编译 layout 与 IR**，链上只做执行。
+
+---
+
+## 3. 核心原则
+
+### 3.1 SSA + flat tape
+
+- **SSA：** 每个逻辑值只赋值一次；由 compiler/SDK 保证。
+- **Tape：** `Frame.tape` 是连续 byte buffer，**不是** register file，**不是** `ValueId → slot` 的固定表。
+- **布局：** 链上 `Frame.cursor` **append** 到 `tape`；`payload_at[i]` 记录 binding **index** → payload 字节偏移。链下 `FrameScratch` 跟踪 `cursor` + `nextIndex`。
+- **Reset：** `ifx_reset_frame` 令 `cursor = 0`、`index_count = 0` 并清空 `tape` — 干净会话；复用 Frame PDA 时常在 tx 开头调用。
+- **`ifx_let` 批内顺序：** 按 `bindings` 顺序 append；后序经 `Expr::Value { index }` 引用前序 binding。
+
+index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./implementation.zh-CN.md)、[frame-memory-index.zh-CN.md](./frame-memory-index.zh-CN.md)、[glossary.zh-CN.md](./glossary.zh-CN.md)。
+
+### 3.2 交易范围与 Frame 草稿纸
+
+- `tape` / `cursor` / `index_count` 是 **单笔 tx 内 Ifx 逻辑的草稿纸** — 不是通用业务状态层。
+- Frame **PDA 可长期留在链上**，但 Ifx **不对** reset / append **做权限控制**。
+- Ifx **不保证**跨 tx 的 tape 会话一致性。**已落地**的 Jito bundle 仅保证 **包内** tx 顺序 — 见 [bundles.zh-CN.md](./bundles.zh-CN.md)。Ifx 流程优先单笔业务 tx。
+
+### 3.3 静态可分析
+
+- 无循环、无递归、无动态 codegen
+- 表达式为有限深度的 `Expr` 树
+- 执行图可由指令参数完全还原
+
+### 3.4 链上 / 链下分工
+
+| 链下（compiler / SDK） | 链上（program） |
+|------------------------|-----------------|
+| SSA 图、节点命名 | — |
+| `tape_len`、`indexCap`、模拟 `cursor` / `nextIndex` | `reset_frame` + cursor append + `payload_at` |
+| CPI `data` 序列化（含经 index 读 tape） | `invoke` 预置 `data` |
+| 账户列表与 remaining 顺序 | 按下标解析账户 |
+
+---
+
+## 4. Frame 与寻址
+
+- **Frame PDA：** `["frame", payer, frame_id]`，`frame_id` 为 32 字节 salt。
+- **`close_authority`：** 指定谁可 `ifx_close_frame` 回收 rent。
+- **`tape_len`：** 创建时分配 tape 大小（`index_cap = min(256, tape_len / 2)`）。
+
+---
+
+## 5. 数据加载
+
+链上通过 [`LetBinding`](./typed-let-bindings.zh-CN.md) enum（tag `0`–`23`）读取：
+
+| Tag | 变体 | 作用 |
+|-----|------|------|
+| `0` | `AccountDataSlice` | 带 owner 校验的原始切片；调用方提供 `ty` 与字节 offset |
+| `1` | `AccountLamports` | lamports → 固定 `U64` |
+| `2` | `Eval` | 基于 frame tape 的表达式（binding index） |
+| `3`–`8` | Clock / Rent sysvar | `Clock::get()` / `Rent::get()` syscall — 无需 remaining 账户 |
+| `9`–`23` | SPL Token / Token-2022 | 官方 unpack 命名字段 — wire 上无字节 offset |
+
+**优先 typed opcode**，而非 `AccountDataSlice` 读 sysvar、SPL 余额与 mint 字段。
+
+**Token-2022：** 独立 opcode，经 `StateWithExtensions` 与 extension API 解包 — TLV 变长由官方反序列化处理，而非客户端自选 offset。
+
+**批内缓存：** 单次 `ifx_let` 内，Token-2022 按 `account_index` 缓存已解析字段值（miss 时短 borrow；同一 extension 只 parse 一次）。缓存不跨指令。
+
+---
+
+## 6. CPI patch 与条件
+
+- 算术与比较在 `ifx_let` 的 `Eval` 中完成。
+- `ifx_assert` / `ifx_if_else` 使用 `cond: Expr`。
+- `ifx_if_else` 分支：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（wire u8 tag = 步数）。
+- 每个 **`Cpi`** 步含可选 **`patches`**（`PatchList` = `U16LenVec`；空 = 静态，非空 = invoke 前 patch）。
+- 无条件 patched CPI：**`ifx_patched_cpi`**（同一 **`Cpi`** wire；`patches` 必须非空）。
+- **`CpiPatch`：** `{ data_offset: u16, source: Value }` — invoke 前经 `payload_at[source.index]` 从 `Frame::tape` 拷贝到模板 CPI `data`。`source.index` 为 binding index（`u8`）；`data_offset` 索引 CPI 模板。
+
+**原始切片与字节 patch** 用于 typed 登记表未覆盖的 layout；钱包应标注为未校验 layout。
+
+## 7. SDK 与可解释性
+
+开发者体验见 [`@ifx-run/sdk`](../sdk/README.zh-CN.md)：
+
+```ts
+// 概念 API
+const a = tx.snapshotLamports(user)
+const b = tx.snapshotLamports(user)
+const delta = tx.sub(a, b)
+const ok = tx.gt(delta, 0)
+tx.invokeIf(ok, transferIx)
+```
+
+编译产物为 Anchor 指令序列 + `LetBinding` / `IfElseArgs` 等 Borsh 参数；wallet 可将 IR 展示为 SSA 图。
+
+---
+
+## 8. 安全与非目标
+
+**不做：**
+
+- VM / 脚本语言
+- 链上持久业务状态层
+- 动态账户元数据注册表
+- 链上解释 pubkey 或 owner 专用比较类型
+
+**不做（当前版本）：**
+
+- 链上动态 patch 账户 meta（仅 patch `data` 字节）
+
+**原始切片：** `AccountDataSlice` 与通用 `CpiPatch` 字节偏移为逃生口；有 typed opcode 时优先 typed 变体。
+
+---
+
+## 9. 核心思想
+
+> **Ifx = SSA（链下）+ planner 分配 binding index（链下）+ typed tape 执行（链上）+ 条件 CPI（链上）。**
+
+不是 register machine，不是 slot machine。

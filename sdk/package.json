@@ -1,0 +1,72 @@
+{
+  "name": "@ifx-run/sdk",
+  "version": "0.2.0-devnet.0",
+  "description": "TypeScript SDK for Ifx (devnet preview — no mainnet program yet). Instruction builders, Expr codec, FrameScratch.",
+  "license": "Apache-2.0",
+  "author": "The Ifx Authors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ifx-run/ifx.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/ifx-run/ifx/tree/main/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/ifx-run/ifx/issues"
+  },
+  "keywords": [
+    "solana",
+    "anchor",
+    "ifx",
+    "ssa",
+    "cpi",
+    "transaction",
+    "web3"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./idl.json": "./dist/idl/ifx.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsc -p tsconfig.json && node scripts/copy-idl.mjs",
+    "rebuild": "npm run clean && npm run build",
+    "prepublishOnly": "npm run rebuild",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "bn.js": "^5.2.1"
+  },
+  "peerDependencies": {
+    "@anchor-lang/core": "^1.0.2",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "peerDependenciesMeta": {
+    "@anchor-lang/core": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@anchor-lang/core": "^1.0.2",
+    "@solana/web3.js": "^1.98.4",
+    "@types/bn.js": "^5.1.6",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

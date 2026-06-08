@@ -1,0 +1,53 @@
+import { expect } from "chai";
+import { PublicKey } from "@solana/web3.js";
+
+import {
+  DEFAULT_IFX_PROGRAM_ID,
+  IFX_DEVNET_PROGRAM_ID,
+  FrameScratch,
+  framePda,
+  immortalCloseAuthority,
+  isImmortalCloseAuthority,
+} from "../sdk/src";
+
+describe("immortal close authority", () => {
+  it("immortalCloseAuthority returns the Frame PDA", () => {
+    const payer = PublicKey.unique();
+    const frameId = Buffer.alloc(32, 3);
+    const [frame] = framePda(payer, frameId, IFX_DEVNET_PROGRAM_ID);
+    expect(
+      immortalCloseAuthority(payer, frameId, IFX_DEVNET_PROGRAM_ID).equals(frame)
+    ).to.be.true;
+  });
+
+  it("isImmortalCloseAuthority matches self-referential close_authority only", () => {
+    const frame = PublicKey.unique();
+    expect(isImmortalCloseAuthority(frame, frame)).to.be.true;
+    expect(isImmortalCloseAuthority(PublicKey.unique(), frame)).to.be.false;
+    expect(
+      isImmortalCloseAuthority(DEFAULT_IFX_PROGRAM_ID, frame)
+    ).to.be.false;
+  });
+
+  it("program id is not treated as immortal close authority", () => {
+    const payer = PublicKey.unique();
+    const frameId = Buffer.alloc(32, 5);
+    const [frame] = framePda(payer, frameId);
+    expect(isImmortalCloseAuthority(DEFAULT_IFX_PROGRAM_ID, frame)).to.be.false;
+  });
+
+  it("planPublicFrame sets close_authority to frame PDA", () => {
+    const payer = PublicKey.unique();
+    const frameId = Buffer.alloc(32, 11);
+    const { ixCreate, frame } = FrameScratch.planPublicFrame({
+      payer,
+      frameId,
+      tapeLen: 256,
+    });
+    const closeAuthority = new PublicKey(
+      ixCreate.data.subarray(1 + 32, 1 + 32 + 32)
+    );
+    expect(closeAuthority.equals(frame)).to.be.true;
+    expect(isImmortalCloseAuthority(closeAuthority, frame)).to.be.true;
+  });
+});

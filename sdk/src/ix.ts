@@ -1,0 +1,220 @@
+import {
+  AccountMeta,
+  PublicKey,
+  SystemProgram,
+  TransactionInstruction,
+} from "@solana/web3.js";
+
+import {
+  ACCOUNT_DISC_FRAME,
+  DEFAULT_IFX_PROGRAM_ID,
+  IX_DISC_ASSERT,
+  IX_DISC_CLOSE_FRAME,
+  IX_DISC_CREATE_FRAME,
+  IX_DISC_IF_ELSE,
+  IX_DISC_PATCHED_CPI,
+  IX_DISC_LET,
+  IX_DISC_RESET_FRAME,
+  MAX_FRAME_TAPE_LEN,
+  MIN_TAPE_LEN,
+} from "./constants";
+import {
+  encodeCpi,
+  encodeIfElseArgs,
+  encodeExpr,
+  encodeLetArgs,
+} from "./codec";
+import { framePda } from "./layout";
+import type { Expr, IfElseArgs, LetArgs } from "./types";
+import type { CpiBuildResult } from "./cpi";
+import { patchListHasPatches } from "./patch-list";
+import type { Cond } from "./typed";
+import { toCond } from "./expr/cond";
+
+export const IX_DISCRIMINATOR = {
+  ifxCreateFrame: Buffer.from([IX_DISC_CREATE_FRAME]),
+  ifxCloseFrame: Buffer.from([IX_DISC_CLOSE_FRAME]),
+  ifxResetFrame: Buffer.from([IX_DISC_RESET_FRAME]),
+  ifxLet: Buffer.from([IX_DISC_LET]),
+  ifxAssert: Buffer.from([IX_DISC_ASSERT]),
+  ifxPatchedCpi: Buffer.from([IX_DISC_PATCHED_CPI]),
+  ifxIfElse: Buffer.from([IX_DISC_IF_ELSE]),
+} as const;
+
+export { ACCOUNT_DISC_FRAME };
+
+export type IxOpts = { programId?: PublicKey };
+
+/** Merge per-ix overrides onto scratch / planner defaults. */
+export function mergeIxOpts(
+  defaults: IxOpts,
+  overrides?: IxOpts
+): IxOpts {
+  return {
+    programId: overrides?.programId ?? defaults.programId ?? DEFAULT_IFX_PROGRAM_ID,
+  };
+}
+
+export function normalizeRemaining(
+  accounts: AccountMeta[] | PublicKey[]
+): AccountMeta[] {
+  if (accounts.length === 0) return [];
+  if (accounts[0] instanceof PublicKey) {
+    return (accounts as PublicKey[]).map((pk) => ({
+      pubkey: pk,
+      isSigner: false,
+      isWritable: false,
+    }));
+  }
+  return accounts as AccountMeta[];
+}
+
+export interface CreateIxCreateFrameParams extends IxOpts {
+  payer: PublicKey;
+  frameId: Uint8Array | Buffer;
+  closeAuthority: PublicKey;
+  tapeLen: number;
+}
+
+/** Build `ifx_create_frame` instruction (Borsh data; no Anchor Program coder). */
+export function createIxCreateFrame(
+  params: CreateIxCreateFrameParams
+): TransactionInstruction {
+  const programId = params.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  if (
+    params.tapeLen < MIN_TAPE_LEN ||
+    params.tapeLen > MAX_FRAME_TAPE_LEN
+  ) {
+    throw new Error(
+      `tapeLen must be in [${MIN_TAPE_LEN}, ${MAX_FRAME_TAPE_LEN}]`
+    );
+  }
+  if (params.frameId.length !== 32) throw new Error("frameId must be 32 bytes");
+  const [frame] = framePda(params.payer, params.frameId, programId);
+  const args = Buffer.alloc(32 + 32 + 4);
+  Buffer.from(params.frameId).copy(args, 0);
+  params.closeAuthority.toBuffer().copy(args, 32);
+  args.writeUInt32LE(params.tapeLen, 64);
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: params.payer, isSigner: true, isWritable: true },
+      { pubkey: frame, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.concat([IX_DISCRIMINATOR.ifxCreateFrame, args]),
+  });
+}
+
+export function createIxCloseFrame(
+  frame: PublicKey,
+  authority: PublicKey,
+  opts: IxOpts = {}
+): TransactionInstruction {
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: authority, isSigner: true, isWritable: true },
+      { pubkey: frame, isSigner: false, isWritable: true },
+    ],
+    data: IX_DISCRIMINATOR.ifxCloseFrame,
+  });
+}
+
+export function createIxResetFrame(
+  frame: PublicKey,
+  opts: IxOpts = {}
+): TransactionInstruction {
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [{ pubkey: frame, isSigner: false, isWritable: true }],
+    data: IX_DISCRIMINATOR.ifxResetFrame,
+  });
+}
+
+export function isIxOpts(value: unknown): value is IxOpts {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "programId" in value &&
+    !("pubkey" in value)
+  );
+}
+
+/** Build `ifx_let` (used by {@link FrameScratch.ixLet}). */
+export function buildIxLet(
+  frame: PublicKey,
+  args: LetArgs,
+  remainingAccounts: AccountMeta[] | PublicKey[] = [],
+  opts: IxOpts = {}
+): TransactionInstruction {
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: frame, isSigner: false, isWritable: true },
+      ...normalizeRemaining(remainingAccounts),
+    ],
+    data: Buffer.concat([IX_DISCRIMINATOR.ifxLet, encodeLetArgs(args)]),
+  });
+}
+
+export const buildIxResetFrame = createIxResetFrame;
+
+export function buildIxAssert(
+  frame: PublicKey,
+  cond: Cond,
+  opts: IxOpts = {}
+): TransactionInstruction {
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [{ pubkey: frame, isSigner: false, isWritable: false }],
+    data: Buffer.concat([IX_DISCRIMINATOR.ifxAssert, encodeExpr(toCond(cond))]),
+  });
+}
+
+/** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
+export function createIxCpi(
+  frame: PublicKey,
+  built: CpiBuildResult,
+  opts: IxOpts = {}
+): TransactionInstruction {
+  if (!patchListHasPatches(built.cpi.patches)) {
+    throw new Error(
+      "ifx_patched_cpi requires at least one cpiPatch; for static CPI add the target instruction to the transaction directly, or use arm.cpi(staticCpi(...).staticStep) inside ifx_if_else"
+    );
+  }
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: frame, isSigner: false, isWritable: false },
+      ...built.remaining,
+    ],
+    data: Buffer.concat([
+      IX_DISCRIMINATOR.ifxPatchedCpi,
+      encodeCpi(built.cpi),
+    ]),
+  });
+}
+
+export function createIxIfElse(
+  frame: PublicKey,
+  args: IfElseArgs,
+  remainingAccounts: AccountMeta[] | PublicKey[] = [],
+  opts: IxOpts = {}
+): TransactionInstruction {
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: frame, isSigner: false, isWritable: false },
+      ...normalizeRemaining(remainingAccounts),
+    ],
+    data: Buffer.concat([IX_DISCRIMINATOR.ifxIfElse, encodeIfElseArgs(args)]),
+  });
+}

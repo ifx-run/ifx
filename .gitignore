@@ -1,0 +1,12 @@
+.anchor
+.DS_Store
+# Build artifacts (program keypair 真源在 keys/，用 npm run keys:sync 复制到 target/deploy)
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+.surfpool
+.idea/
+# Devnet upgrade authority — pubkey in keys/devnet.program-id
+keys/devnet-program-keypair.json

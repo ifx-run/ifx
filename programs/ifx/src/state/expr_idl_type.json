@@ -1,0 +1,216 @@
+{
+  "name": "Expr",
+  "type": {
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Value",
+        "fields": [
+          { "name": "value", "type": { "defined": { "name": "Value" } } }
+        ]
+      },
+      { "name": "ConstBool", "fields": ["bool"] },
+      { "name": "ConstU8", "fields": ["u8"] },
+      { "name": "ConstU16", "fields": ["u16"] },
+      { "name": "ConstU32", "fields": ["u32"] },
+      { "name": "ConstU64", "fields": ["u64"] },
+      { "name": "ConstU128", "fields": ["u128"] },
+      { "name": "ConstI8", "fields": ["i8"] },
+      { "name": "ConstI16", "fields": ["i16"] },
+      { "name": "ConstI32", "fields": ["i32"] },
+      { "name": "ConstI64", "fields": ["i64"] },
+      { "name": "ConstI128", "fields": ["i128"] },
+      { "name": "ConstF32", "fields": ["f32"] },
+      { "name": "ConstF64", "fields": ["f64"] },
+      {
+        "name": "Not",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "Neg",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "IsZero",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "NonZero",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "AsU64",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "AsU128",
+        "fields": [{ "name": "operand", "type": { "defined": { "name": "Expr" } } }]
+      },
+      {
+        "name": "Add",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Sub",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Mul",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Div",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "DivFloor",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "DivCeil",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Min",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Max",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Eq",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Ne",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Gt",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Ge",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Lt",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Le",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "SaturatingSub",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "And",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Or",
+        "fields": [
+          { "name": "lhs", "type": { "defined": { "name": "Expr" } } },
+          { "name": "rhs", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "BpsMulFloor",
+        "fields": [
+          { "name": "amount", "type": { "defined": { "name": "Expr" } } },
+          { "name": "bps", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "BpsMulCeil",
+        "fields": [
+          { "name": "amount", "type": { "defined": { "name": "Expr" } } },
+          { "name": "bps", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "MulDivFloor",
+        "fields": [
+          { "name": "a", "type": { "defined": { "name": "Expr" } } },
+          { "name": "b", "type": { "defined": { "name": "Expr" } } },
+          { "name": "c", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "MulDivCeil",
+        "fields": [
+          { "name": "a", "type": { "defined": { "name": "Expr" } } },
+          { "name": "b", "type": { "defined": { "name": "Expr" } } },
+          { "name": "c", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Clamp",
+        "fields": [
+          { "name": "value", "type": { "defined": { "name": "Expr" } } },
+          { "name": "lo", "type": { "defined": { "name": "Expr" } } },
+          { "name": "hi", "type": { "defined": { "name": "Expr" } } }
+        ]
+      },
+      {
+        "name": "Select",
+        "fields": [
+          { "name": "cond", "type": { "defined": { "name": "Expr" } } },
+          { "name": "then_expr", "type": { "defined": { "name": "Expr" } } },
+          { "name": "else_expr", "type": { "defined": { "name": "Expr" } } }
+        ]
+      }
+    ]
+  }
+}

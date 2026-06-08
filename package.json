@@ -1,0 +1,43 @@
+{
+  "license": "Apache-2.0",
+  "scripts": {
+    "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "keys:sync": "sh scripts/sync-program-keys.sh",
+    "keys:sync:devnet": "IFX_CLUSTER=devnet sh scripts/sync-program-keys.sh",
+    "keys:restore": "sh scripts/restore-program-keys.sh",
+    "keys:verify": "node scripts/verify-program-keys.mjs",
+    "keys:grind-devnet": "node scripts/grind-program-keypair.mjs ifx keys/devnet-program-keypair.json --exact && node scripts/write-devnet-program-id.mjs",
+    "deploy:devnet": "sh scripts/deploy-devnet.sh",
+    "security-txt:check": "sh scripts/check-security-txt.sh",
+    "security:preflight": "npm run keys:sync && CARGO_TARGET_DIR=$PWD/target cargo build-sbf && npm run keys:verify && npm run security-txt:check",
+    "audit:phase0": "sh scripts/audit-phase0.sh",
+    "idl:generate": "npm run keys:sync && anchor build && cp target/idl/ifx.json idl/ifx.json",
+    "idl:sync": "cp idl/ifx.json target/idl/ifx.json && cp idl/ifx.json sdk/src/idl/ifx.json && anchor idl type idl/ifx.json -o target/types/ifx.ts && anchor idl type idl/ifx.json -o sdk/src/idl/ifx.ts",
+    "pretest": "npm run keys:sync && npm run keys:verify && npm run idl:sync && anchor build --no-idl && CARGO_TARGET_DIR=$PWD/target cargo build-sbf && cd sdk && npm run build",
+    "sdk:pack": "npm run idl:sync && cd sdk && npm run rebuild && npm pack",
+    "sdk:publish": "npm run idl:sync && cd sdk && npm publish --tag devnet",
+    "test": "anchor test",
+    "test:detach": "anchor test --detach",
+    "go:test": "cd go-sdk && go test ./...",
+    "go:golden": "node go-sdk/scripts/gen-golden.mjs",
+    "test:legacy": "anchor test --validator legacy",
+    "test:legacy:detach": "anchor test --validator legacy --detach"
+  },
+  "dependencies": {
+    "@anchor-lang/core": "^1.0.2",
+    "@ifx-run/sdk": "file:./sdk",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "@solana/spl-token": "^0.4.9",
+    "@types/bn.js": "^5.1.6",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^9.0.0",
+    "chai": "^4.3.4",
+    "mocha": "^9.0.3",
+    "prettier": "^2.6.2",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.7.3"
+  }
+}

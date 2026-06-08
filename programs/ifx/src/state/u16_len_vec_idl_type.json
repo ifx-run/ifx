@@ -1,0 +1,16 @@
+{
+  "name": "U16LenVec",
+  "docs": [
+    "Generic collection: u16 little-endian element count, then each element in Borsh order (not Anchor/Borsh u32 `vec`).",
+    "Wire limit: 65535 elements. `U16LenVec<u8>` body is raw bytes after the length."
+  ],
+  "generics": [
+    {
+      "kind": "type",
+      "name": "T"
+    }
+  ],
+  "type": {
+    "kind": "struct"
+  }
+}
