@@ -7,7 +7,7 @@
 [English](./README.md) | 中文
 
 [![License](https://img.shields.io/github/license/ifx-run/ifx)](./LICENSE)
-[![npm version](https://img.shields.io/npm/v/@ifx-run/sdk?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk)
+[![npm version](https://img.shields.io/npm/v/@ifx-run/sdk/devnet?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk/v/devnet)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
@@ -48,7 +48,7 @@ Solana 交易是 **instruction 列表**，没有原生 if/else。条件逻辑必
 
 | 项 | 说明 |
 | --- | --- |
-| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-07-f8ddc69-ifx-internal-review.zh-CN.md)（2026-06-07，commit `f8ddc69`）；**未上 mainnet** |
+| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-08-09a9114-ifx-internal-review.zh-CN.md)（2026-06-08，commit `09a9114`）；**未上 mainnet** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.2.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
@@ -322,7 +322,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 | [Verified builds](https://solana.com/docs/programs/verified-builds)（solana-verify） | 主网流程已文档化 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
 | 维护者预检 | `npm run security:preflight`（构建 + keys 校验 + security.txt 检查） |
 | **内部安全评估** | [audits/](./audits/README.zh-CN.md) — 清单 [SECURITY-CHECKLIST.zh-CN.md](./audits/SECURITY-CHECKLIST.zh-CN.md) 对齐 [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security)；流程见 [AUDIT-WORKFLOW.zh-CN.md](./audits/AUDIT-WORKFLOW.zh-CN.md)；Phase 0：`npm run audit:phase0` |
-| **最新已发布审查** | [2026-06-07 @ `f8ddc69`](./audits/internal/2026-06-07-f8ddc69-ifx-internal-review.zh-CN.md) — 仅 `programs/ifx`：**64 ✅ / 10 ⚠️ 已文档化取舍 / 0 ❌**；106 个 npm 测试，含 [`tests/ifx_negative.ts`](./tests/ifx_negative.ts)（`LetNotTopLevel`、tape/CPI 边界） |
+| **最新已发布审查** | [2026-06-08 @ `09a9114`](./audits/internal/2026-06-08-09a9114-ifx-internal-review.zh-CN.md) — 仅 `programs/ifx`：**63 ✅ / 11 ⚠️ 已文档化取舍 / 0 ❌**；116 个 npm 测试，含 [`tests/ifx_negative.ts`](./tests/ifx_negative.ts)（`LetNotTopLevel`、tape/CPI 边界） |
 
 **这不等于什么：** 内部评估由维护者主导、与 git 版本绑定，**不构成安全担保** — 不能替代专业审计，也不能替代集成方上线前自行审查。
 
@@ -355,7 +355,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md) 或 **[Go SDK](./go-sdk/README.zh-CN.md)**；链上 CPI 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
 
-**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-07-f8ddc69-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin SDK、核对 program id，勿在 devnet 使用真实资产。
+**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-08-09a9114-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对 program id，勿在 devnet 使用真实资产。
 
 ---
 
