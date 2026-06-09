@@ -9,8 +9,8 @@ use anchor_lang::prelude::*;
 
 use super::structured_cpi_payload::{
     read_initialize_mint_patch, write_initialize_mint_patch, AmountDecimalsFeePatch,
-    AmountDecimalsPatch, InitializeMintPatch, LamportsSpacePatch, SetTransferFeePatch,
-    deserialize_single_value, serialize_single_value,
+    AmountDecimalsPatch, InitializeMintPatch, LamportsSpacePatch, PatchLogSink,
+    SetTransferFeePatch, deserialize_single_value, serialize_single_value,
 };
 use super::types::Value;
 
@@ -150,6 +150,42 @@ impl StructuredCpiPatch {
             Self::Token2022InitializeMultisig { .. } => "token2022:initialize_multisig",
             Self::Token2022TransferCheckedWithFee(_) => "token2022:transfer_checked_with_fee",
             Self::Token2022SetTransferFee(_) => "token2022:set_transfer_fee",
+        }
+    }
+
+    /// Append ` patch field <- $N` for Frame-bound slots (literals omitted).
+    pub fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::SystemTransfer { lamports } => sink.patch_binding("lamports", *lamports),
+            Self::SystemCreateAccount(shape) => shape.append_log_bindings(sink),
+            Self::SystemAllocate { space } => sink.patch_binding("space", *space),
+            Self::TokenTransfer { amount }
+            | Self::TokenApprove { amount }
+            | Self::TokenMintTo { amount }
+            | Self::TokenBurn { amount }
+            | Self::TokenAmountToUiAmount { amount }
+            | Self::Token2022Transfer { amount }
+            | Self::Token2022Approve { amount }
+            | Self::Token2022MintTo { amount }
+            | Self::Token2022Burn { amount }
+            | Self::Token2022AmountToUiAmount { amount } => sink.patch_binding("amount", *amount),
+            Self::TokenTransferChecked(shape)
+            | Self::TokenApproveChecked(shape)
+            | Self::TokenMintToChecked(shape)
+            | Self::TokenBurnChecked(shape)
+            | Self::Token2022TransferChecked(shape)
+            | Self::Token2022ApproveChecked(shape)
+            | Self::Token2022MintToChecked(shape)
+            | Self::Token2022BurnChecked(shape) => shape.append_log_bindings(sink),
+            Self::TokenInitializeMultisig { m } | Self::Token2022InitializeMultisig { m } => {
+                sink.patch_binding("m", *m)
+            }
+            Self::Token2022TransferCheckedWithFee(shape) => shape.append_log_bindings(sink),
+            Self::Token2022SetTransferFee(shape) => shape.append_log_bindings(sink),
+            Self::TokenInitializeMint(shape)
+            | Self::TokenInitializeMint2(shape)
+            | Self::Token2022InitializeMint(shape)
+            | Self::Token2022InitializeMint2(shape) => shape.append_log_bindings(sink),
         }
     }
 
@@ -306,5 +342,52 @@ mod tests {
         let back = StructuredCpiPatch::deserialize_payload(7, &mut slice).unwrap();
         assert_eq!(back, patch);
         assert!(slice.is_empty());
+    }
+
+    struct TestLogSink {
+        line: String,
+        first: bool,
+    }
+
+    impl PatchLogSink for TestLogSink {
+        fn patch_binding(&mut self, field: &'static str, source: Value) -> bool {
+            if !self.first {
+                self.line.push_str(", patch ");
+            } else {
+                self.line.push_str(" patch ");
+            }
+            self.first = false;
+            self.line
+                .push_str(&format!("{field} <- ${}", source.index));
+            true
+        }
+    }
+
+    #[test]
+    fn append_log_bindings_amount_only() {
+        let patch = StructuredCpiPatch::TokenTransferChecked(AmountDecimalsPatch::AmountOnly {
+            amount: Value { index: 0 },
+            decimals: 9,
+        });
+        let mut sink = TestLogSink {
+            line: String::new(),
+            first: true,
+        };
+        assert!(patch.append_log_bindings(&mut sink));
+        assert_eq!(sink.line, " patch amount <- $0");
+    }
+
+    #[test]
+    fn append_log_bindings_amount_and_decimals() {
+        let patch = StructuredCpiPatch::TokenTransferChecked(AmountDecimalsPatch::Both {
+            amount: Value { index: 0 },
+            decimals: Value { index: 1 },
+        });
+        let mut sink = TestLogSink {
+            line: String::new(),
+            first: true,
+        };
+        assert!(patch.append_log_bindings(&mut sink));
+        assert_eq!(sink.line, " patch amount <- $0, patch decimals <- $1");
     }
 }

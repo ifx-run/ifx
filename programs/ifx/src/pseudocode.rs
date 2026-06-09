@@ -11,6 +11,8 @@ use crate::state::{
     value_codec::{decode_typed, TypedValue},
     Expr, LetBinding, Cpi, ValueType,
 };
+use crate::state::structured_cpi_payload::PatchLogSink;
+use crate::state::types::Value;
 
 const MAX_LINE: usize = 480;
 
@@ -473,6 +475,29 @@ pub fn log_if_else(
     });
 }
 
+struct LinePatchLogSink<'a> {
+    buf: &'a mut LineBuf,
+    first: bool,
+}
+
+impl PatchLogSink for LinePatchLogSink<'_> {
+    fn patch_binding(&mut self, field: &'static str, source: Value) -> bool {
+        if !self.first {
+            if !self.buf.push_str(", patch ") {
+                return false;
+            }
+        } else {
+            if !self.buf.push_str(" patch ") {
+                return false;
+            }
+        }
+        self.first = false;
+        self.buf.push_str(field)
+            && self.buf.push_str(" <- $")
+            && self.buf.push_u8(source.index)
+    }
+}
+
 pub fn log_cpi(arm: &Cpi) {
     emit_line(|b| {
         let (accounts_start, accounts_len, data, label) = match arm {
@@ -521,12 +546,14 @@ pub fn log_cpi(arm: &Cpi) {
                 let end = accounts_start
                     .checked_add(*accounts_len)
                     .unwrap_or(*accounts_start);
-                return b.push_str("cpi accts[")
+                let ok = b.push_str("cpi accts[")
                     && b.push_u64(u64::from(*accounts_start))
                     && b.push_str("..")
                     && b.push_u64(u64::from(end))
                     && b.push_str("] structured ")
                     && b.push_str(patch.log_label());
+                let mut sink = LinePatchLogSink { buf: b, first: true };
+                return ok && patch.append_log_bindings(&mut sink);
             }
         };
         let end = accounts_start

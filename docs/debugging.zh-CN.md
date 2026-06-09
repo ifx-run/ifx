@@ -15,7 +15,7 @@
 | `ifx_close_frame` | `drop(frame)` |
 | `ifx_let` | `let $N: ty = …; //= value` |
 | `ifx_assert` | `assert!(cond); // ok` 或 revert |
-| `ifx_patched_cpi` | `patched_cpi … patch +K <- $N` |
+| `ifx_patched_cpi` | `cpi …` — RawPatched：`patch +K <- $N`；Structured：`patch field <- $N` |
 | `ifx_if_else` | `if cond then … else …` |
 
 ---
@@ -35,7 +35,16 @@ let $0: u64 = eval(...); //= 42
 
 ## Patch
 
+**RawPatched**（DEX / 自定义 layout）：
+
 - **`patch +4 <- $0`** — 将 binding `$0` 的字节写入模板 `data` 的字节偏移 4（如 System Transfer lamports @ 4）。
+
+**Structured**（官方 System / SPL / Token-2022 ix）：
+
+- **`patch amount <- $0`** — 命名字段来自 Frame binding `$0`（wire 上的 literal 不会出现在 log 里）。
+- 示例：`cpi accts[2..6] structured token:transfer_checked patch amount <- $0, patch decimals <- $1`
+
+各 ix 变体的字段名见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)。
 
 ---
 

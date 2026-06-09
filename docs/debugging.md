@@ -15,7 +15,7 @@ Use these lines in explorers, simulators, and wallets to show **what the program
 | `ifx_close_frame` | `drop(frame)` |
 | `ifx_let` | `let $N: ty = …; //= value` |
 | `ifx_assert` | `assert!(cond); // ok` or revert |
-| `ifx_patched_cpi` | `patched_cpi … patch +K <- $N` |
+| `ifx_patched_cpi` | `cpi …` — RawPatched: `patch +K <- $N`; Structured: `patch field <- $N` |
 | `ifx_if_else` | `if cond then … else …` |
 
 ---
@@ -35,7 +35,16 @@ let $0: u64 = eval(...); //= 42
 
 ## Patches
 
+**RawPatched** (DEX / custom layouts):
+
 - **`patch +4 <- $0`** — copy bytes from binding `$0` into template `data` at byte offset 4 (e.g. System Transfer lamports @ 4).
+
+**Structured** (official System / SPL / Token-2022 ix):
+
+- **`patch amount <- $0`** — named field from Frame binding `$0` (literals on wire are omitted).
+- Example: `cpi accts[2..6] structured token:transfer_checked patch amount <- $0, patch decimals <- $1`
+
+See [structured-cpi-patches.md](./structured-cpi-patches.md) for field names per ix variant.
 
 ---
 

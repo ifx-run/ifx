@@ -7,6 +7,12 @@ use std::io::{Error as IoError, ErrorKind, Result as IoResult, Write};
 
 use super::types::Value;
 
+/// Append structured CPI patch fields that come from Frame bindings (`Value`).
+pub trait PatchLogSink {
+    /// One segment: ` patch field <- $N` (comma-separated after the first).
+    fn patch_binding(&mut self, field: &'static str, source: Value) -> bool;
+}
+
 macro_rules! wire_tag_enum {
     ($(#[$meta:meta])* $vis:vis enum $name:ident { $($variant:ident = $val:expr),+ $(,)? }) => {
         $(#[$meta])*
@@ -151,6 +157,32 @@ pub struct InitializeMintPatch {
     pub freeze: FreezeAuthPatch,
 }
 
+fn append_pubkey_value_log(
+    sink: &mut impl PatchLogSink,
+    field: &'static str,
+    value: &PubkeyValue,
+) -> bool {
+    match value {
+        PubkeyValue::FromFrame(v) => sink.patch_binding(field, *v),
+        PubkeyValue::Literal(_) => true,
+    }
+}
+
+fn append_freeze_auth_log(sink: &mut impl PatchLogSink, freeze: &FreezeAuthPatch) -> bool {
+    match freeze {
+        FreezeAuthPatch::None | FreezeAuthPatch::SomeLiteral(_) => true,
+        FreezeAuthPatch::SomeValue(v) => sink.patch_binding("freeze_authority", *v),
+    }
+}
+
+impl InitializeMintPatch {
+    pub(crate) fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        sink.patch_binding("decimals", self.decimals)
+            && append_pubkey_value_log(sink, "mint_authority", &self.mint_authority)
+            && append_freeze_auth_log(sink, &self.freeze)
+    }
+}
+
 /// Freeze authority value for InitializeMint-family patches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FreezeAuthPatch {
@@ -290,6 +322,17 @@ pub(crate) fn read_initialize_mint_patch(buf: &mut &[u8]) -> IoResult<Initialize
 }
 
 impl LamportsSpacePatch {
+    pub(crate) fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::LamportsOnly { lamports, .. } => sink.patch_binding("lamports", *lamports),
+            Self::SpaceOnly { space, .. } => sink.patch_binding("space", *space),
+            Self::Both { lamports, space } => {
+                sink.patch_binding("lamports", *lamports)
+                    && sink.patch_binding("space", *space)
+            }
+        }
+    }
+
     pub(crate) fn serialize_wire<W: Write>(&self, writer: &mut W) -> IoResult<()> {
         match self {
             Self::LamportsOnly { lamports, space } => {
@@ -337,6 +380,17 @@ impl LamportsSpacePatch {
 }
 
 impl AmountDecimalsPatch {
+    pub(crate) fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::AmountOnly { amount, .. } => sink.patch_binding("amount", *amount),
+            Self::Both { amount, decimals } => {
+                sink.patch_binding("amount", *amount)
+                    && sink.patch_binding("decimals", *decimals)
+            }
+            Self::DecimalsOnly { decimals, .. } => sink.patch_binding("decimals", *decimals),
+        }
+    }
+
     pub(crate) fn serialize_wire<W: Write>(&self, writer: &mut W) -> IoResult<()> {
         match self {
             Self::AmountOnly { amount, decimals } => {
@@ -392,6 +446,31 @@ impl AmountDecimalsPatch {
 }
 
 impl AmountDecimalsFeePatch {
+    pub(crate) fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::AmountOnly { amount, .. } => sink.patch_binding("amount", *amount),
+            Self::DecimalsOnly { decimals, .. } => sink.patch_binding("decimals", *decimals),
+            Self::FeeOnly { fee, .. } => sink.patch_binding("fee", *fee),
+            Self::AmountDecimals { amount, decimals, .. } => {
+                sink.patch_binding("amount", *amount)
+                    && sink.patch_binding("decimals", *decimals)
+            }
+            Self::AmountFee { amount, fee, .. } => {
+                sink.patch_binding("amount", *amount) && sink.patch_binding("fee", *fee)
+            }
+            Self::DecimalsFee { decimals, fee, .. } => {
+                sink.patch_binding("decimals", *decimals) && sink.patch_binding("fee", *fee)
+            }
+            Self::AllFromFrame {
+                amount,
+                decimals,
+                fee,
+            } => sink.patch_binding("amount", *amount)
+                && sink.patch_binding("decimals", *decimals)
+                && sink.patch_binding("fee", *fee),
+        }
+    }
+
     pub(crate) fn serialize_wire<W: Write>(&self, writer: &mut W) -> IoResult<()> {
         match self {
             Self::AmountOnly {
@@ -577,6 +656,18 @@ impl AmountDecimalsFeePatch {
 }
 
 impl SetTransferFeePatch {
+    pub(crate) fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::BpsOnly { basis_points, .. } => sink.patch_binding("basis_points", *basis_points),
+            Self::MaxOnly { maximum_fee, .. } => sink.patch_binding("maximum_fee", *maximum_fee),
+            Self::Both {
+                basis_points,
+                maximum_fee,
+            } => sink.patch_binding("basis_points", *basis_points)
+                && sink.patch_binding("maximum_fee", *maximum_fee),
+        }
+    }
+
     pub(crate) fn serialize_wire<W: Write>(&self, writer: &mut W) -> IoResult<()> {
         match self {
             Self::BpsOnly {
