@@ -18,6 +18,7 @@
 
 | 报告 | 类型 | 审查日期 | Git | Program 范围 |
 |------|------|----------|-----|--------------|
+| [2026-06-09-11be96e-ifx-internal-review.zh-CN.md](./internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md) | **内部安全评估**（维护者主导） | 2026-06-09 | [`11be96e`](https://github.com/ifx-run/ifx/commit/11be96eed3724291bd514ac659b8e4eb1f3ad0dd) | Localnet `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` · devnet `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
 | [2026-06-08-09a9114-ifx-internal-review.zh-CN.md](./internal/2026-06-08-09a9114-ifx-internal-review.zh-CN.md) | **内部安全评估**（维护者主导） | 2026-06-08 | [`09a9114`](https://github.com/ifx-run/ifx/commit/09a9114e167216da645f7da24e348fbe054fa2b0) | Localnet `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` · devnet `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
 
 ---
