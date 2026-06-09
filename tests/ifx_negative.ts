@@ -27,6 +27,7 @@ import {
 } from "../sdk/src";
 import { IX_DISC_PATCHED_CPI } from "../sdk/src/constants";
 import { createIxResetFrame, IX_DISCRIMINATOR } from "../sdk/src/ix";
+import { encodeLetArgs } from "../sdk/src/codec";
 import { TransactionInstruction } from "@solana/web3.js";
 import type { Expr } from "../sdk/src/types";
 import {
@@ -709,6 +710,35 @@ describe("ifx negative (on-chain errors)", () => {
             ],
             data: IX_DISCRIMINATOR.ifxResetFrame,
           })
+        ),
+      "UnauthorizedFrameWrite"
+    );
+  });
+
+  it("ifx_let rejects private frame without authority signer (UnauthorizedFrameWrite)", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 256,
+    });
+
+    const letWithoutAuthority = new TransactionInstruction({
+      programId: IFX_LOCALNET_PROGRAM_ID,
+      keys: [{ pubkey: scratch.frame, isSigner: false, isWritable: true }],
+      data: Buffer.concat([
+        IX_DISCRIMINATOR.ifxLet,
+        encodeLetArgs({ bindings: [binding.eval(expr.u64(1))] }),
+      ]),
+    });
+
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · UnauthorizedFrameWrite on let (expect fail)",
+          scratch.ixReset(),
+          letWithoutAuthority
         ),
       "UnauthorizedFrameWrite"
     );

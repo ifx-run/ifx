@@ -36,40 +36,33 @@ import { FrameScratch } from "@ifx-run/sdk";
 
 const tapeLen = 256; // 链上 MAX_FRAME_TAPE_LEN 上限
 const frameId = randomBytes(32); // 持久化 frameId + tapeLen（配置、DB 等）
-const { ixCreate } = FrameScratch.planNewFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen,
 });
 
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**公共 / 不可关闭 Frame** — `authority` 设为 Frame PDA 自身（off-curve；无 Signer 可 `ifx_close_frame`，含 Ifx program 私钥持有者）。reset/let 仍对所有人开放（公共 scratch）：
-
-```ts
-import { FrameScratch, isImmortalCloseAuthority } from "@ifx-run/sdk";
-
-const { ixCreate, frame, scratch } = FrameScratch.planPublicFrame({
-  payer,
-  frameId,
-  tapeLen,
-  // DEFAULT_IFX_PROGRAM_ID（devnet）；localnet 请传 programId
-});
-```
-
-链上读取后：`isImmortalCloseAuthority(decoded.authority, frame)`。需要日后回收 rent 时用 `planNewFrame` 并传 `authority: payer`（私有 / 可关闭 Frame）。
+**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）。`reset` / `let` **无需额外 signer**；无人能 `ifx_close_frame` 回收 rent — swap / ATA glue 的零成本默认路径。链上读取后可用 `isImmortalCloseAuthority(decoded.authority, frame)` 校验。
 
 **Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）：
 
 ```ts
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch } from "@ifx-run/sdk";
+import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
 
 // 从 Tx 1 落库处加载 frameId + tapeLen
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
+const scratch = new FrameScratch(
+  frame,
+  tapeLen,
+  0,
+  0,
+  undefined,
+  immortalCloseAuthority(payer, frameId)
+);
 
 const tx = new Transaction();
 tx.add(scratch.ixReset());
@@ -79,7 +72,19 @@ tx.add(scratch.ixAssert(expr.nonZero(target)));
 await provider.sendAndConfirm(tx);
 ```
 
-仅需 create 指令时用 `FrameScratch.ixCreateFrame(params)`（参数同 `planNewFrame`）。
+**可选 — 私有 / 可关闭 Frame**（on-curve `authority` 签 `reset`/`let`；日后 `close` 回收 rent）。用于 bundle / nonce 防投毒等场景 — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md)：
+
+```ts
+const { ixCreate } = FrameScratch.planNewFrame({
+  payer,
+  frameId,
+  authority: payer, // 通常与业务 tx 已签名的 bot 热钱包相同
+  tapeLen,
+});
+// Tx 2：new FrameScratch(frame, tapeLen, 0, 0, undefined, payer)
+```
+
+仅需 create 指令时用 `FrameScratch.ixCreateFrame(params)`（参数同 `planNewFrame` / `planPublicFrame`）。
 
 执行后确认结果：看 **Ifx 链上 logs**（条件、`rawCpi` / patched CPI、assert 等），不要在生产代码里 `fetchDecodedFrame` 读 tape。decode / `fromFrame` / `refreshFromChain` 仅用于 **测试与本地调试**（见 `tests/`、`integration/`）。
 
@@ -130,9 +135,9 @@ tx.add(letBuilder.buildIx());
 - **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
-- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?)`**：`framePk` 必填；`programId` 默认 `DEFAULT_IFX_PROGRAM_ID`（主网上线前 = devnet）。Localnet 须在 `planNewFrame({ programId })` 或构造函数传入 `IFX_LOCALNET_PROGRAM_ID` — 所有 `scratch.ix*` 自动继承。
-- **`FrameScratch.planNewFrame(...)`**：返回 `{ scratch, ixCreate, frame, frameBump }`；无需再调 `framePda`。
-- **`FrameScratch.planPublicFrame(...)`**：同上，但 `authority` = Frame PDA（`immortalCloseAuthority`）。校验：`isImmortalCloseAuthority(decoded.authority, frame)`。
+- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`immortalCloseAuthority`）；公共 scratch，写操作无额外 signer。
+- **`FrameScratch.planNewFrame(...)`**：私有 / 可关闭 Frame；on-curve `authority`（如 bot 热钱包）签 `reset`/`let`。
+- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；公共 Frame 传 `immortalCloseAuthority(payer, frameId)`。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
 ### SPL Token 与 Token-2022（应用层）

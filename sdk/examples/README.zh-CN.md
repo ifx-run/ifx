@@ -6,7 +6,7 @@
 
 ## `minimal-frame.ts`
 
-两笔 tx：(1) `planNewFrame` + create，(2) reset → let → assert；最后 `fetchDecodedFrame` + `readU64`。导出 `planMinimalFrameBusinessTx`。集成测试：[`tests/minimal_frame.ts`](../../tests/minimal_frame.ts)。
+两笔 tx：(1) `planPublicFrame` + create，(2) reset → let → assert；最后 `fetchDecodedFrame` + `readU64`。导出 `planMinimalFrameBusinessTx`。集成测试：[`tests/minimal_frame.ts`](../../tests/minimal_frame.ts)。
 
 ## `dust-destroy-token2022.ts`
 

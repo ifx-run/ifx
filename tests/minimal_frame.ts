@@ -7,10 +7,10 @@ import { Transaction } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 
 import { planMinimalFrameBusinessTx } from "../sdk/examples/minimal-frame";
+import { FrameScratch, IFX_LOCALNET_PROGRAM_ID } from "../sdk/src";
 import {
   sendAndConfirmSignersOnly,
   LABEL_SETUP_CREATE_FRAME,
-  planLocalFrame,
 } from "./helpers";
 
 describe("minimal frame (L0 example)", () => {
@@ -21,11 +21,11 @@ describe("minimal frame (L0 example)", () => {
   it("planMinimalFrameBusinessTx: reset → let u64(1) → assert non-zero", async () => {
     const frameId = randomBytes(32);
     const tapeLen = 256;
-    const { scratch, ixCreate } = planLocalFrame({
+    const { scratch, ixCreate } = FrameScratch.planPublicFrame({
       payer: payer.publicKey,
       frameId,
-      authority: payer.publicKey,
       tapeLen,
+      programId: IFX_LOCALNET_PROGRAM_ID,
     });
 
     const createTx = new Transaction().add(ixCreate);

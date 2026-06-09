@@ -37,9 +37,11 @@ Ifx adds **read → compute → assert → CPI** inside **one business transacti
 
 **Repo `npm test` / Surfpool:** pass `IFX_LOCALNET_PROGRAM_ID` (`planLocalFrame`). **npm consumers on devnet:** omit `programId` (default = devnet).
 
-Set `programId` once on **`FrameScratch`** (via `planNewFrame({ programId })` or `NewFrameScratch` / constructor). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; **TS only:** pass `IxOpts` to override per ix. **Go:** `ProgramID` on `FrameScratch` only (no per-ix override).
+Set `programId` once on **`FrameScratch`** (via `planPublicFrame({ programId })` or constructor). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; **TS only:** pass `IxOpts` to override per ix. **Go:** `ProgramID` on `FrameScratch` only (no per-ix override).
 
-`planNewFrame` returns `{ scratch, ixCreate, frame, frameBump }` — do not re-derive the PDA outside.
+**Default Frame:** `planPublicFrame` — `authority` = Frame PDA (public scratch, no extra signer). Use `planNewFrame({ authority: payer })` only for private / closeable Frames — [frame-authority.md](../../../docs/frame-authority.md).
+
+`planPublicFrame` returns `{ scratch, ixCreate, frame, frameBump }` — do not re-derive the PDA outside.
 
 Status: **developer preview** — pin `@ifx-run/sdk`, no audit. See [README.md](../../../README.md).
 
@@ -62,10 +64,9 @@ const frameId = randomBytes(32); // persist
 const tapeLen = 256; // indexCap = 128; max tape MAX_FRAME_TAPE_LEN
 
 // Tx 1 (devnet: omit programId — DEFAULT_IFX_PROGRAM_ID)
-const { scratch, ixCreate } = FrameScratch.planNewFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen,
   // localnet repo tests: programId: IFX_LOCALNET_PROGRAM_ID
 });
@@ -190,7 +191,7 @@ When the user asks to add Ifx to their tx:
 rawCpi(...).build().remaining`.
 4. **Insert ix order**: reset first; user swap/ATA ix where reads require; let after state changes.
 5. **Choose CPI type** (static vs patched vs if_else) — see [anti-patterns.md](anti-patterns.md).
-6. **Set `programId`** on `FrameScratch` for cluster (`planNewFrame` or constructor); plan `tapeLen` and binding count (`indexCapForTapeLen`).
+6. **Set `programId`** on `FrameScratch` for cluster (`planPublicFrame` or constructor); plan `tapeLen` and binding count (`indexCapForTapeLen`). Default **`planPublicFrame`** unless you need a private Frame.
 7. **Multi-tx?** If splitting or user mentions Jito — pick bundle pattern 1/2/3 above; default pattern 1.
 8. **Validate**: simulation; if in ifx repo run related tests (`npm test` / specific `tests/*.ts`).
 

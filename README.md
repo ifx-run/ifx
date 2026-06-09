@@ -95,22 +95,29 @@ Ifx does **not** replace your DEX or token programs. It is the glue: read → co
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch } from "@ifx-run/sdk";
+import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
 
 // Tx 1 — once per frame_id (standalone provisioning tx)
 const tapeLen = 256;
 const frameId = randomBytes(32); // persist for later jobs
-const { ixCreate } = FrameScratch.planNewFrame({
+const { ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
 // Tx 2 — business tx (rebuild planner from stored frameId)
+// Public Frame: authority = Frame PDA — no extra signer on reset/let (default).
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
+const scratch = new FrameScratch(
+  frame,
+  tapeLen,
+  0,
+  0,
+  undefined,
+  immortalCloseAuthority(payer, frameId)
+);
 const tx = new Transaction();
 
 tx.add(scratch.ixReset());
@@ -141,17 +148,18 @@ Point your provider at devnet — omitted `programId` uses `DEFAULT_IFX_PROGRAM_
 ```ts
 import { FrameScratch } from "@ifx-run/sdk";
 
-const { scratch, ixCreate } = FrameScratch.planNewFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen: 256,
 });
 
-// business tx
+// business tx — scratch.authority is the Frame PDA (no authority signer)
 tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
+
+Need a **private / closeable** Frame (on-curve `authority` signs `reset`/`let`; reclaim rent via `close`)? Use `planNewFrame({ …, authority: payer })` — see [frame-authority.md](./docs/frame-authority.md).
 
 Devnet program: `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`. Use test SOL / test tokens only — see [keys/README.md](./keys/README.md) for deploy details (maintainers).
 

@@ -36,42 +36,33 @@ import { FrameScratch } from "@ifx-run/sdk";
 
 const tapeLen = 256; // max per on-chain MAX_FRAME_TAPE_LEN
 const frameId = randomBytes(32); // store frameId + tapeLen (config, DB, …)
-const { ixCreate } = FrameScratch.planNewFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen,
 });
 
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**Public / non-closeable Frame** — `authority` = the Frame PDA itself (off-curve; no Signer can `ifx_close_frame`, including the Ifx program key holder). Reset/let stay open for anyone (public scratch):
-
-```ts
-import { FrameScratch, isImmortalCloseAuthority } from "@ifx-run/sdk";
-
-const { ixCreate, frame, scratch } = FrameScratch.planPublicFrame({
-  payer,
-  frameId,
-  tapeLen,
-  // DEFAULT_IFX_PROGRAM_ID (devnet) unless you pass programId
-});
-
-// After fetch: isImmortalCloseAuthority(decoded.authority, frame)
-```
-
-Use `authority: payer` in `planNewFrame` when you may reclaim rent later (private / closeable Frame).
+**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve). `reset` / `let` need **no extra signer**; no one can `ifx_close_frame` for rent — the usual zero-cost path for swap / ATA glue. Verify after fetch: `isImmortalCloseAuthority(decoded.authority, frame)`.
 
 **Tx 2 — business** (separate request / job; reset + let / assert / CPI):
 
 ```ts
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch } from "@ifx-run/sdk";
+import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
 
 // Load frameId + tapeLen from wherever Tx 1 stored them
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
+const scratch = new FrameScratch(
+  frame,
+  tapeLen,
+  0,
+  0,
+  undefined,
+  immortalCloseAuthority(payer, frameId)
+);
 
 const tx = new Transaction();
 tx.add(scratch.ixReset());
@@ -81,7 +72,19 @@ tx.add(scratch.ixAssert(expr.nonZero(target)));
 await provider.sendAndConfirm(tx);
 ```
 
-`FrameScratch.ixCreateFrame(params)` builds only `ifx_create_frame` (same args as `planNewFrame`) when you already have a planner.
+**Optional — private / closeable Frame** (on-curve `authority` signs `reset`/`let`; reclaim rent later). Use when you need bundle / nonce poison defense — [frame-authority.md](../docs/frame-authority.md):
+
+```ts
+const { ixCreate } = FrameScratch.planNewFrame({
+  payer,
+  frameId,
+  authority: payer, // usually the same hot wallet that already signs the business tx
+  tapeLen,
+});
+// Tx 2: new FrameScratch(frame, tapeLen, 0, 0, undefined, payer)
+```
+
+`FrameScratch.ixCreateFrame(params)` builds only `ifx_create_frame` when you already have a planner (same params as `planNewFrame` / `planPublicFrame`).
 
 After execution, confirm via **Ifx transaction logs** — do not `fetchDecodedFrame` in production. Decode APIs are for **tests and local debug** only.
 
@@ -132,9 +135,9 @@ At create: `tapeLen` up to **65_535**; `indexCap = min(256, floor(tapeLen / 2))`
 - **Persist:** Values later read by `ifx_assert`, `ifx_patched_cpi` `RawCpiPatch`, or later `ifx_let` (`ScratchValue` / `expr.*`).
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
-- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?)`:** `framePk` required; `programId` defaults to `DEFAULT_IFX_PROGRAM_ID` (devnet until mainnet). Localnet: pass `IFX_LOCALNET_PROGRAM_ID` in `planNewFrame({ programId })` or the constructor — all `scratch.ix*` inherit it.
-- **`FrameScratch.planNewFrame({ payer, frameId, … })`:** returns `{ scratch, ixCreate, frame, frameBump }`; `scratch.frame` matches `frame`.
-- **`FrameScratch.planPublicFrame({ payer, frameId, … })`:** same, but `authority` = Frame PDA ({@link immortalCloseAuthority}). Verify with `isImmortalCloseAuthority(decoded.authority, frame)`.
+- **`FrameScratch.planPublicFrame({ payer, frameId, … })`:** **default** — `authority` = Frame PDA ({@link immortalCloseAuthority}); public scratch, no extra signer on writes. Localnet: `programId: IFX_LOCALNET_PROGRAM_ID`.
+- **`FrameScratch.planNewFrame({ payer, frameId, authority, … })`:** private / closeable Frame; on-curve `authority` (e.g. bot hot wallet) signs `reset`/`let`.
+- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2; pass `immortalCloseAuthority(payer, frameId)` for public Frames.
 - **`FrameScratch.fromFrame` / `refreshFromChain`:** **tests and local debug only** — not production paths.
 
 ### SPL Token & Token-2022 (application layer)

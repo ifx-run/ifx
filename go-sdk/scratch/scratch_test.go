@@ -9,6 +9,37 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/expr"
 )
 
+func TestPlanPublicFrameSetsFrameAuthority(t *testing.T) {
+	payer := solana.NewWallet().PublicKey()
+	var frameID [32]byte
+	frameID[0] = 11
+
+	plan, err := PlanPublicFrame(PlanNewFrameParams{
+		Payer:     payer,
+		FrameID:   frameID,
+		TapeLen:   256,
+		ProgramID: constants.LocalnetProgramID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !plan.Scratch.Authority.Equals(plan.Frame) {
+		t.Fatalf("authority %s != frame %s", plan.Scratch.Authority, plan.Frame)
+	}
+	data, err := plan.IxCreate.Data()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data[0] != constants.IxDiscCreateFrame {
+		t.Fatalf("disc %d", data[0])
+	}
+	var auth solana.PublicKey
+	copy(auth[:], data[1+32:1+32+32])
+	if !auth.Equals(plan.Frame) {
+		t.Fatalf("create ix authority %s != frame %s", auth, plan.Frame)
+	}
+}
+
 func TestLetLamportsRemainingIndex(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
 	user := solana.NewWallet().PublicKey()

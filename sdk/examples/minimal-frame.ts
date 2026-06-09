@@ -42,10 +42,9 @@ async function main(): Promise<void> {
   const tapeLen = 256;
   const frameId = randomBytes(32);
 
-  const { scratch, ixCreate, frame, frameBump } = FrameScratch.planNewFrame({
+  const { scratch, ixCreate, frame, frameBump } = FrameScratch.planPublicFrame({
     payer,
     frameId,
-    authority: payer,
     tapeLen,
     programId: IFX_LOCALNET_PROGRAM_ID,
   });

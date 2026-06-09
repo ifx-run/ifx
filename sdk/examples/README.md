@@ -6,7 +6,7 @@ These scripts are **not** published to npm; they live in the git repo for copy-p
 
 ## `minimal-frame.ts`
 
-Two txs: (1) `planNewFrame` + create, (2) reset → let → assert; then `fetchDecodedFrame` + `readU64`. Exports `planMinimalFrameBusinessTx`. Integration test: [`tests/minimal_frame.ts`](../../tests/minimal_frame.ts).
+Two txs: (1) `planPublicFrame` + create, (2) reset → let → assert; then `fetchDecodedFrame` + `readU64`. Exports `planMinimalFrameBusinessTx`. Integration test: [`tests/minimal_frame.ts`](../../tests/minimal_frame.ts).
 
 ## `dust-destroy-token2022.ts`
 

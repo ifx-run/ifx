@@ -13,12 +13,11 @@ import (
 func TestPlanMinimalFrameBusiness(t *testing.T) {
 	payer := solana.NewWallet().PublicKey()
 	var frameID [32]byte
-	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
-		Payer:          payer,
-		FrameID:        frameID,
-		Authority: payer,
-		TapeLen:        256,
-		ProgramID:      constants.LocalnetProgramID,
+	plan, err := scratch.PlanPublicFrame(scratch.PlanNewFrameParams{
+		Payer:     payer,
+		FrameID:   frameID,
+		TapeLen:   256,
+		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {
 		t.Fatal(err)

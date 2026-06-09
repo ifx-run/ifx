@@ -43,10 +43,9 @@ if _, err := rand.Read(frameID[:]); err != nil {
     return err
 }
 
-plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
+plan, err := scratch.PlanPublicFrame(scratch.PlanNewFrameParams{
     Payer:          payer,
     FrameID:        frameID,
-    Authority:      payer,
     TapeLen:        256, // 上限见 constants.MaxFrameTapeLen
     ProgramID:      constants.DevnetProgramID, // 本地链用 LocalnetProgramID
 })
@@ -55,9 +54,18 @@ if err != nil {
 }
 
 // plan.IxCreate  — 单独发送
-// plan.Frame     — Frame PDA
+// plan.Frame     — Frame PDA（= plan.Scratch.Authority，公共 Frame）
 // plan.Scratch   — 后续业务用的 planner
 // 持久化 frameID、tapeLen、frame 地址（DB / 配置）
+```
+
+**可选 — 私有 / 可关闭 Frame**（`Authority: payer`，签 reset/let，可 close 回收 rent）：用 `PlanNewFrame` — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md)。
+
+```go
+plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
+    Payer: payer, FrameID: frameID, Authority: payer,
+    TapeLen: 256, ProgramID: constants.DevnetProgramID,
+})
 ```
 
 发送示例（伪代码）：

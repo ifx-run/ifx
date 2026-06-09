@@ -95,22 +95,29 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch } from "@ifx-run/sdk";
+import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
 
 // Tx 1 — 每个 frame_id 一次（单独开通 tx）
 const tapeLen = 256;
 const frameId = randomBytes(32); // 持久化，供后续任务用
-const { ixCreate } = FrameScratch.planNewFrame({
+const { ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
 // Tx 2 — 业务 tx（用已存的 frameId 重建 planner）
+// 公共 Frame：authority = Frame PDA，reset/let 无需额外 signer（默认路径）
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
+const scratch = new FrameScratch(
+  frame,
+  tapeLen,
+  0,
+  0,
+  undefined,
+  immortalCloseAuthority(payer, frameId)
+);
 const tx = new Transaction();
 
 tx.add(scratch.ixReset());
@@ -140,17 +147,18 @@ Provider 指向 devnet — 省略 `programId` 即使用 `DEFAULT_IFX_PROGRAM_ID`
 ```ts
 import { FrameScratch } from "@ifx-run/sdk";
 
-const { scratch, ixCreate } = FrameScratch.planNewFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  authority: payer,
   tapeLen: 256,
 });
 
-// 业务 tx
+// 业务 tx — scratch.authority 为 Frame PDA（无需 authority 签名）
 tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
+
+需要 **私有 / 可关闭** Frame（on-curve `authority` 签 reset/let，日后 `close` 回收 rent）？用 `planNewFrame({ …, authority: payer })` — 见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)。
 
 Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。仅使用测试 SOL / 测试资产 — 部署说明见 [keys/README.zh-CN.md](./keys/README.zh-CN.md)（维护者）。
 

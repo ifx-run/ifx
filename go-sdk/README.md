@@ -31,12 +31,15 @@ Do not mix create with swap/settlement in the same transaction.
 var frameID [32]byte
 rand.Read(frameID[:])
 
-plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
-    Payer: payer, FrameID: frameID, Authority: payer,
+plan, err := scratch.PlanPublicFrame(scratch.PlanNewFrameParams{
+    Payer: payer, FrameID: frameID,
     TapeLen: 256, ProgramID: constants.DevnetProgramID,
 })
 // Send plan.IxCreate alone; persist frameID, tapeLen, plan.Frame
+// plan.Scratch.Authority == plan.Frame (public Frame — no extra signer on reset/let)
 ```
+
+**Optional — private / closeable Frame** (`Authority: payer`, signs reset/let; can close for rent): use `PlanNewFrame` — [frame-authority.md](../docs/frame-authority.md).
 
 ### Tx 2 — Business (reset + let + assert / CPI)
 
