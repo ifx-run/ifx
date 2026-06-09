@@ -1,5 +1,7 @@
 # Ifx Go SDK
 
+**[← Ifx 项目主页](https://github.com/ifx-run/ifx)**
+
 [English](./README.md) | 中文
 
 Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/solana-go) 上组装 **Ifx 指令**（`ifx_create_frame`、`ifx_let`、`ifx_assert`、`ifx_patched_cpi`、`ifx_if_else` 等）。**不包装 RPC、不包装钱包**——只产出 `solana.Instruction` 和账户 meta；签名与发送由你的后端负责。

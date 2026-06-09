@@ -12,17 +12,15 @@ English | [中文](./README.zh-CN.md)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
 
-**Same-tx orchestration—without a new bespoke program per flow.**
+**Ifx is one reusable on-chain orchestration program for Solana** — so you do not deploy a new custom program every time a tiny feature needs reads and branching in the middle of one transaction.
 
-Many Solana backend flows need to **read chain state mid-transaction, branch, and interleave** with swap, ATA, and DEX instructions in one tx—for example, after a swap, close an ATA when its balance is zero, or skip.
+Solana runs instructions in order; there is no built-in if/else. The product ask is often tiny (for example: after a swap, read an ATA balance, close it if zero, otherwise skip), but **reads and branches mid-transaction must run on-chain**, so teams still ship a **dedicated wrapper program** for that glue logic. **Ifx** is the reusable alternative: plan the flow with the [TypeScript SDK](./sdk/) or [Go SDK](./go-sdk/); the deployed program performs reads, math, asserts, and **`ifx_if_else` conditional CPI** (or **Skip**) while the transaction executes.
 
-**Ifx** is a deployed orchestration program (plan the dataflow with [`@ifx-run/sdk`](./sdk/) or the **[Go SDK](./go-sdk/)): reads, math, asserts, and **`ifx_if_else` conditional CPI** (or **Skip**) run during tx execution.
-
-Not a VM or scripting engine — fixed, enumerable instructions on-chain; layout and IR off-chain.
+Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; layout and IR off-chain.
 
 ## What Ifx is (and is not)
 
-Solana transactions are **instruction lists** with no native if/else. Conditional flows therefore need **on-chain** logic—either a bespoke program or a reusable orchestration program. Ifx is the latter for composition over **existing** programs (System, SPL, DEX).
+Solana transactions are **ordered instruction lists** with no native if/else. That glue lives **on-chain** — either a **dedicated wrapper program per flow**, or **one reusable orchestration program** (Ifx) you compose over programs you already use (System, SPL, DEX).
 
 | | **Ifx** | Client-only tx assembly |
 |---|---------|-------------------------|
@@ -79,7 +77,7 @@ If you build Solana backends, many flows need **orchestration inside one transac
 
 | You need… | Common approaches | With Ifx |
 |-----------|-------------------|----------|
-| **Empty ATA** — close and reclaim rent when balance is 0, skip otherwise (same tx as swap) | Bespoke conditional-close program | `ifx_let` + `ifx_if_else` (CloseAccount or **Skip**) — see [example above](#example-close-an-empty-ata-without-failing-the-tx) |
+| **Empty ATA** — close and reclaim rent when balance is 0, skip otherwise (same tx as swap) | Custom conditional-close wrapper program | `ifx_let` + `ifx_if_else` (CloseAccount or **Skip**) — see [example above](#example-close-an-empty-ata-without-failing-the-tx) |
 | Compare lamports **before vs after** a swap in the same tx | Dedicated orchestration program, or split across txs | `ifx_let` snapshot → your ix → `ifx_let` again → `expr` |
 | “Only transfer if delta covers fees” | New program with conditional logic | `ifx_assert` + `ifx_patched_cpi` |
 | Transfer amount **unknown until mid-tx** | Client-side CPI patching, or a new program | Patch CPI `data` from Frame tape |
@@ -238,7 +236,7 @@ Full planner: **[`sdk/examples/two-hop-token-swap.ts`](./sdk/examples/two-hop-to
 
 ### L3 — Sponsored swap settlement
 
-Read SOL **on-chain**, **abort if profit is too low**, repay sponsor, **buy only if SOL remains** — orchestration over existing programs, no new bespoke program for this flow.
+Read SOL **on-chain**, **abort if profit is too low**, repay sponsor, **buy only if SOL remains** — orchestration over existing programs, without a new dedicated orchestration program for this flow.
 
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";

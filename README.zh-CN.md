@@ -12,17 +12,15 @@
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
 
-**同一 tx 内的链上编排——不必为每个业务流单独 deploy 新 program。**
+**Ifx 是一个可复用的链上编排合约** — 解决 Solana 上「功能不大，却因为交易机制不得不单独写一个合约」的问题。
 
-很多 Solana 后端流程要在**同一笔交易里**先读链上状态、再分支，并与 swap、开 ATA、调 DEX 等 instruction 交错执行——例如 swap 之后读 ATA 余额，为 0 则 `closeAccount` 回收租金，否则跳过。
+Solana 在一笔交易里按顺序执行 instruction，没有原生 if/else。业务需求往往很小（例如：swap 之后读 ATA 余额，为 0 就 close 回收租金，否则跳过），但 **交易执行到一半时的读取和分支必须在链上完成**，团队仍得为这种 glue 逻辑反复部署、维护**专用包装合约**。**Ifx** 是可复用的替代方案：链下用 [TypeScript SDK](./sdk/) 或 [Go SDK](./go-sdk/) 规划数据流；交易执行期间由合约完成读取、运算、断言和 **`ifx_if_else` 条件 CPI**（或 **Skip**）。
 
-**Ifx** 是已部署的通用编排 program（链下用 [`@ifx-run/sdk`](./sdk/) 或 **[Go SDK](./go-sdk/)** 规划数据流）：在 tx 执行期间做读取、运算、断言与 **`ifx_if_else` 条件 CPI**（或 **Skip**）。
-
-不是 VM，也不是脚本引擎——链上指令固定、可枚举；布局与 IR 在链下生成。
+不是 VM，也不是脚本引擎 — 链上指令固定、可枚举；布局与 IR 在链下生成。
 
 ## Ifx 是什么（不是什么）
 
-Solana 交易是 **instruction 列表**，没有原生 if/else。条件逻辑必须在**链上**完成——要么写 bespoke program，要么用可复用的编排 program。Ifx 属于后者，在 **已有** program（System、SPL、DEX）之上编排。
+Solana 交易是 **按顺序执行的 instruction 列表**，没有原生 if/else。这类 glue 必须在**链上**完成 — 要么为每个流程 **单独写包装合约**，要么用 **一个可复用的编排合约**（Ifx）在已有合约（System、SPL、DEX）之上组合。
 
 | | **Ifx** | 纯客户端组 tx |
 |---|---------|---------------|
@@ -30,7 +28,7 @@ Solana 交易是 **instruction 列表**，没有原生 if/else。条件逻辑必
 | 同一 tx 里**靠前 ix 之后**再读余额 | `ifx_let` 读到 ix 后的状态 | 签名时拿不到 |
 | 余额可能 ≠ 0 时的可选 `closeAccount` | **`ifx_if_else` → Skip**，tx 继续 | 无条件 close **整笔 tx revert** |
 
-**Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go SDK** 编码数据流；**Ifx program** 在链上执行分支与 CPI。
+**Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go SDK** 编码数据流；**Ifx 合约** 在链上执行分支与 CPI。
 
 ### 示例：余额为 0 才关 ATA，且不能让整笔 tx 失败
 
@@ -42,7 +40,7 @@ Solana 交易是 **instruction 列表**，没有原生 if/else。条件逻辑必
            → ifx_if_else(amount == 0, CloseAccount CPI, Skip)
 ```
 
-无需单独的「conditional-close helper program」。分支在 **Ifx** 里执行；`CloseAccount` 是对 SPL Token 的 CPI。
+无需单独的「conditional-close 辅助合约」。分支在 **Ifx** 里执行；`CloseAccount` 是对 SPL Token 的 CPI。
 
 更完整变体（dust：burn + harvest + close）：[L1 dust 清理](./sdk/examples/dust-destroy-token2022.ts) · 测试 [`tests/dust_destroy_token2022.ts`](./tests/dust_destroy_token2022.ts)。
 
@@ -71,22 +69,22 @@ go get github.com/ifx-run/ifx/go-sdk
 
 ## 是不是你的日常？
 
-做 Solana 后端时，很多需求本质是**单笔 tx 内的链上编排**——读余额、算差额、分支、再 CPI 现有 program。常见做法有三类：
+做 Solana 后端时，很多需求本质是**单笔 tx 内的链上编排**——读余额、算差额、分支、再 CPI 现有合约。常见做法有三类：
 
-- **新 program** — 新的链上状态或协议规则  
+- **新合约** — 新的链上状态或协议规则  
 - **纯客户端组 tx** — 迭代快；钱包/风控较难验证  
-- **Ifx** — 通用链上层；指令参数是可检查的数据流 IR；复用已部署 program
+- **Ifx** — 通用链上层；指令参数是可检查的数据流 IR；复用已部署合约
 
 | 你需要… | 常见做法 | 用 Ifx |
 |---------|----------|--------|
-| **空 ATA** — 余额为 0 则 close 回收租金，否则跳过（与 swap 同一 tx） | 单独写 conditional-close program | `ifx_let` + `ifx_if_else`（CloseAccount 或 **Skip**）— 见上文示例 |
-| 同一笔 tx 里对比 swap **前后** lamports | 单独 orchestration program，或拆成多笔 tx | `ifx_let` 快照 → 你的 ix → 再 `ifx_let` → `expr` |
-| 「只有 delta 够才转账」 | 新 program 写条件分支 | `ifx_assert` + `ifx_patched_cpi` |
-| 转账金额要**跑完中间步骤才知道** | 客户端 patch CPI，或新 program | 从 Frame tape patch CPI `data` |
-| **Token-2022 dust ATA** — burn、harvest、close | 单独 program，或纯客户端拼装 | `ifx_let` + `ifx_if_else` + patched / static CPI（[示例](./sdk/examples/dust-destroy-token2022.ts)） |
+| **空 ATA** — 余额为 0 则 close 回收租金，否则跳过（与 swap 同一笔交易） | 单独写 conditional-close 包装合约 | `ifx_let` + `ifx_if_else`（CloseAccount 或 **Skip**）— 见上文示例 |
+| 同一笔 tx 里对比 swap **前后** lamports | 单独编排合约，或拆成多笔 tx | `ifx_let` 快照 → 你的 ix → 再 `ifx_let` → `expr` |
+| 「只有 delta 够才转账」 | 新合约写条件分支 | `ifx_assert` + `ifx_patched_cpi` |
+| 转账金额要**跑完中间步骤才知道** | 客户端 patch CPI，或新合约 | 从 Frame tape patch CPI `data` |
+| **Token-2022 dust ATA** — burn、harvest、close | 单独合约，或纯客户端拼装 | `ifx_let` + `ifx_if_else` + patched / static CPI（[示例](./sdk/examples/dust-destroy-token2022.ts)） |
 | 钱包 / 风控问「这笔 tx 在算什么？」 | 逻辑散在客户端拼装里 | 指令参数 = 可检查的数据流 IR |
 
-Ifx **不替代** DEX 或 token program。它是胶水：当结果依赖**本 tx 内的链上状态**时，读 → 算 → 断言 → CPI 现有 program。
+Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 内的链上状态**时，读 → 算 → 断言 → CPI 现有合约。
 
 ---
 
@@ -154,7 +152,7 @@ tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
 
-Devnet program：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。仅使用测试 SOL / 测试资产 — 部署说明见 [keys/README.zh-CN.md](./keys/README.zh-CN.md)（维护者）。
+Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。仅使用测试 SOL / 测试资产 — 部署说明见 [keys/README.zh-CN.md](./keys/README.zh-CN.md)（维护者）。
 
 ---
 
@@ -185,7 +183,7 @@ flowchart LR
   reset[reset] --> let[let 链上读]
   let --> yours[你的 ix]
   yours --> branch{if_else / assert}
-  branch -->|条件成立| cpi[CPI 现有 program]
+  branch -->|条件成立| cpi[CPI 现有合约]
   branch -->|否则| skip[skip]
 ```
 
@@ -237,7 +235,7 @@ reset → CPI 第一跳（A→USDC）→ let(usdcOut) → patched CPI 第二跳�
 
 ### L3 — 赞助代付 + swap 结算
 
-链上读 SOL，**利润不够就 revert**，还款给赞助方，**有剩余才**买入——在已有 program 之上编排，无需为本流程单独 deploy 新 program。
+链上读 SOL，**利润不够就 revert**，还款给赞助方，**有剩余才**买入——在已有合约之上编排，无需为本流程单独 deploy 新合约。
 
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";
@@ -290,7 +288,7 @@ await provider.sendAndConfirm(tx);
 **适合**
 
 - 金额或分支依赖**同一 tx 内的链上读取**
-- 业务是**在已有 program 之上的编排**——读状态、运算、分支、CPI，且不引入新的持久链上状态
+- 业务是**在已有合约之上的编排**——读状态、运算、分支、CPI，且不引入新的持久链上状态
 - 希望 wallet / 模拟器看到**结构化数据流**
 
 **不必用**
@@ -309,7 +307,7 @@ await provider.sendAndConfirm(tx);
 | **Mainnet** | — | 未部署 |
 
 - **`declare_id!` / 仓库 IDL** 对应 **localnet**（仓库构建）。**`@ifx-run/sdk` npm 默认** 为 **devnet**（`DEFAULT_IFX_PROGRAM_ID`）。本地测试显式传 `IFX_LOCALNET_PROGRAM_ID`。
-- 集成方：pin `@ifx-run/sdk`，核对目标集群 program id，上生产前阅读 [docs/SECURITY.zh-CN.md](./docs/SECURITY.zh-CN.md) 与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。
+- 集成方：pin `@ifx-run/sdk`，核对目标集群合约 ID，上生产前阅读 [docs/SECURITY.zh-CN.md](./docs/SECURITY.zh-CN.md) 与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。
 - 维护者：[keys/README.zh-CN.md](./keys/README.zh-CN.md) · [docs/development.zh-CN.md](./docs/development.zh-CN.md)
 
 ---
@@ -345,9 +343,9 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 ## 常见问题
 
-**Ifx 只是 tx builder / instruction pipeline 吗？** **不是。** `@ifx-run/sdk` 在链下组 tx，但 **`ifx_if_else`、`ifx_assert`、`ifx_let` 在 tx 执行时于链上运行**。分支不是在 TypeScript 里「模拟」的，而是在已部署的 Ifx program 里执行。可选 `closeAccount`、dust 清理、「差额够才转账」都靠这个机制在同一 tx 内完成。
+**Ifx 只是 tx builder / instruction pipeline 吗？** **不是。** `@ifx-run/sdk` 在链下组 tx，但 **`ifx_if_else`、`ifx_assert`、`ifx_let` 在 tx 执行时于链上运行**。分支不是在 TypeScript 里「模拟」的，而是在已部署的 Ifx 合约里执行。可选 `closeAccount`、dust 清理、「差额够才转账」都靠这个机制在同一 tx 内完成。
 
-**conditional-close ATA 还要单独写 helper program 吗？** **在 SPL/System/DEX 之上的同一 tx 编排不需要。** `ifx_let` 读 token 余额，`ifx_if_else` 选 CloseAccount CPI 或 **Skip** 即可。只有当你要引入 Ifx 不覆盖的**新链上状态或协议规则**时才需要新 program。
+**conditional-close ATA 还要单独写辅助合约吗？** **在 SPL/System/DEX 之上的同一 tx 编排不需要。** `ifx_let` 读 token 余额，`ifx_if_else` 选 CloseAccount CPI 或 **Skip** 即可。只有当你要引入 Ifx 不覆盖的**新链上状态或协议规则**时才需要新合约。
 
 **为什么要两笔 tx？** 创建 Frame 是一次性开通；业务 tx 开头 `reset`。多 tx 拆分见 [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)。
 
@@ -357,7 +355,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md) 或 **[Go SDK](./go-sdk/README.zh-CN.md)**；链上 CPI 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
 
-**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对 program id，勿在 devnet 使用真实资产。
+**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对合约 ID，勿在 devnet 使用真实资产。
 
 ---
 

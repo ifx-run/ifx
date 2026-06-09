@@ -4,6 +4,8 @@
 
 # @ifx-run/sdk
 
+**[← Ifx project homepage](https://github.com/ifx-run/ifx)**
+
 English | [中文](./README.zh-CN.md)
 
 TypeScript SDK for Ifx in two layers — **does not wrap RPC / wallet**:

@@ -4,6 +4,8 @@
 
 # @ifx-run/sdk
 
+**[← Ifx 项目主页](https://github.com/ifx-run/ifx)**
+
 [English](./README.md) | 中文
 
 Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
