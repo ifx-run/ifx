@@ -9,6 +9,8 @@ export declare const IFX_ERROR: {
     readonly LetNotTopLevel: 6000;
     readonly TapeOutOfBounds: 6001;
     readonly UnauthorizedClose: 6002;
+    readonly InvalidAuthority: 6003;
+    /** @deprecated Use {@link IFX_ERROR.InvalidAuthority} */
     readonly InvalidCloseAuthority: 6003;
     readonly InvalidTapeLen: 6004;
     readonly AssertFailed: 6005;
@@ -36,6 +38,12 @@ export declare const IFX_ERROR: {
     readonly SplToken2022UnpackFailed: 6027;
     readonly CastOverflow: 6028;
     readonly InvalidPatchedCpiPatches: 6029;
+    readonly InvalidStructuredCpiProgram: 6030;
+    readonly InvalidInstructionData: 6031;
+    readonly ResetNotTopLevel: 6032;
+    readonly CloseNotTopLevel: 6033;
+    readonly CreateNotTopLevel: 6034;
+    readonly UnauthorizedFrameWrite: 6035;
 };
 export type IfxErrorName = keyof typeof IFX_ERROR;
 export type IfxErrorCode = (typeof IFX_ERROR)[IfxErrorName];

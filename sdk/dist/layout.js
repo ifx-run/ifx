@@ -24,6 +24,8 @@ function valueTypeSize(ty) {
         return 8;
     if ("u128" in ty || "i128" in ty)
         return 16;
+    if ("pubkey" in ty)
+        return 32;
     throw new Error(`unknown ValueType: ${JSON.stringify(ty)}`);
 }
 function readPayload(tape, payloadOffset, ty) {
@@ -66,17 +68,20 @@ function decodePayloadBytes(bytes, ty) {
             return bytes.readFloatLE(0);
         case "f64":
             return bytes.readDoubleLE(0);
+        case "pubkey":
+            return new web3_js_1.PublicKey(bytes);
         default:
             throw new Error(`unsupported read type: ${k}`);
     }
 }
 /** Snapshot of an on-chain Frame account (`tape` is chain data at fetch/decode time). */
 class DecodedFrame {
-    constructor(closeAuthority, cursor, indexCount, indexCap, payloadAt, tape) {
-        this.closeAuthority = closeAuthority;
+    constructor(authority, cursor, indexCount, indexCap, generation, payloadAt, tape) {
+        this.authority = authority;
         this.cursor = cursor;
         this.indexCount = indexCount;
         this.indexCap = indexCap;
+        this.generation = generation;
         this.payloadAt = payloadAt;
         this.tape = tape;
     }
@@ -132,18 +137,21 @@ class DecodedFrame {
     readF64(value) {
         return this.readValue(value);
     }
+    readPubkey(value) {
+        return this.readValue(value);
+    }
 }
 exports.DecodedFrame = DecodedFrame;
 /** Decode a Frame account after the 1-byte type discriminator. */
 function decodeFrameAccount(data) {
-    if (data.length < 1 + 32 + 4 + 2 + 2 + 4 + 4) {
+    if (data.length < 1 + 32 + 4 + 2 + 2 + 8 + 4 + 4) {
         throw new Error("Frame account data too short");
     }
     if (data[0] !== constants_1.ACCOUNT_DISC_FRAME) {
         throw new Error("invalid Frame account discriminator");
     }
     let o = 1;
-    const closeAuthority = new web3_js_1.PublicKey(data.subarray(o, o + 32));
+    const authority = new web3_js_1.PublicKey(data.subarray(o, o + 32));
     o += 32;
     const cursor = data.readUInt32LE(o);
     o += 4;
@@ -151,6 +159,8 @@ function decodeFrameAccount(data) {
     o += 2;
     const indexCap = data.readUInt16LE(o);
     o += 2;
+    const generation = data.readBigUInt64LE(o);
+    o += 8;
     const payloadAtLen = data.readUInt32LE(o);
     o += 4;
     const payloadAt = [];
@@ -164,7 +174,7 @@ function decodeFrameAccount(data) {
     if (payloadAtLen !== indexCap) {
         throw new Error(`payload_at length mismatch: ${payloadAtLen} vs indexCap ${indexCap}`);
     }
-    return new DecodedFrame(closeAuthority, cursor, indexCount, indexCap, payloadAt, tape);
+    return new DecodedFrame(authority, cursor, indexCount, indexCap, generation, payloadAt, tape);
 }
 function framePda(payer, frameId, programId = constants_1.DEFAULT_IFX_PROGRAM_ID) {
     if (frameId.length !== 32) {

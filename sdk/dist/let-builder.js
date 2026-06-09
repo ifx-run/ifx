@@ -79,6 +79,25 @@ class LetIxBuilder {
         const i = this.accountIndex(account);
         return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.accountDataLen(0), i));
     }
+    /** `remaining[i].key` (account address; ALT-friendly). */
+    /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+    letAccountKey(account) {
+        const i = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.accountKey(0), i));
+    }
+    /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+    letConstPubkey(pk) {
+        const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+        return this.push(this.scratch.plan(binding_1.binding.constPubkey(bytes)));
+    }
+    /** `Frame.generation` (increments on reset; no remaining account). */
+    frameGeneration() {
+        return this.push(this.scratch.plan(binding_1.binding.frameGeneration()));
+    }
+    /** `Frame.index_count` (bindings since last reset; no remaining account). */
+    frameIndexCount() {
+        return this.push(this.scratch.plan(binding_1.binding.frameIndexCount()));
+    }
     accountDataSlice(account, expectedOwner, ty, dataOffset) {
         const dataIdx = this.accountIndex(account);
         const ownerIdx = this.accountIndex(expectedOwner);

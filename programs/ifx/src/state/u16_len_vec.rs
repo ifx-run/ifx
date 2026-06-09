@@ -93,7 +93,7 @@ impl<T: BorshDeserialize> BorshDeserialize for U16LenVec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{CpiPatch, Value};
+    use crate::state::{RawCpiPatch, Value};
 
     #[test]
     fn roundtrip_bytes() {
@@ -108,12 +108,12 @@ mod tests {
 
     #[test]
     fn roundtrip_struct() {
-        let v = U16LenVec(vec![CpiPatch {
+        let v = U16LenVec(vec![RawCpiPatch {
             data_offset: 4,
             source: Value { index: 10 },
         }]);
         let encoded = borsh::to_vec(&v).unwrap();
-        let back = borsh::from_slice::<U16LenVec<CpiPatch>>(&encoded).unwrap();
+        let back = borsh::from_slice::<U16LenVec<RawCpiPatch>>(&encoded).unwrap();
         assert_eq!(back, v);
     }
 }

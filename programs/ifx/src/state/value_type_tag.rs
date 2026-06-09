@@ -18,6 +18,7 @@ pub fn value_type_to_tag(ty: ValueType) -> u8 {
         ValueType::I128 => 10,
         ValueType::F32 => 11,
         ValueType::F64 => 12,
+        ValueType::Pubkey => 13,
     }
 }
 
@@ -36,6 +37,7 @@ pub fn tag_to_value_type(tag: u8) -> Result<ValueType> {
         10 => ValueType::I128,
         11 => ValueType::F32,
         12 => ValueType::F64,
+        13 => ValueType::Pubkey,
         _ => return err!(ErrorCode::InvalidValueTypeTag),
     })
 }

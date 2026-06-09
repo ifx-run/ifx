@@ -1,5 +1,10 @@
 import type { ScratchValue } from "./scratch";
-import type { CpiPatch } from "./types";
+import type { RawCpiPatch } from "./types";
 import type { IfxTy } from "./typed";
-/** Patch template CPI `data` at `dataOffset` from a frame binding (`Value.index` is u8). */
-export declare function cpiPatch<T extends IfxTy>(dataOffset: number, at: ScratchValue<T>): CpiPatch;
+/**
+ * Raw byte overlay on template CPI `data` (wire kind `1` — escape hatch for DEX / custom layouts).
+ * Prefer {@link structuredCpi} for official System / SPL ix.
+ */
+export declare function rawCpiPatch<T extends IfxTy>(dataOffset: number, at: ScratchValue<T>): RawCpiPatch;
+/** @deprecated Use {@link rawCpiPatch} */
+export declare const cpiPatch: typeof rawCpiPatch;

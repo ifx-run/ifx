@@ -52,10 +52,11 @@
 
 ```text
 Frame {
-  close_authority: Pubkey
+  authority: Pubkey
   cursor: u32              // memory 上下次 append 的字节位置
   index_count: u16         // 自上次 reset 以来已 append 的 binding 数
   index_cap: u16           // = payload_at.len()；create 时固定
+  generation: u64          // create 为 0；每次 reset wrapping_add(1)
   payload_at: Vec<u16>     // 长度 = index_cap；payload_at[i] = 第 i 个 binding 的 payload 字节起点
   memory: Vec<u8>          // 物理 tape，长度 = create 时的 memory_len
 }
@@ -100,7 +101,7 @@ SDK 与 program 在校验 `ifx_create_frame` 时必须使用 **相同的 `f`**�
 5. `cursor = endCursor`；`index_count += 1`。
 6. 若 `index_count >= index_cap` → **index 上限**；若 `endCursor > memory.len()` → **tape 满**。
 
-### 4.2 Read（`eval_expr`、`CpiPatch` 等）
+### 4.2 Read（`eval_expr`、`RawCpiPatch` 等）
 
 ```text
 resolve(index k):
@@ -117,7 +118,8 @@ resolve(index k):
 
 - `cursor = 0`
 - `index_count = 0`
-- 清零 `memory`（O(`memory_len`)）
+- `generation = generation.wrapping_add(1)`（create 时为 `0`）
+- **Lazy tape：** 不逐字节清零 `memory`；re-append 前旧字节经 `index < index_count` 守卫不可达
 - **`payload_at` 不必逐格清零** — 仅读取 `k < index_count` 的项。
 
 ### 4.4 账户体积 / rent
@@ -176,7 +178,7 @@ Create 时规划：
 
 **`ifx_reset_frame` 后**：本地 `cursor = 0`，`nextIndex = 0`。
 
-**Bundle pattern 3**：后续 tx plan 前 **`refreshFromChain`** 应对齐链上 **`cursor`** 与 **`index_count`**。
+**Bundle pattern 3**：后续 tx plan 前 **`refreshFromChain`** / **`fromFrame`** 应对齐链上 **`cursor`**、**`index_count`**，并读取 **`generation`**（测试 / 实验用 — 非生产钱包路径）。
 
 仅有 index **无法** 判断 tape 是否够用（256 bool vs 256 u128）；**cursor 模拟仍必需**，以保证 layout 与链上一致。
 

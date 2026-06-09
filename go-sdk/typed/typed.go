@@ -26,6 +26,7 @@ const (
 	TyI128 IfxTy = "i128"
 	TyF32  IfxTy = "f32"
 	TyF64  IfxTy = "f64"
+	TyPubkey IfxTy = "pubkey"
 )
 
 // ScratchValue is one planned ifx_let binding plus its frame index.
@@ -72,6 +73,8 @@ func ValueTypeTag(ty IfxTy) (uint8, error) {
 		return constants.ValueTypeF32, nil
 	case TyF64:
 		return constants.ValueTypeF64, nil
+	case TyPubkey:
+		return constants.ValueTypePubkey, nil
 	default:
 		return 0, fmt.Errorf("unknown IfxTy %q", ty)
 	}
@@ -84,6 +87,8 @@ func InferBindingTy(b binding.Node, indexTypes map[uint8]IfxTy) (IfxTy, error) {
 		return valueTypeFromTag(v.ValueTypeTag)
 	case binding.Eval:
 		return InferExprTy(v.Expr, indexTypes)
+	case binding.ConstPubkey:
+		return TyPubkey, nil
 	case binding.AccountIndex:
 		return inferAccountIndexTy(v.Tag)
 	case binding.RentMinimumBalance:
@@ -118,6 +123,8 @@ func inferAccountIndexTy(tag uint8) (IfxTy, error) {
 		return TyU8, nil
 	case constants.LetTagSplToken2022MintTransferFeeBasisPoints:
 		return TyU16, nil
+	case constants.LetTagAccountKey:
+		return TyPubkey, nil
 	default:
 		return "", fmt.Errorf("unknown account binding tag %d", tag)
 	}
@@ -133,6 +140,10 @@ func inferEmptyTy(tag uint8) (IfxTy, error) {
 	case constants.LetTagSysvarClockEpochStartTimestamp,
 		constants.LetTagSysvarClockUnixTimestamp:
 		return TyI64, nil
+	case constants.LetTagFrameGeneration:
+		return TyU64, nil
+	case constants.LetTagFrameIndexCount:
+		return TyU16, nil
 	default:
 		return "", fmt.Errorf("unknown sysvar binding tag %d", tag)
 	}
@@ -166,6 +177,8 @@ func valueTypeFromTag(tag uint8) (IfxTy, error) {
 		return TyF32, nil
 	case constants.ValueTypeF64:
 		return TyF64, nil
+	case constants.ValueTypePubkey:
+		return TyPubkey, nil
 	default:
 		return "", fmt.Errorf("unknown ValueType tag %d", tag)
 	}
@@ -206,6 +219,8 @@ func InferExprTy(n expr.Node, indexTypes map[uint8]IfxTy) (IfxTy, error) {
 		return TyF32, nil
 	case expr.ConstF64:
 		return TyF64, nil
+	case expr.ConstPubkey:
+		return TyPubkey, nil
 	case expr.Unary:
 		switch v.Tag {
 		case constants.ExprTagNot, constants.ExprTagIsZero, constants.ExprTagNonZero:

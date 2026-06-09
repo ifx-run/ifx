@@ -15,8 +15,9 @@ const web3_js_1 = require("@solana/web3.js");
 const constants_1 = require("./constants");
 Object.defineProperty(exports, "ACCOUNT_DISC_FRAME", { enumerable: true, get: function () { return constants_1.ACCOUNT_DISC_FRAME; } });
 const codec_1 = require("./codec");
+const frame_authority_1 = require("./frame-authority");
 const layout_1 = require("./layout");
-const patch_list_1 = require("./patch-list");
+const types_1 = require("./types");
 const cond_1 = require("./expr/cond");
 exports.IX_DISCRIMINATOR = {
     ifxCreateFrame: Buffer.from([constants_1.IX_DISC_CREATE_FRAME]),
@@ -57,7 +58,7 @@ function createIxCreateFrame(params) {
     const [frame] = (0, layout_1.framePda)(params.payer, params.frameId, programId);
     const args = Buffer.alloc(32 + 32 + 4);
     Buffer.from(params.frameId).copy(args, 0);
-    params.closeAuthority.toBuffer().copy(args, 32);
+    params.authority.toBuffer().copy(args, 32);
     args.writeUInt32LE(params.tapeLen, 64);
     return new web3_js_1.TransactionInstruction({
         programId,
@@ -80,11 +81,14 @@ function createIxCloseFrame(frame, authority, opts = {}) {
         data: exports.IX_DISCRIMINATOR.ifxCloseFrame,
     });
 }
-function createIxResetFrame(frame, opts = {}) {
+function createIxResetFrame(frame, authority, opts = {}) {
     const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
     return new web3_js_1.TransactionInstruction({
         programId,
-        keys: [{ pubkey: frame, isSigner: false, isWritable: true }],
+        keys: [
+            { pubkey: frame, isSigner: false, isWritable: true },
+            ...(0, frame_authority_1.prependWriteAuthorityRemaining)(authority),
+        ],
         data: exports.IX_DISCRIMINATOR.ifxResetFrame,
     });
 }
@@ -96,13 +100,13 @@ function isIxOpts(value) {
         !("pubkey" in value));
 }
 /** Build `ifx_let` (used by {@link FrameScratch.ixLet}). */
-function buildIxLet(frame, args, remainingAccounts = [], opts = {}) {
+function buildIxLet(frame, authority, args, remainingAccounts = [], opts = {}) {
     const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
     return new web3_js_1.TransactionInstruction({
         programId,
         keys: [
             { pubkey: frame, isSigner: false, isWritable: true },
-            ...normalizeRemaining(remainingAccounts),
+            ...(0, frame_authority_1.prependWriteAuthorityRemaining)(authority, normalizeRemaining(remainingAccounts)),
         ],
         data: Buffer.concat([exports.IX_DISCRIMINATOR.ifxLet, (0, codec_1.encodeLetArgs)(args)]),
     });
@@ -118,8 +122,8 @@ function buildIxAssert(frame, cond, opts = {}) {
 }
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
 function createIxCpi(frame, built, opts = {}) {
-    if (!(0, patch_list_1.patchListHasPatches)(built.cpi.patches)) {
-        throw new Error("ifx_patched_cpi requires at least one cpiPatch; for static CPI add the target instruction to the transaction directly, or use arm.cpi(staticCpi(...).staticStep) inside ifx_if_else");
+    if (!(0, types_1.cpiRequiresPatchApply)(built.cpi)) {
+        throw new Error("ifx_patched_cpi requires at least one patch; for static CPI add the target instruction to the transaction directly, or use arm.cpi(staticCpi(...).staticStep) inside ifx_if_else");
     }
     const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
     return new web3_js_1.TransactionInstruction({

@@ -1,7 +1,7 @@
 import { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ACCOUNT_DISC_FRAME } from "./constants";
 import type { IfElseArgs, LetArgs } from "./types";
-import type { CpiBuildResult } from "./cpi";
+import type { CpiWireBuildResult } from "./cpi";
 import type { Cond } from "./typed";
 export declare const IX_DISCRIMINATOR: {
     readonly ifxCreateFrame: Buffer<ArrayBuffer>;
@@ -22,18 +22,18 @@ export declare function normalizeRemaining(accounts: AccountMeta[] | PublicKey[]
 export interface CreateIxCreateFrameParams extends IxOpts {
     payer: PublicKey;
     frameId: Uint8Array | Buffer;
-    closeAuthority: PublicKey;
+    authority: PublicKey;
     tapeLen: number;
 }
 /** Build `ifx_create_frame` instruction (Borsh data; no Anchor Program coder). */
 export declare function createIxCreateFrame(params: CreateIxCreateFrameParams): TransactionInstruction;
 export declare function createIxCloseFrame(frame: PublicKey, authority: PublicKey, opts?: IxOpts): TransactionInstruction;
-export declare function createIxResetFrame(frame: PublicKey, opts?: IxOpts): TransactionInstruction;
+export declare function createIxResetFrame(frame: PublicKey, authority: PublicKey, opts?: IxOpts): TransactionInstruction;
 export declare function isIxOpts(value: unknown): value is IxOpts;
 /** Build `ifx_let` (used by {@link FrameScratch.ixLet}). */
-export declare function buildIxLet(frame: PublicKey, args: LetArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
+export declare function buildIxLet(frame: PublicKey, authority: PublicKey, args: LetArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
 export declare const buildIxResetFrame: typeof createIxResetFrame;
 export declare function buildIxAssert(frame: PublicKey, cond: Cond, opts?: IxOpts): TransactionInstruction;
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
-export declare function createIxCpi(frame: PublicKey, built: CpiBuildResult, opts?: IxOpts): TransactionInstruction;
+export declare function createIxCpi(frame: PublicKey, built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
 export declare function createIxIfElse(frame: PublicKey, args: IfElseArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;

@@ -2,7 +2,7 @@
 
 # Typed `ifx_let` bindings
 
-[`LetBinding`](../programs/ifx/src/state/types.rs) 的 **wire enum**（tag `0`–`24`）。每个变体追加一条 frame 记录 **`[ty:1][payload:ty.size()]`**；类型由变体决定（slice / `Eval` 显式指定）。
+[`LetBinding`](../programs/ifx/src/state/types.rs) 的 **wire enum**（tag `0`–`28`）。每个变体追加一条 frame 记录 **`[ty:1][payload:ty.size()]`**；类型由变体决定（slice / `Eval` 显式指定）。
 
 SDK：[`@ifx-run/sdk`](../sdk/README.zh-CN.md) 的 `FrameScratch` / `letBuilder`。
 
@@ -107,6 +107,46 @@ SDK：`splTokenAmount`、`splMintDecimals` 等（见 `sdk/src/spl/`）。
 
 ---
 
+## Pubkey — tag 25–26
+
+Frame 类型 **`Pubkey`**（`ValueType` tag `13`，32 字节原始公钥）。比较仅支持 `Eq` / `Ne`。
+
+| Tag | 变体 | 来源 | Frame 类型 | Wire 字段 |
+|-----|------|------|------------|-----------|
+| `25` | `AccountKey` | `remaining[account_index].key` | **Pubkey** | `account_index` |
+| `26` | `ConstPubkey` | ix-data 字面量 | **Pubkey** | `bytes: [u8; 32]` |
+
+优先 **`AccountKey`**（ALT 友好、不占 32 B ix data）。需要时可使用 **`ConstPubkey`**（自负 wire 成本）。
+
+SDK：`scratch.letAccountKey(account)` — `PublicKey` 或 `AccountMeta`（只读 pubkey；忽略 signer/writable）。另有 `scratch.letConstPubkey(pk)`、`expr.pubkey(pk)`。
+
+Structured CPI（`InitializeMint`）：mint authority 经 `PubkeyValue::FromFrame` / `Literal`；freeze 经 `FreezeAuthPatch`（`None` / `SomeValue` / `SomeLiteral`）。见 [structured-cpi-patches.md](./structured-cpi-patches.zh-CN.md)。
+
+---
+
+## Frame 元数据 — tag 27–28
+
+| Tag | 变体 | 来源 | Frame 类型 | Wire 字段 |
+|-----|------|------|------------|-----------|
+| `27` | `FrameGeneration` | `Frame.generation` | **U64** | _(无)_ |
+| `28` | `FrameIndexCount` | `Frame.index_count` | **U16** | _(无)_ |
+
+create 时 `generation = 0`；每次 `ifx_reset_frame` 执行 `wrapping_add(1)`。无需 `remaining` 账户。
+
+SDK：`scratch.letFrameGeneration()`、`scratch.letFrameIndexCount()`（`letBuilder.frameGeneration()` / `frameIndexCount()`）。
+
+---
+
+## 账户元数据 — tag 24
+
+| Tag | 变体 | 字段 | Frame 类型 | Wire 字段 |
+|-----|------|------|------------|-----------|
+| `24` | `AccountDataLen` | `data_len()` | **U32** | `account_index` |
+
+链上 `remaining[account_index].data_len()` — 账户 data 字节长度（任意 owner）。与 `AccountDataSlice` 互补：只需长度时无需指定 offset/owner（例如与 `SysvarRentMinimumBalance` 的静态 `data_len` 对照、或判断 Token-2022 extension 布局）。
+
+---
+
 ## SDK 映射
 
 优先用 **`LetIxBuilder`** —— 账户类 load 传 `AccountMeta` / pubkey；sysvar load 无需账户。
@@ -123,6 +163,10 @@ SDK：`splTokenAmount`、`splMintDecimals` 等（见 `sdk/src/spl/`）。
 | `splToken2022Amount(account)` | `SplToken2022AccountAmount` |
 | `letEval(expr)` | `Eval { expr }` |
 | `accountDataSlice(...)` | `AccountDataSlice` |
+| `letAccountKey(account)` | `AccountKey` |
+| `letConstPubkey(pk)` | `ConstPubkey` |
+| `frameGeneration()` | `FrameGeneration` |
+| `frameIndexCount()` | `FrameIndexCount` |
 
 底层：`binding.*` + `scratch.plan` / `scratch.planAtRemainingIndex`（维护者 / 代码生成用）。
 
@@ -130,6 +174,4 @@ SDK：`splTokenAmount`、`splMintDecimals` 等（见 `sdk/src/spl/`）。
 
 ## 新增 opcode
 
-Tag **只增不改**。下一个空闲 id：**25**。新变体须同步 program、SDK、IDL 与本文档。
-
-Pubkey / `COption` 字段不在 typed binding 范围内 — 使用 `AccountDataSlice` 或链下规划。
+Tag **只增不改**。下一个空闲 id：**29**。新变体须同步 program、SDK、IDL 与本文档。

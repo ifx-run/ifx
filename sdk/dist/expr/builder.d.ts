@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import { PublicKey } from "@solana/web3.js";
 import type { Value } from "../types";
 import type { ArithmeticTy, Cond, ExprInput, IfxTy, ScratchValue, TypedExpr } from "../typed";
 import { isScratchValue, scratchValue, taggedExpr } from "../typed";
@@ -22,6 +23,7 @@ export declare const expr: {
     i128: (v: number | bigint | BN) => TypedExpr<"i128">;
     f32: (v: number) => TypedExpr<"f32">;
     f64: (v: number) => TypedExpr<"f64">;
+    pubkey: (pk: PublicKey | Buffer) => TypedExpr<"pubkey">;
     not: (operand: TypedExpr<"bool">) => TypedExpr<"bool">;
     neg: <T extends ArithmeticTy>(operand: TypedExpr<T>) => TypedExpr<T>;
     isZero: <T extends IfxTy>(operand: ExprInput<T>) => TypedExpr<"bool">;

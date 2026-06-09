@@ -22,6 +22,7 @@ export function valueTypeSize(ty: ValueType): number {
   if ("u32" in ty || "i32" in ty || "f32" in ty) return 4;
   if ("u64" in ty || "i64" in ty || "f64" in ty) return 8;
   if ("u128" in ty || "i128" in ty) return 16;
+  if ("pubkey" in ty) return 32;
   throw new Error(`unknown ValueType: ${JSON.stringify(ty)}`);
 }
 
@@ -34,7 +35,9 @@ export type SnapshotReadResult<T extends IfxTy> = T extends "bool"
       ? bigint
       : T extends "i128"
         ? BN
-        : never;
+        : T extends "pubkey"
+          ? PublicKey
+          : never;
 
 function readPayload(tape: Buffer, payloadOffset: number, ty: ValueType): Buffer {
   const size = valueTypeSize(ty);
@@ -79,6 +82,8 @@ function decodePayloadBytes(bytes: Buffer, ty: ValueType): unknown {
       return bytes.readFloatLE(0);
     case "f64":
       return bytes.readDoubleLE(0);
+    case "pubkey":
+      return new PublicKey(bytes);
     default:
       throw new Error(`unsupported read type: ${k}`);
   }
@@ -87,10 +92,11 @@ function decodePayloadBytes(bytes: Buffer, ty: ValueType): unknown {
 /** Snapshot of an on-chain Frame account (`tape` is chain data at fetch/decode time). */
 export class DecodedFrame {
   constructor(
-    readonly closeAuthority: PublicKey,
+    readonly authority: PublicKey,
     readonly cursor: number,
     readonly indexCount: number,
     readonly indexCap: number,
+    readonly generation: bigint,
     readonly payloadAt: readonly number[],
     readonly tape: Buffer
   ) {}
@@ -165,18 +171,22 @@ export class DecodedFrame {
   readF64(value: ScratchValue<"f64">): number {
     return this.readValue(value);
   }
+
+  readPubkey(value: ScratchValue<"pubkey">): PublicKey {
+    return this.readValue(value);
+  }
 }
 
 /** Decode a Frame account after the 1-byte type discriminator. */
 export function decodeFrameAccount(data: Buffer): DecodedFrame {
-  if (data.length < 1 + 32 + 4 + 2 + 2 + 4 + 4) {
+  if (data.length < 1 + 32 + 4 + 2 + 2 + 8 + 4 + 4) {
     throw new Error("Frame account data too short");
   }
   if (data[0] !== ACCOUNT_DISC_FRAME) {
     throw new Error("invalid Frame account discriminator");
   }
   let o = 1;
-  const closeAuthority = new PublicKey(data.subarray(o, o + 32));
+  const authority = new PublicKey(data.subarray(o, o + 32));
   o += 32;
   const cursor = data.readUInt32LE(o);
   o += 4;
@@ -184,6 +194,8 @@ export function decodeFrameAccount(data: Buffer): DecodedFrame {
   o += 2;
   const indexCap = data.readUInt16LE(o);
   o += 2;
+  const generation = data.readBigUInt64LE(o);
+  o += 8;
   const payloadAtLen = data.readUInt32LE(o);
   o += 4;
   const payloadAt: number[] = [];
@@ -200,10 +212,11 @@ export function decodeFrameAccount(data: Buffer): DecodedFrame {
     );
   }
   return new DecodedFrame(
-    closeAuthority,
+    authority,
     cursor,
     indexCount,
     indexCap,
+    generation,
     payloadAt,
     tape
   );

@@ -1,3 +1,4 @@
+import { PublicKey } from "@solana/web3.js";
 import { expect } from "chai";
 
 import { encodeExpr, EXPR_TAG } from "../sdk/src/codec";
@@ -50,6 +51,8 @@ function sampleExpr(key: ExprVariantKey): Expr {
       return expr.f32(1.5);
     case "constF64":
       return expr.f64(1.5);
+    case "constPubkey":
+      return expr.pubkey(PublicKey.default);
     case "not":
       return expr.not(BOOL);
     case "neg":
@@ -116,16 +119,16 @@ function sampleExpr(key: ExprVariantKey): Expr {
 }
 
 describe("sdk Expr wire parity", () => {
-  it("EXPR_VARIANT matches IDL enum order (tags 0..42)", () => {
+  it("EXPR_VARIANT matches IDL enum order (tags 0..43)", () => {
     const def = idl.types.find((t) => t.name === "Expr");
     expect(def?.type.kind).to.equal("enum");
     const idlKeys = def!.type.variants.map((v) => pascalToCamel(v.name));
     expect(idlKeys).to.deep.equal([...EXPR_VARIANT]);
-    expect(EXPR_VARIANT_COUNT).to.equal(43);
-    expect(EXPR_NEXT_TAG).to.equal(43);
+    expect(EXPR_VARIANT_COUNT).to.equal(44);
+    expect(EXPR_NEXT_TAG).to.equal(44);
   });
 
-  it("EXPR_TAG indices are contiguous 0..42", () => {
+  it("EXPR_TAG indices are contiguous 0..43", () => {
     for (let tag = 0; tag < EXPR_VARIANT.length; tag++) {
       const key = EXPR_VARIANT[tag];
       expect(EXPR_TAG[key]).to.equal(tag);

@@ -28,9 +28,8 @@ import {
 import { randomBytes } from "crypto";
 
 import {
-  cpiPatch,
-  cpi,
-  expr,
+  rawCpiPatch,
+  rawCpi,   expr,
   FrameScratch,
 } from "../sdk/src";
 import {
@@ -74,7 +73,7 @@ describe("sponsored buy (ifx orchestration)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: sponsor.publicKey,
       frameId,
-      closeAuthority: sponsor.publicKey,
+      authority: sponsor.publicKey,
       tapeLen: 256,
     });
 
@@ -176,13 +175,13 @@ describe("sponsored buy (ifx orchestration)", () => {
     // 7) B → A：ATA rent + fee 预算
     orchestrationIxs.push(
       scratch.ixCpi(
-        cpi(
+        rawCpi(
           SystemProgram.transfer({
             fromPubkey: user.publicKey,
             toPubkey: sponsor.publicKey,
             lamports: 0,
           }),
-          { patches: [cpiPatch(4, settle)] }
+          { patches: [rawCpiPatch(4, settle)] }
         ).build()
       )
     );
@@ -190,13 +189,13 @@ describe("sponsored buy (ifx orchestration)", () => {
     // 8) mock SOL→N：用剩余 swap SOL
     orchestrationIxs.push(
       scratch.ixCpi(
-        cpi(
+        rawCpi(
           SystemProgram.transfer({
             fromPubkey: user.publicKey,
             toPubkey: pool.publicKey,
             lamports: 0,
           }),
-          { patches: [cpiPatch(4, buyLamports)] }
+          { patches: [rawCpiPatch(4, buyLamports)] }
         ).build()
       )
     );
@@ -276,7 +275,7 @@ describe("sponsored buy (ifx orchestration)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: sponsor.publicKey,
       frameId,
-      closeAuthority: sponsor.publicKey,
+      authority: sponsor.publicKey,
       tapeLen: 256,
     });
 

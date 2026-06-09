@@ -15,9 +15,8 @@ pub struct IfxPatchedCpi<'info> {
 }
 
 pub fn handler<'info>(ctx: Context<'info, IfxPatchedCpi<'info>>, arm: Cpi) -> Result<()> {
-    require!(!arm.patches.is_empty(), ErrorCode::InvalidPatchedCpiPatches);
+    require!(arm.requires_patch_apply(), ErrorCode::InvalidPatchedCpiPatches);
     let remaining = ctx.remaining_accounts;
-    FrameAccount::try_from(ctx.accounts.frame.as_ref())?.with_read(|tape| {
-        invoke_cpi(&tape, remaining, &arm)
-    })
+    let frame = FrameAccount::try_from(ctx.accounts.frame.as_ref())?;
+    invoke_cpi(&frame, remaining, &arm)
 }

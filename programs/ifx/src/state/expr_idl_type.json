@@ -210,7 +210,8 @@
           { "name": "then_expr", "type": { "defined": { "name": "Expr" } } },
           { "name": "else_expr", "type": { "defined": { "name": "Expr" } } }
         ]
-      }
+      },
+      { "name": "ConstPubkey", "fields": [{ "array": ["u8", 32] }] }
     ]
   }
 }

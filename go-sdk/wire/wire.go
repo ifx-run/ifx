@@ -27,6 +27,13 @@ func AppendU32LE(buf []byte, v uint32) ([]byte, error) {
 	return append(buf, b[:]...), nil
 }
 
+// AppendVecU8 appends a Borsh/Anchor Vec<u8> (u32 LE length + bytes).
+func AppendVecU8(buf, payload []byte) []byte {
+	var lenb [4]byte
+	binary.LittleEndian.PutUint32(lenb[:], uint32(len(payload)))
+	return append(append(buf, lenb[:]...), payload...)
+}
+
 func AppendU64LE(buf []byte, v uint64) []byte {
 	var b [8]byte
 	binary.LittleEndian.PutUint64(b[:], v)

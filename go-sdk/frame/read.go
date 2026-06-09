@@ -90,6 +90,13 @@ func decodePayloadBytes(bytes []byte, ty typed.IfxTy) (interface{}, error) {
 		return math.Float32frombits(binary.LittleEndian.Uint32(bytes)), nil
 	case typed.TyF64:
 		return math.Float64frombits(binary.LittleEndian.Uint64(bytes)), nil
+	case typed.TyPubkey:
+		if len(bytes) != 32 {
+			return nil, fmt.Errorf("pubkey requires 32 bytes")
+		}
+		var pk [32]byte
+		copy(pk[:], bytes)
+		return pk, nil
 	default:
 		return nil, fmt.Errorf("unsupported read type %q", ty)
 	}
@@ -178,4 +185,16 @@ func (dec *DecodedFrame) ReadI64(sv typed.ScratchValue) (int64, error) {
 		return 0, fmt.Errorf("expected i64, got %T", v)
 	}
 	return n, nil
+}
+
+func (dec *DecodedFrame) ReadPubkey(sv typed.ScratchValue) ([32]byte, error) {
+	v, err := dec.ReadValue(sv)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	pk, ok := v.([32]byte)
+	if !ok {
+		return [32]byte{}, fmt.Errorf("expected pubkey, got %T", v)
+	}
+	return pk, nil
 }

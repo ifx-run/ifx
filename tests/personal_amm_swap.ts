@@ -52,7 +52,7 @@ describe("personal AMM swap (program-free wallet pool)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 

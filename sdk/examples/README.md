@@ -24,6 +24,10 @@ Token-2022 dust cleanup in **one business tx**: `let` → burn (patched CPI via 
 
 Pool operator helpers: `personalDexAltAddresses`, `planPersonalDexFrame`. See [docs/personal-amm.md §5.1](../../docs/personal-amm.md#51-pool-onboarding-and-address-lookup-table-alt).
 
+## `structured-cpi` (reference)
+
+Official System / SPL / Token-2022 ix with tape-bound fields — **not** a standalone example script. See `tests/ifx_structured_cpi_initialize_mint.ts` (InitializeMint2 + `Pubkey` let) and [structured-cpi-patches.md](../../docs/structured-cpi-patches.md).
+
 ## Run locally
 
 From repo root (after `npm run pretest` or local validator + deploy):

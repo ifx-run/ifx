@@ -10,7 +10,7 @@ import (
 
 func TestPlanDustDestroyInstructionCount(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
-	s := scratch.NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID)
+	s := scratch.NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
 	accts := DustDestroyAccounts{
 		Mint:            solana.NewWallet().PublicKey(),
 		TokenAccount:    solana.NewWallet().PublicKey(),

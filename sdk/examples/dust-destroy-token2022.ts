@@ -18,11 +18,10 @@ import {
 
 import {
   arm,
-  cpiPatch,
+  rawCpiPatch,
   expr,
   ifElseArgs,
-  cpi,
-  staticCpi,
+  rawCpi,   staticCpi,
   type FrameScratch,
 } from "../src/index";
 
@@ -69,10 +68,10 @@ export function planDustDestroyTx(
 
   // spl-token BurnChecked `data` (10 bytes):
   //   byte 0       u8  instruction tag (15 = BurnChecked)
-  //   bytes 1..8   u64 amount (LE)  ← cpiPatch(1, amount)
-  //   byte 9       u8  decimals      ← cpiPatch(9, decimals)
+  //   bytes 1..8   u64 amount (LE)  ← rawCpiPatch(1, amount)
+  //   byte 9       u8  decimals      ← rawCpiPatch(9, decimals)
   // Template zeros are overwritten by Ifx before invoke.
-  const burn = cpi(
+  const burn = rawCpi(
     createBurnCheckedInstruction(
       tokenAccount,
       mint,
@@ -84,8 +83,8 @@ export function planDustDestroyTx(
     ),
     {
       patches: [
-        cpiPatch(1, amount),
-        cpiPatch(9, decimals),
+        rawCpiPatch(1, amount),
+        rawCpiPatch(9, decimals),
       ],
     }
   ).build();

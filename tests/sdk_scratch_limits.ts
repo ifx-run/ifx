@@ -17,7 +17,7 @@ describe("FrameScratch off-chain limits", () => {
     const { scratch } = planLocalFrame({
       payer: framePayer,
       frameId: randomBytes(32),
-      closeAuthority: framePayer,
+      authority: framePayer,
       tapeLen: 20,
     });
 
@@ -31,7 +31,7 @@ describe("FrameScratch off-chain limits", () => {
     const { scratch } = planLocalFrame({
       payer: framePayer,
       frameId: randomBytes(32),
-      closeAuthority: framePayer,
+      authority: framePayer,
       tapeLen: 20,
     });
 
@@ -45,7 +45,7 @@ describe("FrameScratch off-chain limits", () => {
     const { scratch, frame, frameBump } = FrameScratch.planNewFrame({
       payer: framePayer,
       frameId,
-      closeAuthority: framePayer,
+      authority: framePayer,
       tapeLen: 128,
       programId: IFX_LOCALNET_PROGRAM_ID,
     });
@@ -60,7 +60,7 @@ describe("FrameScratch off-chain limits", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 128,
     });
 

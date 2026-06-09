@@ -18,6 +18,8 @@ func ValueTypeSize(tag uint8) (int, error) {
 		return 8, nil
 	case constants.ValueTypeU128, constants.ValueTypeI128:
 		return 16, nil
+	case constants.ValueTypePubkey:
+		return 32, nil
 	default:
 		return 0, fmt.Errorf("unknown ValueType tag %d", tag)
 	}

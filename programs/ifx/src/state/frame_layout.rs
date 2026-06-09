@@ -4,30 +4,34 @@ use crate::{constants::ACCOUNT_DISC_FRAME, error::ErrorCode, frame_require};
 
 use super::frame_error::{FrameError, FrameLayoutResult, FrameSite};
 
-/// Byte offset of `Frame.close_authority` (after 1-byte discriminator).
-pub const OFF_CLOSE_AUTHORITY: usize = 1;
+/// Byte offset of `Frame.authority` (after 1-byte discriminator).
+pub const OFF_AUTHORITY: usize = 1;
+pub const OFF_CLOSE_AUTHORITY: usize = OFF_AUTHORITY;
 pub const OFF_CURSOR: usize = 33;
 pub const OFF_INDEX_COUNT: usize = 37;
 pub const OFF_INDEX_CAP: usize = 39;
-pub const OFF_PAYLOAD_AT_LEN: usize = 41;
-pub const OFF_PAYLOAD_AT: usize = 45;
+pub const OFF_GENERATION: usize = 41;
+pub const OFF_PAYLOAD_AT_LEN: usize = 49;
+pub const OFF_PAYLOAD_AT: usize = 53;
 
 /// Minimum account data length: disc + fixed header + empty vec prefixes.
 pub const FRAME_MIN_DATA_LEN: usize = OFF_PAYLOAD_AT + 4 + 4;
 
-const OFF_CLOSE_AUTHORITY_END: usize = OFF_CLOSE_AUTHORITY + 32;
+const OFF_AUTHORITY_END: usize = OFF_AUTHORITY + 32;
 const OFF_CURSOR_END: usize = OFF_CURSOR + 4;
 const OFF_INDEX_COUNT_END: usize = OFF_INDEX_COUNT + 2;
 const OFF_INDEX_CAP_END: usize = OFF_INDEX_CAP + 2;
+const OFF_GENERATION_END: usize = OFF_GENERATION + 8;
 const OFF_PAYLOAD_AT_LEN_END: usize = OFF_PAYLOAD_AT_LEN + 4;
 
 /// Compile-time layout chain (must match SDK `decodeFrameAccount`).
 const _: () = {
-    assert!(OFF_CLOSE_AUTHORITY == 1);
-    assert!(OFF_CURSOR == OFF_CLOSE_AUTHORITY_END);
+    assert!(OFF_AUTHORITY == 1);
+    assert!(OFF_CURSOR == OFF_AUTHORITY_END);
     assert!(OFF_INDEX_COUNT == OFF_CURSOR_END);
     assert!(OFF_INDEX_CAP == OFF_INDEX_COUNT_END);
-    assert!(OFF_PAYLOAD_AT_LEN == OFF_INDEX_CAP_END);
+    assert!(OFF_GENERATION == OFF_INDEX_CAP_END);
+    assert!(OFF_PAYLOAD_AT_LEN == OFF_GENERATION_END);
     assert!(OFF_PAYLOAD_AT == OFF_PAYLOAD_AT_LEN_END);
 };
 
@@ -127,8 +131,12 @@ impl FrameLayout {
         OFF_PAYLOAD_AT + index_cap as usize * 2 + 4 + tape_len as usize
     }
 
+    pub fn read_authority(&self, data: &[u8]) -> FrameLayoutResult<Pubkey> {
+        read_authority(data)
+    }
+
     pub fn read_close_authority(&self, data: &[u8]) -> FrameLayoutResult<Pubkey> {
-        read_close_authority(data)
+        read_authority(data)
     }
 
     pub fn read_cursor(&self, data: &[u8]) -> FrameLayoutResult<u32> {
@@ -145,6 +153,13 @@ impl FrameLayout {
         )
     }
 
+    pub fn read_generation(&self, data: &[u8]) -> FrameLayoutResult<u64> {
+        read_u64_le(
+            FrameSite::ReadGeneration,
+            field(FrameSite::ReadGeneration, data, OFF_GENERATION, 8)?,
+        )
+    }
+
     pub fn write_cursor(&self, data: &mut [u8], v: u32) -> FrameLayoutResult<()> {
         write_u32_le(
             FrameSite::WriteCursor,
@@ -157,6 +172,14 @@ impl FrameLayout {
         write_u16_le(
             FrameSite::WriteIndexCount,
             field_mut(FrameSite::WriteIndexCount, data, OFF_INDEX_COUNT, 2)?,
+            v,
+        )
+    }
+
+    pub fn write_generation(&self, data: &mut [u8], v: u64) -> FrameLayoutResult<()> {
+        write_u64_le(
+            FrameSite::WriteGeneration,
+            field_mut(FrameSite::WriteGeneration, data, OFF_GENERATION, 8)?,
             v,
         )
     }
@@ -269,14 +292,18 @@ pub fn field_mut(
         .ok_or_else(|| FrameError::new(site, ErrorCode::AccountDataTooShort))
 }
 
-pub fn read_close_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
-    let bytes = field(FrameSite::CloseAuthorityField, data, OFF_CLOSE_AUTHORITY, 32)?;
+pub fn read_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
+    let bytes = field(FrameSite::AuthorityField, data, OFF_AUTHORITY, 32)?;
     Pubkey::try_from(bytes).map_err(|_| {
         FrameError::new(
-            FrameSite::CloseAuthorityPubkey,
+            FrameSite::AuthorityPubkey,
             ErrorCode::AccountDataTooShort,
         )
     })
+}
+
+pub fn read_close_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
+    read_authority(data)
 }
 
 pub fn read_u16_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u16> {
@@ -290,6 +317,17 @@ pub fn read_u32_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u32> {
     bytes
         .get(0..4)
         .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .ok_or_else(|| FrameError::new(site, ErrorCode::AccountDataTooShort))
+}
+
+pub fn read_u64_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u64> {
+    bytes
+        .get(0..8)
+        .map(|b| {
+            u64::from_le_bytes([
+                b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+            ])
+        })
         .ok_or_else(|| FrameError::new(site, ErrorCode::AccountDataTooShort))
 }
 
@@ -309,6 +347,14 @@ pub fn write_u32_le(site: FrameSite, bytes: &mut [u8], v: u32) -> FrameLayoutRes
     Ok(())
 }
 
+pub fn write_u64_le(site: FrameSite, bytes: &mut [u8], v: u64) -> FrameLayoutResult<()> {
+    let out = bytes
+        .get_mut(0..8)
+        .ok_or_else(|| FrameError::new(site, ErrorCode::AccountDataTooShort))?;
+    out.copy_from_slice(&v.to_le_bytes());
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,13 +367,14 @@ mod tests {
         buf
     }
 
-    fn empty_frame(close_authority: Pubkey, tape_len: u32) -> Frame {
+    fn empty_frame(authority: Pubkey, tape_len: u32) -> Frame {
         let index_cap = index_cap_for_tape_len(tape_len);
         Frame {
-            close_authority,
+            authority,
             cursor: 0,
             index_count: 0,
             index_cap,
+            generation: 0,
             payload_at: vec![0u16; index_cap as usize],
             tape: vec![0u8; tape_len as usize],
         }
@@ -357,6 +404,7 @@ mod tests {
             assert_eq!(layout.read_close_authority(&data).unwrap(), auth);
             assert_eq!(layout.read_cursor(&data).unwrap(), 0);
             assert_eq!(layout.read_index_count(&data).unwrap(), 0);
+            assert_eq!(layout.read_generation(&data).unwrap(), 0);
         }
     }
 

@@ -51,6 +51,8 @@ func EncodeExpr(n expr.Node) ([]byte, error) {
 		return wire.AppendF32LE([]byte{constants.ExprTagConstF32}, float32(v)), nil
 	case expr.ConstF64:
 		return wire.AppendF64LE([]byte{constants.ExprTagConstF64}, float64(v)), nil
+	case expr.ConstPubkey:
+		return append([]byte{constants.ExprTagConstPubkey}, v.Bytes[:]...), nil
 	case expr.Unary:
 		return encodeUnary(v.Tag, v.Operand)
 	case expr.Binary:

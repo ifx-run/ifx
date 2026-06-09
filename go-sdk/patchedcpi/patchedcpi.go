@@ -23,11 +23,11 @@ type Builder struct {
 	programID solana.PublicKey
 	ixKeys    []*solana.AccountMeta
 	data      []byte
-	patches   []codec.CpiPatch
+	patches   []codec.RawCpiPatch
 }
 
 // FromInstruction starts from any template ix (e.g. system transfer with lamports 0).
-func FromInstruction(template solana.Instruction, patches ...codec.CpiPatch) *Builder {
+func FromInstruction(template solana.Instruction, patches ...codec.RawCpiPatch) *Builder {
 	keys := template.Accounts()
 	acc := make([]*solana.AccountMeta, len(keys))
 	copy(acc, keys)
@@ -46,8 +46,13 @@ func FromInstruction(template solana.Instruction, patches ...codec.CpiPatch) *Bu
 }
 
 // Cpi is shorthand for FromInstruction.
-func Cpi(template solana.Instruction, patches ...codec.CpiPatch) *Builder {
+func RawCpi(template solana.Instruction, patches ...codec.RawCpiPatch) *Builder {
 	return FromInstruction(template, patches...)
+}
+
+// WireBuild returns the unified CPI wire input for ifx_patched_cpi.
+func (b BuildResult) WireBuild() codec.WireBuildResult {
+	return codec.WireBuildResult{Step: b.Cpi, Remaining: b.Remaining}
 }
 
 // Build finalizes wire structs. remaining may be nil to use [program, ...template keys].
@@ -127,7 +132,7 @@ func SystemTransferTemplate(from, to solana.PublicKey) solana.Instruction {
 }
 
 // Patch is re-exported helper.
-var Patch = patch.CpiPatch
+var Patch = patch.RawCpiPatch
 
 func scratchFromIxKeys(keys []*solana.AccountMeta) []typed.AccountMeta {
 	out := make([]typed.AccountMeta, len(keys))

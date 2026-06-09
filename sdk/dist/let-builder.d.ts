@@ -1,4 +1,4 @@
-import { AccountMeta, TransactionInstruction } from "@solana/web3.js";
+import { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { LetAccountInput } from "./let-account";
 import type { IxOpts } from "./ix";
 import { FrameScratch, type ScratchValue } from "./scratch";
@@ -32,6 +32,15 @@ export declare class LetIxBuilder {
     lamports(account: LetAccountInput): ScratchValue<"u64">;
     /** On-chain `AccountInfo::data_len` for a remaining account. */
     dataLen(account: LetAccountInput): ScratchValue<"u32">;
+    /** `remaining[i].key` (account address; ALT-friendly). */
+    /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+    letAccountKey(account: LetAccountInput): ScratchValue<"pubkey">;
+    /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+    letConstPubkey(pk: PublicKey | Buffer): ScratchValue<"pubkey">;
+    /** `Frame.generation` (increments on reset; no remaining account). */
+    frameGeneration(): ScratchValue<"u64">;
+    /** `Frame.index_count` (bindings since last reset; no remaining account). */
+    frameIndexCount(): ScratchValue<"u16">;
     accountDataSlice<T extends IfxTy>(account: LetAccountInput, expectedOwner: LetAccountInput, ty: T, dataOffset: number): ScratchValue<T>;
     splTokenAmount(account: LetAccountInput): ScratchValue<"u64">;
     splTokenDelegatedAmount(account: LetAccountInput): ScratchValue<"u64">;

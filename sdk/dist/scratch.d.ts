@@ -2,14 +2,14 @@ import { AccountMeta, Connection, PublicKey, TransactionInstruction, type Commit
 import { type DecodedFrame } from "./layout";
 import type { LetArgs, LetBinding } from "./types";
 import { type Cond, type IfxTy, type ScratchValue, type TypedExpr } from "./typed";
-import type { CpiBuildResult } from "./cpi";
+import type { CpiWireBuildResult } from "./cpi";
 import type { IfElseArgs } from "./types";
 import { type CreateIxCreateFrameParams, type IxOpts } from "./ix";
 import { LetAccountInput } from "./let-account";
 import { LetIxBuilder } from "./let-builder";
 export type { CreateIxCreateFrameParams } from "./ix";
-/** Params for {@link FrameScratch.planPublicFrame} — `close_authority` is set to {@link immortalCloseAuthority}. */
-export type PlanPublicFrameParams = Omit<CreateIxCreateFrameParams, "closeAuthority">;
+/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link immortalCloseAuthority}. */
+export type PlanPublicFrameParams = Omit<CreateIxCreateFrameParams, "authority">;
 /** Options for {@link FrameScratch.fetchDecodedFrame}. */
 export type FrameScratchReadOpts = {
     commitment?: Commitment;
@@ -36,8 +36,10 @@ export declare class FrameScratch {
     readonly frame: PublicKey;
     /** Ifx program id for all {@link FrameScratch} `ix*` builders (override per call via `IxOpts`). */
     readonly programId: PublicKey;
+    /** Frame `authority` from create; required for `ixReset` / `ixLet`. */
+    readonly authority: PublicKey;
     private readonly indexTypes;
-    constructor(frame: PublicKey, tapeLen?: number, cursor?: number, nextIndex?: number, programId?: PublicKey);
+    constructor(frame: PublicKey, tapeLen?: number, cursor?: number, nextIndex?: number, programId?: PublicKey, authority?: PublicKey);
     /** Sync planner from a fetched frame account (`frame` must match the fetch address). Tests / local debug only. */
     static fromFrame(account: DecodedFrame, frame: PublicKey, programId?: PublicKey): FrameScratch;
     /**
@@ -46,7 +48,7 @@ export declare class FrameScratch {
      */
     static planNewFrame(params: CreateIxCreateFrameParams): PlanNewFrameResult;
     /**
-     * Like {@link planNewFrame}, but sets `close_authority` to the Frame PDA itself
+     * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
      * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
      * Reset and let remain open to anyone (scratch semantics).
      */
@@ -72,6 +74,14 @@ export declare class FrameScratch {
     letLamports(account: LetAccountInput): ScratchValue<"u64">;
     /** `remaining[i].data.byteLength` on-chain (`AccountInfo::data_len`). */
     letDataLen(account: LetAccountInput): ScratchValue<"u32">;
+    /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+    letAccountKey(account: LetAccountInput): ScratchValue<"pubkey">;
+    /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+    letConstPubkey(pk: PublicKey | Buffer): ScratchValue<"pubkey">;
+    /** `Frame.generation` (increments on reset; no remaining account). */
+    letFrameGeneration(): ScratchValue<"u64">;
+    /** `Frame.index_count` (bindings since last reset; no remaining account). */
+    letFrameIndexCount(): ScratchValue<"u16">;
     letAccountDataSlice<T extends IfxTy>(account: LetAccountInput, expectedOwner: LetAccountInput, ty: T, dataOffset: number): ScratchValue<T>;
     /** `Clock::get()?.slot` (syscall; no remaining account). */
     clockSlot(): ScratchValue<"u64">;
@@ -102,7 +112,7 @@ export declare class FrameScratch {
     ixLet(target: ScratchValue<IfxTy> | LetIxBuilder, opts?: IxOpts): TransactionInstruction;
     ixAssert(cond: Cond, opts?: IxOpts): TransactionInstruction;
     /** Patched CPI (`ifx_patched_cpi`). */
-    ixCpi(built: CpiBuildResult, opts?: IxOpts): TransactionInstruction;
+    ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
     /** Conditional CPI arms (`ifx_if_else`). */
     ixIfElse(args: IfElseArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
     /** @internal */

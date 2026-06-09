@@ -30,7 +30,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	owner := accts.Owner
 	rentDestination := accts.RentDestination
 
-	out := []solana.Instruction{s.IxReset(nil)}
+	out := []solana.Instruction{s.IxReset()}
 
 	b := s.LetBuilder()
 	amount, err := b.SplToken2022Amount(tokenAccount)
@@ -45,7 +45,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	if err != nil {
 		return nil, err
 	}
-	letIx, err := b.BuildIx(nil)
+	letIx, err := b.BuildIx()
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +54,10 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	dust := expr.Lt(expr.Ref(amount.Index), expr.U64(DustThresholdRaw))
 
 	burnTpl := spltoken.BurnCheckedInstruction(tokenAccount, mint, owner, accts.OwnerSigner)
-	burn, err := patchedcpi.Cpi(
+	burn, err := patchedcpi.RawCpi(
 		burnTpl,
-		patch.CpiPatch(1, amount),
-		patch.CpiPatch(9, decimals),
+		patch.RawCpiPatch(1, amount),
+		patch.RawCpiPatch(9, decimals),
 	).Build(nil)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	if err != nil {
 		return nil, err
 	}
-	burnIfElse, err := s.IxIfElse(burnArgs, burn.Remaining, nil)
+	burnIfElse, err := s.IxIfElse(burnArgs, burn.Remaining)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	if err != nil {
 		return nil, err
 	}
-	harvestIfElse, err := s.IxIfElse(harvestArgs, harvestRem, nil)
+	harvestIfElse, err := s.IxIfElse(harvestArgs, harvestRem)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	if err != nil {
 		return nil, err
 	}
-	closeIfElse, err := s.IxIfElse(closeArgs, closeRem, nil)
+	closeIfElse, err := s.IxIfElse(closeArgs, closeRem)
 	if err != nil {
 		return nil, err
 	}

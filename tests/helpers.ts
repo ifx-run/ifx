@@ -205,6 +205,63 @@ export async function confirmSignature(
   );
 }
 
+/** Poll until `signature` reaches `confirmed` / `finalized` (Surfpool-safe, longer than Anchor default). */
+export async function waitForSignature(
+  connection: Connection,
+  signature: TransactionSignature,
+  deadlineMs = 120_000
+): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < deadlineMs) {
+    const { value } = await connection.getSignatureStatuses([signature], {
+      searchTransactionHistory: true,
+    });
+    const status = value[0];
+    if (status !== null) {
+      if (status.err) {
+        throw new Error(
+          `transaction ${signature} failed: ${JSON.stringify(status.err)}`
+        );
+      }
+      if (
+        status.confirmationStatus === "confirmed" ||
+        status.confirmationStatus === "finalized"
+      ) {
+        return;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  throw new Error(
+    `Transaction was not confirmed in ${deadlineMs / 1000}s: ${signature}`
+  );
+}
+
+/** Wait until slot advances (avoids duplicate tx signature when resubmitting identical ix batches). */
+export async function waitForNextSlot(
+  connection: Connection,
+  commitment: Commitment = "confirmed"
+): Promise<void> {
+  const start = await connection.getSlot(commitment);
+  for (let i = 0; i < 120; i++) {
+    await new Promise((r) => setTimeout(r, 200));
+    const slot = await connection.getSlot(commitment);
+    if (slot > start) return;
+  }
+  throw new Error(`slot did not advance past ${start}`);
+}
+
+function signedTxSignature(tx: Transaction): TransactionSignature {
+  const sigBytes = tx.signatures[0]?.signature;
+  if (!sigBytes) {
+    throw new Error("signed transaction missing signature");
+  }
+  // bs58 is a transitive dep of @solana/web3.js (Anchor wallet tests).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const bs58 = require("bs58") as { encode: (buf: Uint8Array) => string };
+  return bs58.encode(sigBytes) as TransactionSignature;
+}
+
 /** Fund a vanity sponsor on localnet (airdrop, then wallet transfer if capped). */
 export async function fundLocalKeypair(
   provider: AnchorProvider,
@@ -254,16 +311,39 @@ export async function sendAndConfirm(
   ...rest: TransactionInstruction[]
 ): Promise<string> {
   const { label, instructions } = splitLabelAndInstructions(labelOrIx, rest);
+  const connection = provider.connection;
+  const commitment: Commitment = provider.opts?.commitment ?? "confirmed";
   const tx = new Transaction();
   for (const ix of instructions) tx.add(ix);
-  const sig = await provider.sendAndConfirm(tx);
+  tx.feePayer = provider.wallet.publicKey;
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash(commitment);
+  tx.recentBlockhash = blockhash;
+  tx.lastValidBlockHeight = lastValidBlockHeight;
+  const signed = await provider.wallet.signTransaction(tx);
+  const raw = signed.serialize();
+
+  let signature: TransactionSignature;
+  try {
+    signature = await connection.sendRawTransaction(raw, {
+      skipPreflight: false,
+    });
+  } catch (err: unknown) {
+    const msg = String(err);
+    if (!msg.includes("already been processed")) {
+      throw err;
+    }
+    signature = signedTxSignature(signed);
+  }
+
+  await waitForSignature(connection, signature);
   if (shouldLogTx()) {
-    logLocalTx(sig, label, {
+    logLocalTx(signature, label, {
       bytes: legacyTxSerializedBytes(tx),
       kind: "legacy",
     });
   }
-  return sig;
+  return signature;
 }
 
 /**
@@ -291,14 +371,7 @@ export async function sendAndConfirmSignersOnly(
   const sig = await connection.sendRawTransaction(raw, {
     skipPreflight: false,
   });
-  await connection.confirmTransaction(
-    {
-      signature: sig,
-      blockhash: tx.recentBlockhash!,
-      lastValidBlockHeight: tx.lastValidBlockHeight!,
-    },
-    "confirmed"
-  );
+  await waitForSignature(connection, sig);
   if (shouldLogTx()) {
     logLocalTx(sig, label, { bytes: raw.length, kind: "legacy" });
   }

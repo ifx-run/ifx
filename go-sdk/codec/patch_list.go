@@ -2,14 +2,14 @@ package codec
 
 import "github.com/ifx-run/ifx/go-sdk/wire"
 
-// PatchList is U16LenVec<CpiPatch> on wire (u16 LE count + entries). Empty = static step.
-type PatchList []CpiPatch
+// PatchList is U16LenVec<RawCpiPatch> on wire (u16 LE count + entries). Empty = static step.
+type PatchList []RawCpiPatch
 
 func PatchListStatic() PatchList {
 	return nil
 }
 
-func PatchListPatched(patches []CpiPatch) PatchList {
+func PatchListPatched(patches []RawCpiPatch) PatchList {
 	return patches
 }
 
@@ -23,7 +23,7 @@ func EncodePatchList(p PatchList) ([]byte, error) {
 		return nil, err
 	}
 	for i := range p {
-		body, err := EncodeCpiPatch(p[i])
+		body, err := EncodeRawCpiPatch(p[i])
 		if err != nil {
 			return nil, err
 		}

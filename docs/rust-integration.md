@@ -10,7 +10,7 @@ How to use Ifx from **Rust** projects: on-chain CPI, off-chain transaction build
 
 | Role | Recommended path |
 |------|------------------|
-| **App / bot / wallet (off-chain)** | [`@ifx-run/sdk`](../sdk/README.md) — layout planning, `expr` builders, instruction encoding |
+| **App / bot / wallet (off-chain)** | [`@ifx-run/sdk`](../sdk/README.md) or [`go-sdk`](../go-sdk/README.md) — layout planning, `expr` builders, instruction encoding |
 | **Anchor program (on-chain CPI)** | `ifx` program crate with `features = ["cpi"]` |
 | **Pure Rust off-chain (advanced)** | Path dependency on `ifx` crate for wire types + manual Borsh encoding (must match SDK codec) |
 
@@ -20,19 +20,20 @@ There is **no published Rust SDK crate** yet (planned: `ifx-core` + `ifx-sdk`). 
 
 ---
 
-## Off-chain: use the TypeScript SDK
+## Off-chain: TypeScript or Go SDK
 
-For almost all integrators, encode transactions with **`@ifx-run/sdk`**:
+For almost all integrators, encode transactions with **`@ifx-run/sdk`** or **[`go-sdk`](../go-sdk/README.md)** (same wire; Go needs no Node):
 
 - `FrameScratch` simulates tape layout (`planRecordOffsets` + `indexCapForTapeLen`)
-- `expr.*` builds flat `Expr` trees (Borsh tags 0–42)
+- `expr.*` builds flat `Expr` trees (Borsh tags 0–43)
 - `letBuilder` / `ixLet` deduplicates `remaining_accounts`
 
 A Rust backend can:
 
-1. Shell out to a small TS script that returns serialized instructions, or
-2. Call the SDK via Node from Rust, or
-3. Reimplement the codec (see below) and keep golden tests aligned with `tests/sdk_expr_flat.ts`
+1. Call the **Go SDK** from a sidecar or separate service, or
+2. Shell out to a small TS script that returns serialized instructions, or
+3. Call the SDK via Node from Rust, or
+4. Reimplement the codec (see below) and keep golden tests aligned with `tests/sdk_expr_flat.ts`
 
 **Do not** use Anchor's recursive instruction coder for [`Expr`](../programs/ifx/src/state/types.rs). `Expr` is a deep recursive enum; Anchor's coder can stack-overflow. The program uses **Borsh** with a flat per-operator tag layout. Encode with SDK `codec.ts` or `borsh` against the same shape.
 
@@ -69,12 +70,14 @@ Instruction-level docs live in [`programs/ifx/src/lib.rs`](../programs/ifx/src/l
 
 | Type | Serialization | Notes |
 |------|---------------|-------|
-| `Expr` | **Borsh**, flat enum tags **0–42** | See [implementation.md](./implementation.md) §5 |
-| `LetBinding` | Anchor / Borsh enum tags **0–23** | See [typed-let-bindings.md](./typed-let-bindings.md) |
+| `Expr` | **Borsh**, flat enum tags **0–43** | See [implementation.md](./implementation.md) §5 |
+| `LetBinding` | Anchor / Borsh enum tags **0–28** | See [typed-let-bindings.md](./typed-let-bindings.md) |
 | `LetArgs.bindings` | `U8LenVec<LetBinding>` | u8 length prefix + elements (max 255) |
-| `Cpi.data` / `patches` | `U16LenVec` | u16 LE length prefix |
+| `Cpi` step | Wire kind **`0/1/2`** + payload | **Static** / **RawPatched** (`U16LenVec` data + patches) / **Structured** (patch tag + payload, no template) — [structured-cpi-patches.md](./structured-cpi-patches.md) |
+| `ifx_patched_cpi` ix data | **`Cpi`** (Anchor arg) | Wire kind **`0/1/2`** + payload — see [structured-cpi-patches.md](./structured-cpi-patches.md) |
+| `ifx_if_else` ix data | **`IfElseArgs`** (Anchor arg) | `Expr` cond + two custom-wire [`IfElseArm`] sides |
 | `Value` | `index: u8` | Binding index (0-based append order) |
-| `CpiPatch` | `{ data_offset: u16, source: Value }` | Patch CPI template `data` before invoke (`source.index`) |
+| `RawCpiPatch` | `{ data_offset: u16, source: Value }` | **RawPatched only** — patch template `data` before invoke |
 
 ---
 
@@ -93,6 +96,7 @@ Off-chain simulation:
 
 - Rust: [`plan_record_offsets`](../programs/ifx/src/state/tape.rs), [`index_cap_for_tape_len`](../programs/ifx/src/constants.rs)
 - TypeScript: `@ifx-run/sdk` `planRecordOffsets`, `indexCapForTapeLen`
+- Go: `go-sdk/frame` decode + `scratch` planner (same rules)
 
 Mismatch → layout errors, `InvalidValueIndex`, or silent wrong reads.
 
@@ -129,7 +133,7 @@ When `patches` is non-empty, bytes copy from `Frame::tape` (via `payload_at[sour
 
 | Doc | Contents |
 |-----|----------|
-| [errors.md](./errors.md) | Full error code table (6000–6029) |
+| [errors.md](./errors.md) | Full error code table (6000–6035) |
 | [debugging.md](./debugging.md) | Program log pseudocode format |
 | [implementation.md](./implementation.md) | Instructions, limits, types |
 

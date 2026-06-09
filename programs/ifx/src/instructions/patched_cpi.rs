@@ -5,32 +5,70 @@ use anchor_lang::solana_program::program::invoke;
 use crate::{
     error::ErrorCode,
     pseudocode,
-    state::{frame_access::FrameReader, Cpi, CpiPatch},
+    state::{frame_access::FrameReader, FrameAccount, Cpi, RawCpiPatch},
 };
 
+use super::structured_cpi::assemble_structured_cpi;
+
 /// Apply frame tape patches when needed, then `invoke` one CPI step.
+///
+/// Takes [`FrameAccount`] (not an active [`FrameReader`] borrow) so callers such as
+/// [`super::if_else`] can evaluate `cond` and release the read lock before CPI — nested
+/// self-CPI write instructions must not run while a parent `with_read` is held.
 pub fn invoke_cpi<'info>(
-    frame: &impl FrameReader,
+    frame: &FrameAccount<'info>,
     remaining: &'info [AccountInfo<'info>],
-    arm: &Cpi,
+    cpi: &Cpi,
 ) -> Result<()> {
-    pseudocode::log_cpi(arm);
-    if arm.patches.is_empty() {
-        return invoke_raw(
+    pseudocode::log_cpi(cpi);
+    match cpi {
+        Cpi::Static {
+            accounts_start,
+            accounts_len,
+            data,
+        } => invoke_raw(
             remaining,
-            arm.accounts_start,
-            arm.accounts_len,
-            arm.data.as_slice(),
-        );
+            *accounts_start,
+            *accounts_len,
+            data.as_slice(),
+        ),
+        Cpi::RawPatched {
+            accounts_start,
+            accounts_len,
+            data,
+            patches,
+        } => {
+            let mut buf = data.to_vec();
+            if !patches.is_empty() {
+                frame.with_read(|tape| apply_generic_patches(&tape, &mut buf, patches.as_slice()))?;
+            }
+            invoke_raw(remaining, *accounts_start, *accounts_len, &buf)
+        }
+        Cpi::Structured {
+            accounts_start,
+            accounts_len,
+            patch,
+        } => {
+            let program_id =
+                program_id_from_remaining(remaining, *accounts_start, *accounts_len)?;
+            let data = frame.with_read(|tape| assemble_structured_cpi(patch, &program_id, &tape))?;
+            invoke_raw(remaining, *accounts_start, *accounts_len, &data)
+        }
     }
-    let mut data = arm.data.to_vec();
-    apply_patches(frame, &mut data, arm.patches.as_slice())?;
-    invoke_raw(
-        remaining,
-        arm.accounts_start,
-        arm.accounts_len,
-        &data,
-    )
+}
+
+fn program_id_from_remaining<'info>(
+    remaining: &'info [AccountInfo<'info>],
+    accounts_start: u8,
+    accounts_len: u8,
+) -> Result<Pubkey> {
+    let start = accounts_start as usize;
+    let end = start
+        .checked_add(accounts_len as usize)
+        .ok_or(ErrorCode::InvalidAccountRange)?;
+    require!(end <= remaining.len(), ErrorCode::InvalidAccountRange);
+    require!(start < end, ErrorCode::InvalidAccountRange);
+    Ok(*remaining[start].key)
 }
 
 fn invoke_raw<'info>(
@@ -71,10 +109,10 @@ fn invoke_raw<'info>(
     Ok(())
 }
 
-fn apply_patches(
+fn apply_generic_patches(
     frame: &impl FrameReader,
     data: &mut [u8],
-    patches: &[CpiPatch],
+    patches: &[RawCpiPatch],
 ) -> Result<()> {
     for patch in patches {
         let off = usize::from(patch.data_offset);

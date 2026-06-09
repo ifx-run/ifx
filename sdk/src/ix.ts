@@ -24,10 +24,11 @@ import {
   encodeExpr,
   encodeLetArgs,
 } from "./codec";
+import { prependWriteAuthorityRemaining } from "./frame-authority";
 import { framePda } from "./layout";
 import type { Expr, IfElseArgs, LetArgs } from "./types";
-import type { CpiBuildResult } from "./cpi";
-import { patchListHasPatches } from "./patch-list";
+import type { CpiWireBuildResult } from "./cpi";
+import { cpiRequiresPatchApply } from "./types";
 import type { Cond } from "./typed";
 import { toCond } from "./expr/cond";
 
@@ -72,7 +73,7 @@ export function normalizeRemaining(
 export interface CreateIxCreateFrameParams extends IxOpts {
   payer: PublicKey;
   frameId: Uint8Array | Buffer;
-  closeAuthority: PublicKey;
+  authority: PublicKey;
   tapeLen: number;
 }
 
@@ -93,7 +94,7 @@ export function createIxCreateFrame(
   const [frame] = framePda(params.payer, params.frameId, programId);
   const args = Buffer.alloc(32 + 32 + 4);
   Buffer.from(params.frameId).copy(args, 0);
-  params.closeAuthority.toBuffer().copy(args, 32);
+  params.authority.toBuffer().copy(args, 32);
   args.writeUInt32LE(params.tapeLen, 64);
   return new TransactionInstruction({
     programId,
@@ -124,12 +125,16 @@ export function createIxCloseFrame(
 
 export function createIxResetFrame(
   frame: PublicKey,
+  authority: PublicKey,
   opts: IxOpts = {}
 ): TransactionInstruction {
   const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
   return new TransactionInstruction({
     programId,
-    keys: [{ pubkey: frame, isSigner: false, isWritable: true }],
+    keys: [
+      { pubkey: frame, isSigner: false, isWritable: true },
+      ...prependWriteAuthorityRemaining(authority),
+    ],
     data: IX_DISCRIMINATOR.ifxResetFrame,
   });
 }
@@ -147,6 +152,7 @@ export function isIxOpts(value: unknown): value is IxOpts {
 /** Build `ifx_let` (used by {@link FrameScratch.ixLet}). */
 export function buildIxLet(
   frame: PublicKey,
+  authority: PublicKey,
   args: LetArgs,
   remainingAccounts: AccountMeta[] | PublicKey[] = [],
   opts: IxOpts = {}
@@ -156,7 +162,10 @@ export function buildIxLet(
     programId,
     keys: [
       { pubkey: frame, isSigner: false, isWritable: true },
-      ...normalizeRemaining(remainingAccounts),
+      ...prependWriteAuthorityRemaining(
+        authority,
+        normalizeRemaining(remainingAccounts)
+      ),
     ],
     data: Buffer.concat([IX_DISCRIMINATOR.ifxLet, encodeLetArgs(args)]),
   });
@@ -180,12 +189,12 @@ export function buildIxAssert(
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
 export function createIxCpi(
   frame: PublicKey,
-  built: CpiBuildResult,
+  built: CpiWireBuildResult,
   opts: IxOpts = {}
 ): TransactionInstruction {
-  if (!patchListHasPatches(built.cpi.patches)) {
+  if (!cpiRequiresPatchApply(built.cpi)) {
     throw new Error(
-      "ifx_patched_cpi requires at least one cpiPatch; for static CPI add the target instruction to the transaction directly, or use arm.cpi(staticCpi(...).staticStep) inside ifx_if_else"
+      "ifx_patched_cpi requires at least one patch; for static CPI add the target instruction to the transaction directly, or use arm.cpi(staticCpi(...).staticStep) inside ifx_if_else"
     );
   }
   const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;

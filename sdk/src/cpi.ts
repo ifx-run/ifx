@@ -5,9 +5,9 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 
-import type { Cpi, CpiPatch } from "./types";
-import { patchListPatched, patchListStatic } from "./patch-list";
-export { cpiPatch } from "./patch";
+import type { Cpi, RawCpiPatch } from "./types";
+import { patchListPatched } from "./patch-list";
+export { rawCpiPatch } from "./patch";
 
 function normalizeRemaining(
   accounts: AccountMeta[] | PublicKey[]
@@ -23,28 +23,82 @@ function normalizeRemaining(
   return accounts as AccountMeta[];
 }
 
-export type CpiBuildResult = {
-  /** Wire step with patches applied at invoke time. */
+/** Result of {@link RawCpiBuilder.build} / {@link StructuredCpiBuilder.build} for `ixCpi`. */
+export type CpiWireBuildResult = {
   cpi: Cpi;
-  /** Static step (empty `PatchList`) for `ifx_if_else`. */
-  staticStep: Cpi;
-  /** Remaining accounts for `createIxCpi` / `createIxIfElse` (program first in slice). */
   remaining: AccountMeta[];
 };
 
+export type CpiBuildResult = CpiWireBuildResult & {
+  /** Static step for `ifx_if_else`. */
+  staticStep: Cpi;
+};
+
 /**
- * Semi-built CPI: clone `data` from a template {@link TransactionInstruction},
- * apply {@link cpiPatch} at `build()` time, and derive account layout for ifx remaining.
+ * Derive `accountsStart` / `accountsLen` + validate CPI account slice in `remaining`.
+ *
+ * Default `remaining`: `[programId, ...template.keys]`. Pass a longer list when merging
+ * multiple CPI steps (e.g. transfer + syncNative in one `ifx_if_else` arm).
  */
-export class CpiBuilder {
+export function resolveCpiRemaining(
+  programId: PublicKey,
+  ixKeys: AccountMeta[],
+  remaining?: AccountMeta[] | PublicKey[]
+): { accountsStart: number; accountsLen: number; remaining: AccountMeta[] } {
+  const metas =
+    remaining === undefined
+      ? [
+          {
+            pubkey: programId,
+            isSigner: false,
+            isWritable: false,
+          },
+          ...ixKeys,
+        ]
+      : normalizeRemaining(remaining);
+
+  const accountsStart = metas.findIndex((m) => m.pubkey.equals(programId));
+  if (accountsStart < 0) {
+    throw new Error("remaining must include the CPI program id");
+  }
+
+  const slice = metas.slice(accountsStart);
+  if (slice.length < 1 + ixKeys.length) {
+    throw new Error(
+      `remaining slice too short: need program + ${ixKeys.length} account(s)`
+    );
+  }
+
+  for (let i = 0; i < ixKeys.length; i++) {
+    const exp = ixKeys[i];
+    const got = slice[1 + i];
+    if (!got.pubkey.equals(exp.pubkey)) {
+      throw new Error(
+        `account mismatch at remaining[${accountsStart + 1 + i}]: expected ${exp.pubkey.toBase58()}`
+      );
+    }
+  }
+
+  return {
+    accountsStart,
+    accountsLen: slice.length,
+    remaining: metas,
+  };
+}
+
+/**
+ * Raw patched CPI: clone template `data`, apply {@link rawCpiPatch} byte overlays at build time.
+ * Escape hatch for DEX / custom layouts — prefer {@link structuredCpi} for official ix.
+ */
+export class RawCpiBuilder {
   private readonly programId: PublicKey;
   private readonly ixKeys: AccountMeta[];
   private readonly data: Buffer;
-  private readonly patches: CpiPatch[];
+  private readonly patches: RawCpiPatch[];
 
   private constructor(
     template: TransactionInstruction,
-    patches: CpiPatch[]
+    patches: RawCpiPatch[]
   ) {
     this.programId = template.programId;
     this.ixKeys = template.keys.map((k) => ({
@@ -59,56 +113,18 @@ export class CpiBuilder {
   /** Start from any instruction (e.g. `SystemProgram.transfer` with lamports `0`). */
   static fromInstruction(
     template: TransactionInstruction,
-    options?: { patches?: CpiPatch[] }
-  ): CpiBuilder {
-    return new CpiBuilder(template, options?.patches ?? []);
+    options?: { patches?: RawCpiPatch[] }
+  ): RawCpiBuilder {
+    return new RawCpiBuilder(template, options?.patches ?? []);
   }
 
-  /**
-   * Finalize wire args + ifx `remaining` account list.
-   *
-   * With no args: `[programId, ...template.keys]` from the template instruction (preferred).
-   * Custom `remaining` only when the CPI slice sits inside a longer list; must include
-   * `programId` then `template.keys` in order. Avoid `PublicKey[]` — signer/writable are lost.
-   */
   build(remaining?: AccountMeta[] | PublicKey[]): CpiBuildResult {
-    const metas =
-      remaining === undefined
-        ? [
-            {
-              pubkey: this.programId,
-              isSigner: false,
-              isWritable: false,
-            },
-            ...this.ixKeys,
-          ]
-        : normalizeRemaining(remaining);
-
-    const accountsStart = metas.findIndex((m) =>
-      m.pubkey.equals(this.programId)
+    const { accountsStart, accountsLen, remaining: metas } = resolveCpiRemaining(
+      this.programId,
+      this.ixKeys,
+      remaining
     );
-    if (accountsStart < 0) {
-      throw new Error("remaining must include the CPI program id");
-    }
 
-    const slice = metas.slice(accountsStart);
-    if (slice.length < 1 + this.ixKeys.length) {
-      throw new Error(
-        `remaining slice too short: need program + ${this.ixKeys.length} account(s)`
-      );
-    }
-
-    for (let i = 0; i < this.ixKeys.length; i++) {
-      const exp = this.ixKeys[i];
-      const got = slice[1 + i];
-      if (!got.pubkey.equals(exp.pubkey)) {
-        throw new Error(
-          `account mismatch at remaining[${accountsStart + 1 + i}]: expected ${exp.pubkey.toBase58()}`
-        );
-      }
-    }
-
-    const accountsLen = slice.length;
     const stepBase = {
       accountsStart,
       accountsLen,
@@ -117,39 +133,46 @@ export class CpiBuilder {
 
     return {
       cpi: {
+        kind: "rawPatched",
         ...stepBase,
         patches: patchListPatched(this.patches),
       },
       staticStep: {
+        kind: "static",
         ...stepBase,
-        patches: patchListStatic(),
       },
       remaining: metas,
     };
   }
 }
 
-/** Shorthand for {@link CpiBuilder.fromInstruction}. */
-export function cpi(
+/** @deprecated Use {@link RawCpiBuilder} */
+export const CpiBuilder = RawCpiBuilder;
+
+/** Shorthand for {@link RawCpiBuilder.fromInstruction}. */
+export function rawCpi(
   template: TransactionInstruction,
-  options?: { patches?: CpiPatch[] }
-): CpiBuilder {
-  return CpiBuilder.fromInstruction(template, options);
+  options?: { patches?: RawCpiPatch[] }
+): RawCpiBuilder {
+  return RawCpiBuilder.fromInstruction(template, options);
 }
 
-/** Static CPI step for `ifx_if_else` — empty `PatchList` (`U16LenVec` count 0). */
+/** @deprecated Use {@link rawCpi} */
+export const cpi = rawCpi;
+
+/** Static CPI step for `ifx_if_else`. */
 export function staticCpi(
   template: TransactionInstruction,
   remaining?: AccountMeta[] | PublicKey[]
 ): Pick<CpiBuildResult, "staticStep" | "remaining"> {
-  const built = CpiBuilder.fromInstruction(template).build(remaining);
+  const built = RawCpiBuilder.fromInstruction(template).build(remaining);
   return {
     staticStep: built.staticStep,
     remaining: built.remaining,
   };
 }
 
-/** System Program `Transfer` ix data; lamports at byte offset 4 (for `cpiPatch`). */
+/** System Program `Transfer` ix data; lamports at byte offset 4 (for `rawCpiPatch`). */
 export function systemTransferDataTemplate(
   lamports: number | bigint = 0
 ): Buffer {
@@ -159,7 +182,7 @@ export function systemTransferDataTemplate(
   return buf;
 }
 
-/** Convenience: template transfer with `lamports: 0` for patching. */
+/** Convenience: template transfer with `lamports: 0` for raw patching. */
 export function systemTransferTemplate(params: {
   fromPubkey: PublicKey;
   toPubkey: PublicKey;

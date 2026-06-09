@@ -1,6 +1,7 @@
 #![allow(ambiguous_glob_reexports)]
 
 pub mod patched_cpi;
+pub mod structured_cpi;
 pub mod if_else;
 pub mod patched_cpi_ix;
 pub mod assert;

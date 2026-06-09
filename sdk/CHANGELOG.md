@@ -4,23 +4,48 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** Current devnet npm release is **`0.2.0-devnet.0`** — devnet-only preview (no mainnet program). **`0.1.0-devnet.0` is incompatible** (Cpi / IfElseArm wire unify); deprecate after publish and devnet redeploy.
+**Status:** Current devnet npm release is **`0.3.0-devnet.0`** — devnet-only preview (no mainnet program). **`0.2.0-devnet.0` is incompatible** (Frame layout, authority, Structured CPI); upgrade SDK and redeployed devnet program together.
 
 ## [Unreleased]
+
+## [0.3.0-devnet.0] - 2026-06-08
+
+### Breaking
+
+- **Frame `authority`:** `close_authority` → **`authority`** (same account offset). `planNewFrame({ authority })`; `ixReset` / `ixLet` include authority meta (signer when on-curve). New errors `ResetNotTopLevel`, `CloseNotTopLevel`, `CreateNotTopLevel`, `UnauthorizedFrameWrite`; `InvalidCloseAuthority` → `InvalidAuthority` (6003).
+- **Frame account layout:** new **`generation: u64`** field (+8 B rent at create); **`payload_at`** vec offset shifts. Requires program redeploy; decode with pre-generation layout will fail.
+- **IDL / wire naming:** on-chain `CpiPatch` → **`RawCpiPatch`**; `Cpi::GenericPatched` → **`Cpi::RawPatched`**; structured mint pubkey slots **`PubkeySlot` → `PubkeyValue`**. SDK: **`rawCpiPatch`**, deprecated aliases `cpi` / `cpiPatch` / `CpiGenericPatched` retained.
+- **`IFX_ERROR`:** through **6035** (see `docs/errors.md`).
+
+### Added
+
+- **`Frame.generation`** on-chain (`0` at create; `wrapping_add(1)` on each `ifx_reset_frame`).
+- **`LetBinding` tags 27–28:** `FrameGeneration` / `FrameIndexCount` — SDK `letFrameGeneration()`, `letFrameIndexCount()`, `letBuilder.frameGeneration()` / `frameIndexCount()`; Go `LetFrameGeneration()` / `LetFrameIndexCount()`.
+- Integration tests: `tests/ifx_frame_generation.ts`, `go-sdk/integration/frame_generation_test.go`.
+- **`frameAuthorityRequiresSigner` / `frameWriteAuthorityMeta`** — SDK helpers for reset/let authority accounts.
+- **`letAccountKey` / `LetIxBuilder.letAccountKey`:** accept `PublicKey` or `AccountMeta` (`LetAccountInput`); only the pubkey is used for the `AccountKey` binding.
+- **`structuredCpiPatch`:** full registry (wire tags **0–28**); infer patch tag from official ix when omitted.
+- Go SDK parity: `patch.RawCpiPatch`, `patchedcpi.RawCpi`, `CpiWireRawPatched` wire tag `1`.
+- Go SDK: `structuredcpi` builders + `WireBuildResult`; `IxCpi` / `BuildCpi` structured path; 29-tag wire tests + InitializeMint2 localnet e2e.
+- Go SDK: dust integration fixture is pure Go (`integration/dust_fixture_test.go`, `spltoken/setup.go`); removed `go-sdk/scripts/dust-fixture.ts`.
+
+### Changed
+
+- Go SDK: `FrameScratch.Ix*` and `LetBuilder.BuildIx()` no longer take per-ix `*ix.Options` — set `ProgramID` on `FrameScratch` only (matches TS default; TS still supports optional `IxOpts` per call).
 
 ## [0.2.0-devnet.0] - 2026-06-08
 
 ### Breaking
 
 - **Unified wire type `Cpi`:** one struct with optional `patches` (`PatchList` = `U16LenVec`; empty = static step, non-empty = patched). Removed the old static-only `Cpi` type and separate `PatchedCpi` type.
-- **SDK renames:** `patchedCpi()` → **`cpi()`**; `scratch.ixPatchedCpi` / `createIxPatchedCpi` → **`ixCpi` / `createIxCpi`**; `arm.patchedCpi` → **`arm.cpi`**. Instruction name **`ifx_patched_cpi`** unchanged (still requires non-empty patches).
+- **SDK renames:** `patchedCpi()` → **`rawCpi()`**; `scratch.ixPatchedCpi` / `createIxPatchedCpi` → **`ixCpi` / `createIxCpi`**; `arm.patchedCpi` → **`arm.cpi`**. Instruction name **`ifx_patched_cpi`** unchanged (still requires non-empty patches).
 - **`IfElseArm` wire:** tag `0x00` skip · `0xff` revert · `1..254` = N × `Cpi` steps (mixed static + patched per arm). Replaces separate static/patched arm tag ranges.
 - **`IFX_ERROR`:** `InvalidPatchedCpiPatches` (6029) when `ifx_patched_cpi` is invoked with empty `patches`.
 - **Requires matching on-chain program** (devnet redeploy with this wire). Do not mix with `@ifx-run/sdk@0.1.0-devnet.0`.
 
 ### Added
 
-- **`IFX_ERROR`** / `ifxErrorName()` — named Anchor error codes (`6000`–`6029`) aligned with `docs/errors.md`.
+- **`IFX_ERROR`** / `ifxErrorName()` — named Anchor error codes (`6000`–`6031`) aligned with `docs/errors.md`.
 - **`EXPR_VARIANT`** — single source for flat `Expr` wire tags (`0`–`42`); parity test vs IDL.
 - **`FrameScratch`:** sysvar helpers (`clockSlot`, `rentMinimumBalance`, …) and Token-2022 `letSplToken2022*` (mirror legacy SPL + `LetIxBuilder`).
 - Module exports: `letClockSlot`, `letSplToken2022Amount`, … (by `remaining_accounts` index).
@@ -46,7 +71,7 @@ All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep 
 - **`LetIxBuilder` Token-2022 helpers:** `splToken2022Amount`, `splToken2022TransferFeeWithheld`, mint TransferFee / DefaultAccountState methods, etc. (`sdk/src/spl/token2022-bind.ts`). Pass accounts directly — same dedupe as legacy `splTokenAmount`.
 - **`splTokenAccountState`:** `letBuilder.splTokenAccountState(account)` / `binding.splTokenAccountState` (SPL Token tag 11).
 - **`let-binding-variants.ts`:** single source of wire tag order (`LET_BINDING_VARIANT`); must match Rust `LetBinding` enum and IDL.
-- **`staticCpi(ix)`:** build `{ staticStep, remaining }` for `arm.cpi` when instruction `data` is fixed (no Frame patches). Use **`cpi()`** + **`cpiPatch`** when patching from tape bindings.
+- **`staticCpi(ix)`:** build `{ staticStep, remaining }` for `arm.cpi` when instruction `data` is fixed (no Frame patches). Use **`rawCpi()`** + **`rawCpiPatch`** when patching from tape bindings.
 - **`Expr` flat enum** (one tag per operator): `expr.add`, `isZero`, `nonZero`, `asU64`, `asU128`, `saturatingSub`, `and`, `or`, `mulDivFloor`/`Ceil`, `clamp`, `select`, `divFloor`/`Ceil`, `bpsMulFloor`/`Ceil`, etc.
 - **`IfElseArm`:** sequential **`Cpi`** steps (static and/or patched); SDK **`arm.cpi`** / **`arm.cpis`**.
 

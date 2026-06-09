@@ -28,7 +28,7 @@
 
 - 指令集、账户 layout、`Frame` tape 语义
 - CPI / patch / `if_else` 执行模型
-- PDA seeds、discriminator、close authority 规则
+- PDA seeds、discriminator、Frame `authority` 规则
 - `tests/ifx_anchor_security.ts` 或 tape/binding 相关不变量
 
 **发版清单（维护者）：**

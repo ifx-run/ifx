@@ -29,6 +29,10 @@ impl FrameReader for Frame {
         Ok(self.index_count)
     }
 
+    fn generation(&self) -> Result<u64> {
+        Ok(self.generation)
+    }
+
     fn index_cap(&self) -> u16 {
         self.index_cap
     }
@@ -70,6 +74,7 @@ impl FrameReader for Frame {
 
 impl FrameWriter for Frame {
     fn reset_session(&mut self) -> Result<()> {
+        self.generation = self.generation.wrapping_add(1);
         self.cursor = 0;
         self.index_count = 0;
         Ok(())
@@ -154,10 +159,11 @@ mod tests {
         let tape_len = 256u32;
         let cap = index_cap_for_tape_len(tape_len);
         let mut frame = Frame {
-            close_authority: Pubkey::default(),
+            authority: Pubkey::default(),
             cursor: 0,
             index_count: 0,
             index_cap: cap,
+            generation: 0,
             payload_at: vec![0u16; cap as usize],
             tape: vec![0u8; tape_len as usize],
         };

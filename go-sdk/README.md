@@ -9,7 +9,7 @@ Go off-chain client for **Ifx** on [`solana-go`](https://github.com/gagliardetto
 ## Two layers
 
 1. **`scratch.FrameScratch`** — plan tape bindings (`Let*` / `LetBuilder`), emit `IxReset`, `IxLet`, `IxAssert`, `IxCpi` (`ifx_patched_cpi`), `IxIfElse`, …
-2. **`expr` + `typed.ScratchValue`** — build on-chain `Expr` trees and scratch slots (binding index, remaining accounts, types)
+2. **`expr` + `typed.ScratchValue`** — build on-chain `Expr` trees and Frame bindings (binding index, remaining accounts, types)
 
 Prefer `FrameScratch` in application code; use `ix.BuildCreateFrame` and friends when you need lower-level control.
 
@@ -30,7 +30,7 @@ var frameID [32]byte
 rand.Read(frameID[:])
 
 plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
-    Payer: payer, FrameID: frameID, CloseAuthority: payer,
+    Payer: payer, FrameID: frameID, Authority: payer,
     TapeLen: 256, ProgramID: constants.DevnetProgramID,
 })
 // Send plan.IxCreate alone; persist frameID, tapeLen, plan.Frame
@@ -40,11 +40,11 @@ plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
 
 ```go
 tapeLen := 256
-s := scratch.NewFrameScratch(plan.Frame, &tapeLen, constants.DevnetProgramID)
+s := scratch.NewFrameScratch(plan.Frame, &tapeLen, constants.DevnetProgramID, plan.Scratch.Authority)
 
 target, _ := s.LetConstU64(10)
-letIx, _ := s.IxLet(target, nil)
-assertIx, _ := s.IxAssert(expr.NonZero(expr.Ref(target.Index)), nil)
+letIx, _ := s.IxLet(target)
+assertIx, _ := s.IxAssert(expr.NonZero(expr.Ref(target.Index)))
 // Assemble transaction, sign, send
 ```
 
@@ -56,9 +56,9 @@ Confirm behavior via **Ifx transaction logs** (conditions, CPI arms, patch offse
 
 ## Single vs multi binding
 
-**Single:** `s.LetLamports(user)` → `s.IxLet(sv, nil)` → later `expr.Ref(sv.Index)`.
+**Single:** `s.LetLamports(user)` → `s.IxLet(sv)` → later `expr.Ref(sv.Index)`.
 
-**Multi:** `s.LetBuilder()` → several `Lamports` / `SplTokenAmount` / … → `b.BuildIx(nil)` (remaining deduped).
+**Multi:** `s.LetBuilder()` → several `Lamports` / `SplTokenAmount` / … → `b.BuildIx()` (remaining deduped).
 
 Conditions for `IxAssert` / `if_else`: bool `expr.Node` or bool `ScratchValue`.
 
@@ -75,16 +75,31 @@ Session helpers: `PlanNewFrame`, `PlanPublicFrame`, `NewFrameScratch`. (`FetchDe
 
 Use `LetBuilder` or `FrameScratch` let helpers — pass accounts; remaining indices are assigned and deduped. Missing Token-2022 extension → `Token2022ExtensionNotPresent` (6026). Custom fields: `AccountDataSlice`.
 
-For conditional CPI, `spltoken` includes BurnChecked, CloseAccount, HarvestWithheldTokensToMint; build other instructions with solana-go and pass to `patchedcpi`.
+For conditional CPI, `spltoken` includes BurnChecked, CloseAccount, HarvestWithheldTokensToMint. **Official** System/SPL ix with tape-bound fields: `structuredcpi.StructuredCpi` + `StructuredCpiPatch`. Other layouts: `patchedcpi` (RawPatched).
+
+## Structured CPI
+
+```go
+import "github.com/ifx-run/ifx/go-sdk/structuredcpi"
+
+amount := structuredcpi.AsFrameValue(sv)
+built, _ := structuredcpi.StructuredCpi(
+    transferCheckedIx,
+    structuredcpi.StructuredCpiPatch.TokenTransferChecked().AmountOnly(amount, 9),
+).Build(nil)
+s.IxCpi(built) // ifx_patched_cpi — structured or raw-patched
+```
+
+See [structured-cpi-patches.md](../docs/structured-cpi-patches.md). Wire parity: `structuredcpi/patch_builders_test.go`, `codec/cpi_test.go`.
 
 ## Patched CPI & `ifx_if_else`
 
 ```go
-built, _ := patchedcpi.Cpi(
+built, _ := patchedcpi.RawCpi(
     patchedcpi.SystemTransferTemplate(payer, recipient),
-    patch.CpiPatch(4, settle),
+    patch.RawCpiPatch(4, settle),
 ).Build(nil)
-s.IxCpi(built, nil) // ifx_patched_cpi
+s.IxCpi(built.WireBuild()) // ifx_patched_cpi
 ```
 
 Static CPI step: `patchedcpi.StaticCpi(ix, nil)`. Branches: `ifelse.Skip`, `ifelse.Cpi` (wire `Cpi` step), `ifelse.Revert`.
@@ -96,9 +111,9 @@ Static CPI step: `patchedcpi.StaticCpi(ix, nil)`. Branches: `ifelse.Skip`, `ifel
 | `scratch` | Planner + fetch |
 | `frame` | PDA, decode, readback |
 | `expr` / `binding` / `typed` / `codec` | IR + wire |
-| `ix` / `patchedcpi` / `patch` / `ifelse` | Instructions + CPI |
+| `ix` / `patchedcpi` / `structuredcpi` / `patch` / `ifelse` | Instructions + CPI (RawPatched + Structured) |
 | `spltoken` | Token-2022 CPI templates |
-| `errors` / `immortal` / `constants` | Errors, close authority, IDs |
+| `errors` / `immortal` / `constants` | Errors, Frame `authority` helpers, IDs |
 | `examples` | Reusable business planners |
 
 ## Examples
@@ -107,11 +122,11 @@ See [`examples/README.md`](./examples/README.md): minimal frame, dust destroy (`
 
 ## Errors
 
-Match on-chain codes with `errors.MessageIncludes` — [error reference](../docs/errors.md) (6000–6029).
+Match on-chain codes with `errors.MessageIncludes` — [error reference](../docs/errors.md) (6000–6035).
 
 ## Program IDs
 
-`DefaultProgramID` (devnet) · `DevnetProgramID` · `LocalnetProgramID`. Per-ix override: `&ix.Options{ProgramID: id}`.
+`DefaultProgramID` (devnet) · `DevnetProgramID` · `LocalnetProgramID`. Set once on `FrameScratch` via `PlanNewFrame` / `NewFrameScratch` (`ProgramID` field).
 
 ## Tests
 

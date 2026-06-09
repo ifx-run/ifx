@@ -6,12 +6,15 @@
 //! | `0x01..=0xfe` | **N** [`Cpi`] steps, N = tag |
 //! | `0xff` | revert |
 //!
-//! Each step uses [`Cpi`] with [`super::patch_list::PatchList`] (`U16LenVec`; empty = static).
+//! Each step uses [`Cpi`] (`Static` | `RawPatched` | `Structured`).
 
 use anchor_lang::prelude::*;
 use std::io::{Error as IoError, ErrorKind, Read, Result as IoResult, Write};
 
-use super::types::{Cpi, IfElseArm};
+use borsh::BorshDeserialize;
+
+use super::Cpi;
+use super::types::IfElseArm;
 
 pub const IF_ELSE_ARM_SKIP: u8 = 0x00;
 pub const IF_ELSE_ARM_REVERT: u8 = 0xff;
@@ -103,7 +106,7 @@ impl AnchorDeserialize for IfElseArm {
 #[cfg(test)]
 mod wire_tests {
     use super::*;
-    use crate::state::{IfElseArgs, Cpi};
+    use crate::state::{IfElseArgs, Cpi, CPI_WIRE_RAW_PATCHED, CPI_WIRE_STATIC};
     use anchor_lang::AnchorDeserialize;
     use crate::state::Expr;
 
@@ -111,10 +114,9 @@ mod wire_tests {
         vec![
             0x01, 0x01, // ConstBool(true)
             0x01, // then arm: 1 step
-            0x00, 0x03, // accounts_start, accounts_len
+            CPI_WIRE_STATIC, 0x00, 0x03, // Cpi::Static accounts_start, accounts_len
             0x0c, 0x00, // data u16 len = 12
             0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, // PatchList empty (U16LenVec)
             0x00, // else arm skip
         ]
     }
@@ -165,9 +167,9 @@ mod wire_tests {
     }
 
     #[test]
-    fn deserializes_single_static_patched_cpi_step() {
+    fn deserializes_single_static_cpi_step() {
         let step: &[u8] = &[
-            0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00,
+            CPI_WIRE_STATIC, 0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         let mut slice = step;
@@ -176,9 +178,63 @@ mod wire_tests {
     }
 
     #[test]
+    fn deserializes_sdk_generic_patched_hex_from_node() {
+        let bytes: Vec<u8> = vec![
+            0x01, 0x01, 0x01, 0x01, 0x00, 0x04, 0x0a, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x09, 0x00, 0x00,
+            0x00, // else arm skip
+        ];
+        let mut slice = bytes.as_slice();
+        IfElseArgs::deserialize(&mut slice).expect("sdk generic patched from node");
+        assert!(slice.is_empty());
+    }
+
+    #[test]
+    fn deserializes_generic_patched_cpi_if_else_args() {
+        // SDK: encodeCpi(rawPatched) + encodeIfElseArgs(bool true, 1 step, skip)
+        let patch_offset = 4u16;
+        let source_index = 2u8;
+        let step: Vec<u8> = vec![
+            CPI_WIRE_RAW_PATCHED,
+            0x00,
+            0x03, // accounts_start, accounts_len
+            0x0c,
+            0x00, // data len 12
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00, // patch list len 1
+            patch_offset as u8,
+            (patch_offset >> 8) as u8,
+            source_index,
+        ];
+        let bytes = vec![
+            0x01, 0x01, // ConstBool(true)
+            0x01,         // then: 1 step
+        ]
+        .into_iter()
+        .chain(step)
+        .chain([IF_ELSE_ARM_SKIP]) // else skip
+        .collect::<Vec<_>>();
+        let mut slice = bytes.as_slice();
+        IfElseArgs::deserialize(&mut slice).expect("generic patched IfElseArgs");
+        assert!(slice.is_empty());
+    }
+
+    #[test]
     fn patched_cpi_does_not_consume_trailing_byte() {
         let bytes = vec![
-            0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00,
+            CPI_WIRE_STATIC, 0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ];
         let mut slice = bytes.as_slice();

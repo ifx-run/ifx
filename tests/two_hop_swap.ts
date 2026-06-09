@@ -40,7 +40,7 @@ describe("two-hop token swap (ifx orchestration)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 

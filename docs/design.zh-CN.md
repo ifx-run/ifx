@@ -38,7 +38,7 @@ Ifx 希望在链上用 **固定、可枚举** 的指令集表达这类逻辑，�
 - **SSA：** 每个逻辑值只赋值一次；由 compiler/SDK 保证。
 - **Tape：** `Frame.tape` 是连续 byte buffer，**不是** register file，**不是** `ValueId → slot` 的固定表。
 - **布局：** 链上 `Frame.cursor` **append** 到 `tape`；`payload_at[i]` 记录 binding **index** → payload 字节偏移。链下 `FrameScratch` 跟踪 `cursor` + `nextIndex`。
-- **Reset：** `ifx_reset_frame` 令 `cursor = 0`、`index_count = 0` 并清空 `tape` — 干净会话；复用 Frame PDA 时常在 tx 开头调用。
+- **Reset：** `ifx_reset_frame` 令 `cursor = 0`、`index_count = 0`，且 **`generation = generation.wrapping_add(1)`**（lazy tape — 见 [frame-cu-optimization.zh-CN.md](./frame-cu-optimization.zh-CN.md)）。复用 Frame PDA 时常在 tx 开头调用。
 - **`ifx_let` 批内顺序：** 按 `bindings` 顺序 append；后序经 `Expr::Value { index }` 引用前序 binding。
 
 index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./implementation.zh-CN.md)、[frame-memory-index.zh-CN.md](./frame-memory-index.zh-CN.md)、[glossary.zh-CN.md](./glossary.zh-CN.md)。
@@ -46,14 +46,16 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 ### 3.2 交易范围与 Frame 草稿纸
 
 - `tape` / `cursor` / `index_count` 是 **单笔 tx 内 Ifx 逻辑的草稿纸** — 不是通用业务状态层。
-- Frame **PDA 可长期留在链上**，但 Ifx **不对** reset / append **做权限控制**。
+- Frame **PDA 可长期留在链上**。**公共** Frame（off-curve `authority`）任何人可 `reset`/`let`；**私有** Frame（on-curve `authority`）写操作须 authority 签名 — [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
 - Ifx **不保证**跨 tx 的 tape 会话一致性。**已落地**的 Jito bundle 仅保证 **包内** tx 顺序 — 见 [bundles.zh-CN.md](./bundles.zh-CN.md)。Ifx 流程优先单笔业务 tx。
 
-### 3.3 静态可分析
+### 3.3 静态可分析与顶层写
 
 - 无循环、无递归、无动态 codegen
 - 表达式为有限深度的 `Expr` 树
 - 执行图可由指令参数完全还原
+- **写** 指令（`create`、`reset`、`let`、`close`）**仅交易顶层** — 不可 CPI 包装（[frame-authority.zh-CN.md](./frame-authority.zh-CN.md)）
+- 出站 CPI 仅用 **`invoke`**（无 **`invoke_signed`**）：patched 步须等价于可放在 **最外层** 的 ix
 
 ### 3.4 链上 / 链下分工
 
@@ -69,14 +71,14 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 ## 4. Frame 与寻址
 
 - **Frame PDA：** `["frame", payer, frame_id]`，`frame_id` 为 32 字节 salt。
-- **`close_authority`：** 指定谁可 `ifx_close_frame` 回收 rent。
+- **`authority`：** **off-curve** → 公共 scratch 可写；**on-curve** → 私有 Frame（bot / relayer 密钥签 `reset` / `let` / `close`）。完整规范：[frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
 - **`tape_len`：** 创建时分配 tape 大小（`index_cap = min(256, tape_len / 2)`）。
 
 ---
 
 ## 5. 数据加载
 
-链上通过 [`LetBinding`](./typed-let-bindings.zh-CN.md) enum（tag `0`–`23`）读取：
+链上通过 [`LetBinding`](./typed-let-bindings.zh-CN.md) enum（tag `0`–`28`）读取：
 
 | Tag | 变体 | 作用 |
 |-----|------|------|
@@ -99,9 +101,12 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 - 算术与比较在 `ifx_let` 的 `Eval` 中完成。
 - `ifx_assert` / `ifx_if_else` 使用 `cond: Expr`。
 - `ifx_if_else` 分支：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（wire u8 tag = 步数）。
-- 每个 **`Cpi`** 步含可选 **`patches`**（`PatchList` = `U16LenVec`；空 = 静态，非空 = invoke 前 patch）。
-- 无条件 patched CPI：**`ifx_patched_cpi`**（同一 **`Cpi`** wire；`patches` 必须非空）。
-- **`CpiPatch`：** `{ data_offset: u16, source: Value }` — invoke 前经 `payload_at[source.index]` 从 `Frame::tape` 拷贝到模板 CPI `data`。`source.index` 为 binding index（`u8`）；`data_offset` 索引 CPI 模板。
+- 每个 **`Cpi`** 步以 wire kind 开头：**`0` Static** · **`1` RawPatched** · **`2` Structured**（[structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）。
+  - **RawPatched：** 模板 `data` + **`patches`** 字节覆盖 — DEX / 逃生口。
+  - **Structured：** 官方 registry ix；从 typed patch 组装 `data`，无模板 blob。
+  - **Static：** 模板 `data` 原样 invoke。
+- 无条件 patched CPI：**`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** 或 **Structured**（须 apply patch）。
+- **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**。
 
 **原始切片与字节 patch** 用于 typed 登记表未覆盖的 layout；钱包应标注为未校验 layout。
 
@@ -135,7 +140,7 @@ tx.invokeIf(ok, transferIx)
 
 - 链上动态 patch 账户 meta（仅 patch `data` 字节）
 
-**原始切片：** `AccountDataSlice` 与通用 `CpiPatch` 字节偏移为逃生口；有 typed opcode 时优先 typed 变体。
+**原始切片：** `AccountDataSlice` 与通用 `RawCpiPatch` 字节偏移为逃生口；有 typed opcode 时优先 typed 变体。
 
 ---
 

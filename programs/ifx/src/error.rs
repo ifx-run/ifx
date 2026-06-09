@@ -13,12 +13,12 @@ pub enum ErrorCode {
     /// `Value.index` + type size exceeds `Frame::tape`, or layout plan diverged.
     #[msg("Tape offset and type exceed Frame::tape bounds")]
     TapeOutOfBounds,
-    /// `ifx_close_frame` signer is not `Frame.close_authority`.
-    #[msg("Only the frame close authority may close this PDA")]
+    /// `ifx_close_frame` signer is not `Frame.authority`.
+    #[msg("Only the frame authority may close this PDA")]
     UnauthorizedClose,
-    /// `Pubkey::default()` passed as `close_authority` at create.
-    #[msg("Invalid close authority")]
-    InvalidCloseAuthority,
+    /// `Pubkey::default()` passed as `authority` at create.
+    #[msg("Invalid frame authority")]
+    InvalidAuthority,
     /// `tape_len` is 0 or above `MAX_FRAME_TAPE_LEN`.
     #[msg("Frame tape length must be at least 1")]
     InvalidTapeLen,
@@ -97,4 +97,22 @@ pub enum ErrorCode {
     /// `ifx_patched_cpi` requires at least one patch (not static-only).
     #[msg("ifx_patched_cpi requires at least one patch")]
     InvalidPatchedCpiPatches,
+    /// Structured CPI program id does not match patch variant.
+    #[msg("Structured CPI program id does not match patch")]
+    InvalidStructuredCpiProgram,
+    /// Instruction data trailing bytes or CPI payload invalid.
+    #[msg("Invalid instruction data")]
+    InvalidInstructionData,
+    /// `ifx_reset_frame` was invoked via CPI (must be transaction top level).
+    #[msg("ifx_reset_frame must be invoked at transaction top level (stack height 1)")]
+    ResetNotTopLevel,
+    /// `ifx_close_frame` was invoked via CPI (must be transaction top level).
+    #[msg("ifx_close_frame must be invoked at transaction top level (stack height 1)")]
+    CloseNotTopLevel,
+    /// `ifx_create_frame` was invoked via CPI (must be transaction top level).
+    #[msg("ifx_create_frame must be invoked at transaction top level (stack height 1)")]
+    CreateNotTopLevel,
+    /// On-curve `authority` missing or wrong signer on `reset` / `let`.
+    #[msg("Frame write requires authority signer")]
+    UnauthorizedFrameWrite,
 }

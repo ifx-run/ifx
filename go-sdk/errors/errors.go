@@ -13,7 +13,7 @@ const (
 	LetNotTopLevel              = 6000
 	TapeOutOfBounds             = 6001
 	UnauthorizedClose           = 6002
-	InvalidCloseAuthority       = 6003
+	InvalidAuthority            = 6003
 	InvalidTapeLen              = 6004
 	AssertFailed                = 6005
 	IfElseRevert                = 6006
@@ -37,15 +37,22 @@ const (
 	AccountDataLenMismatch      = 6024
 	SplTokenUnpackFailed        = 6025
 	Token2022ExtensionNotPresent = 6026
-	SplToken2022UnpackFailed    = 6027
-	CastOverflow                = 6028
+	SplToken2022UnpackFailed     = 6027
+	CastOverflow                 = 6028
+	InvalidPatchedCpiPatches     = 6029
+	InvalidStructuredCpiProgram  = 6030
+	InvalidInstructionData       = 6031
+	ResetNotTopLevel             = 6032
+	CloseNotTopLevel             = 6033
+	CreateNotTopLevel            = 6034
+	UnauthorizedFrameWrite       = 6035
 )
 
 var nameByCode = map[int]string{
 	LetNotTopLevel:               "LetNotTopLevel",
 	TapeOutOfBounds:              "TapeOutOfBounds",
 	UnauthorizedClose:            "UnauthorizedClose",
-	InvalidCloseAuthority:        "InvalidCloseAuthority",
+	InvalidAuthority:             "InvalidAuthority",
 	InvalidTapeLen:               "InvalidTapeLen",
 	AssertFailed:                 "AssertFailed",
 	IfElseRevert:                 "IfElseRevert",
@@ -71,6 +78,13 @@ var nameByCode = map[int]string{
 	Token2022ExtensionNotPresent: "Token2022ExtensionNotPresent",
 	SplToken2022UnpackFailed:     "SplToken2022UnpackFailed",
 	CastOverflow:                 "CastOverflow",
+	InvalidPatchedCpiPatches:     "InvalidPatchedCpiPatches",
+	InvalidStructuredCpiProgram:  "InvalidStructuredCpiProgram",
+	InvalidInstructionData:       "InvalidInstructionData",
+	ResetNotTopLevel:             "ResetNotTopLevel",
+	CloseNotTopLevel:             "CloseNotTopLevel",
+	CreateNotTopLevel:            "CreateNotTopLevel",
+	UnauthorizedFrameWrite:       "UnauthorizedFrameWrite",
 }
 
 // Name returns the Ifx error name for a numeric Anchor code, if known.

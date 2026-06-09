@@ -1,13 +1,33 @@
 import { expect } from "chai";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { randomBytes } from "crypto";
 
+import { DEFAULT_IFX_PROGRAM_ID } from "../sdk/src/constants";
+import { framePda } from "../sdk/src/layout";
 import { FrameScratch } from "../sdk/src/scratch";
+
+function publicFrameScratch(tapeLen = 256): {
+  scratch: FrameScratch;
+  frame: PublicKey;
+} {
+  const payer = Keypair.generate().publicKey;
+  const frameId = randomBytes(32);
+  const [frame] = framePda(payer, frameId, DEFAULT_IFX_PROGRAM_ID);
+  const scratch = new FrameScratch(
+    frame,
+    tapeLen,
+    0,
+    0,
+    DEFAULT_IFX_PROGRAM_ID,
+    frame
+  );
+  return { scratch, frame };
+}
 
 describe("sdk FrameScratch single let", () => {
   it("letLamports uses remaining index 0 without caller passing 0", () => {
-    const frame = Keypair.generate().publicKey;
     const user = Keypair.generate().publicKey;
-    const scratch = new FrameScratch(frame, 256);
+    const { scratch } = publicFrameScratch();
 
     const userLamports = scratch.letLamports(user);
 
@@ -18,6 +38,7 @@ describe("sdk FrameScratch single let", () => {
 
     const ix = scratch.ixLet(userLamports);
     expect(ix.keys[1].pubkey.equals(user)).to.be.true;
+    expect(ix.keys).to.have.length(2);
     expect(userLamports.ref.index).to.equal(0);
   });
 

@@ -1,7 +1,7 @@
 /**
  * Wire tag order for on-chain [`LetBinding`](../../programs/ifx/src/state/types.rs).
  *
- * **Must match the Rust enum declaration exactly** (tags `0`–`24`). When adding a
+ * **Must match the Rust enum declaration exactly** (tags `0`–`28`). When adding a
  * variant: append here, extend `binding`, `codec` switch, program match arms, IDL, docs.
  */
 export const LET_BINDING_VARIANT = [
@@ -30,6 +30,10 @@ export const LET_BINDING_VARIANT = [
   "splToken2022MintWithheldAmount",
   "splToken2022MintDefaultAccountState",
   "accountDataLen",
+  "accountKey",
+  "constPubkey",
+  "frameGeneration",
+  "frameIndexCount",
 ] as const;
 
 export type LetBindingVariantKey = (typeof LET_BINDING_VARIANT)[number];

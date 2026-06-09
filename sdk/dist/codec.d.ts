@@ -1,8 +1,11 @@
 import { type PatchList } from "./patch-list";
+import type { Cpi } from "./types";
 export { LET_BINDING_VARIANT } from "./let-binding-variants";
 export { EXPR_TAG, EXPR_VARIANT, EXPR_VARIANT_COUNT } from "./expr-variants";
 export { IF_ELSE_ARM, ifElseArmStepTag, } from "./if-else-arm";
 export { patchListPatched, patchListStatic, type PatchList, } from "./patch-list";
+export { CPI_WIRE } from "./types";
+export { STRUCTURED_CPI_PATCH_WIRE, type StructuredCpiPatchWireTag, } from "./structured-cpi-patch";
 /** Runtime shapes from {@link expr} / {@link binding} helpers (avoid recursive IDL types here). */
 type AnyExpr = any;
 type AnyRecord = any;
@@ -22,7 +25,9 @@ export declare function encodeU16LenBytes(data: Buffer | Uint8Array): Buffer;
 export declare function encodeExpr(expr: AnyExpr): Buffer;
 export declare function encodeLetBinding(binding: AnyRecord): Buffer;
 export declare function encodeLetArgs(args: AnyRecord): Buffer;
-export declare function encodeCpiPatch(patch: AnyRecord): Buffer;
+export declare function encodeRawCpiPatch(patch: AnyRecord): Buffer;
+/** @deprecated Use {@link encodeRawCpiPatch} */
+export declare const encodeCpiPatch: typeof encodeRawCpiPatch;
 export declare function encodePatchList(list: PatchList): Buffer;
-export declare function encodeCpi(arm: AnyRecord): Buffer;
+export declare function encodeCpi(step: Cpi): Buffer;
 export declare function encodeIfElseArgs(args: AnyRecord): Buffer;

@@ -14,10 +14,9 @@ import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 import {
   arm,
-  cpiPatch,
+  rawCpiPatch,
   ifElseArgs,
-  cpi,
-  staticCpi,
+  rawCpi,   staticCpi,
   type FrameScratch,
 } from "../src";
 
@@ -55,20 +54,19 @@ export function planWsolConditionalWrapTx(
   const tx = new Transaction();
   tx.add(scratch.ixReset());
 
-  const transfer = cpi(
+  const transfer = rawCpi(
     SystemProgram.transfer({
       fromPubkey: accounts.owner,
       toPubkey: wsolAta,
       lamports: 0,
     }),
-    { patches: [cpiPatch(4, accounts.wrapLamports)] }
+    { patches: [rawCpiPatch(4, accounts.wrapLamports)] }
   ).build();
   const sync = staticCpi(createSyncNativeInstruction(wsolAta));
   const remaining = mergeWsolWrapRemaining(
     transfer.remaining,
     sync.remaining,
-    transfer.cpi,
-    sync.staticStep
+    transfer.cpi,     sync.staticStep
   );
 
   tx.add(

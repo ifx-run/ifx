@@ -31,7 +31,7 @@ Ifx **不提供** bundle。本文说明 Jito bundle **实际能保证什么、�
 | **落地后 Frame 不被碰** | **之后**任意 tx 仍可对你的 Frame `reset` / append |
 | **相隔较远的 standalone tx** | 先 create、后日再业务 — 除非放进**同一** bundle，否则 bundle 帮不上中间时段 |
 | **两笔普通 RPC 发送** | **无**顺序保证；中间可能被人 reset |
-| **Ifx 权限** | Frame 仍是共享 PDA；bundle 不是权限模型 |
+| **Ifx 权限** | 公共 Frame（off-curve `authority`）；私有 Frame 写操作须 on-curve **`authority`** 签名 — [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。bundle 不能替代 |
 
 **Ifx 不对 Jito 作背书。** 请把 bundle 视为**第三方、且以成功落地为前提**的机制。
 
@@ -84,7 +84,7 @@ tx_a: ifx_reset_frame → ifx_let → …
 tx_b:（不 reset）→ ifx_let → ifx_patched_cpi …
 ```
 
-**仅 bundle 落地时：** tx2 可见 tx1 的 Frame 写入；包内无插入。合并规划 `tape_len`。拍卖失败需重提新 bundle — **无部分提交**。
+**仅 bundle 落地时：** tx2 可见 tx1 的 Frame 写入；包内无插入。合并规划 `tape_len`。续写且 **不 reset** 时，须从链上同步 planner（测试里 `fromFrame` / `refreshFromChain`），并读取 **`generation`** / **`index_count`** 后再 append。拍卖失败需重提新 bundle — **无部分提交**。
 
 ---
 

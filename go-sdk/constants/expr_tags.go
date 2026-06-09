@@ -45,6 +45,7 @@ const (
 	ExprTagMulDivCeil
 	ExprTagClamp
 	ExprTagSelect
+	ExprTagConstPubkey
 )
 
-const ExprVariantCount = 43
+const ExprVariantCount = 44

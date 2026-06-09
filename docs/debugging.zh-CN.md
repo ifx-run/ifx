@@ -43,6 +43,6 @@ let $0: u64 = eval(...); //= 42
 
 1. 模拟同一 tx，收集 program logs。
 2. 将 `$N` 与 planner 的 `ScratchValue.ref.index` 对照。
-3. 上链后 `DecodedFrame.readValue(slot)` 应与 `//=` 注释一致（类型对齐时）。
+3. 上链后 `DecodedFrame.readValue(binding)` 应与 `//=` 注释一致（类型对齐时）。解码 Frame 账户时可用 `DecodedFrame.generation`（测试 / 调试）。
 
 若 index 或 tape 越界，见 [implementation.zh-CN.md](./implementation.zh-CN.md) §2 与 [errors.zh-CN.md](./errors.zh-CN.md)。

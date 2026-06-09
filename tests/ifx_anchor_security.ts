@@ -19,7 +19,7 @@ describe("ifx anchor security (negative)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -51,7 +51,7 @@ describe("ifx anchor security (negative)", () => {
       FrameScratch.ixCreateFrame({
         payer: payer.publicKey,
         frameId,
-        closeAuthority: PublicKey.default,
+        authority: PublicKey.default,
         tapeLen: 256,
         programId: IFX_LOCALNET_PROGRAM_ID,
       })

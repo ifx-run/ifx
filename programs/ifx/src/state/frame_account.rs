@@ -9,7 +9,7 @@ use crate::error::ErrorCode;
 use crate::state::Frame;
 
 use super::frame_access::{FrameMut, FrameRef};
-use super::frame_layout::{read_close_authority, FrameLayout};
+use super::frame_layout::{read_authority, FrameLayout};
 
 /// Zero-copy Frame account wrapper (same pattern as exact `MaybeUninitializedTokenAccount`).
 ///
@@ -20,14 +20,14 @@ use super::frame_layout::{read_close_authority, FrameLayout};
 pub struct FrameAccount<'info> {
     info: &'info AccountInfo<'info>,
     layout: FrameLayout,
-    /// Cached for `#[account(constraint = … frame.close_authority …)]`.
-    pub close_authority: Pubkey,
+    /// Cached `Frame.authority` from account data.
+    pub authority: Pubkey,
 }
 
 impl fmt::Debug for FrameAccount<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FrameAccount")
-            .field("close_authority", &self.close_authority)
+            .field("authority", &self.authority)
             .field("layout", &self.layout)
             .field("info", &self.info)
             .finish()
@@ -50,11 +50,11 @@ impl<'info> FrameAccount<'info> {
         }
         let data = info.try_borrow_data()?;
         let layout = FrameLayout::parse(&data).map_err(Error::from)?;
-        let close_authority = read_close_authority(&data).map_err(Error::from)?;
+        let authority = read_authority(&data).map_err(Error::from)?;
         Ok(Self {
             info,
             layout,
-            close_authority,
+            authority,
         })
     }
 

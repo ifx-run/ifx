@@ -14,7 +14,7 @@ Ifx is a **deployed on-chain program**. **`ifx_if_else` branches execute during 
 
 Ifx adds **read → compute → assert → CPI** inside **one business transaction**, interleaved with the user's swap / ATA / DEX instructions. It is **not** a DEX replacement and **not** a client-only instruction pipeline.
 
-**Repo canon:** copy patterns from `sdk/examples/` and `tests/` — do not invent wire formats or hand-encode `Expr`.
+**Repo canon:** copy patterns from `sdk/examples/` and `tests/` — do not invent wire formats or hand-encode `Expr`. **Go backends:** use [`go-sdk/`](../../../go-sdk/README.md) with the same two-tx model (no Node).
 
 ## When to use Ifx
 
@@ -37,7 +37,7 @@ Ifx adds **read → compute → assert → CPI** inside **one business transacti
 
 **Repo `npm test` / Surfpool:** pass `IFX_LOCALNET_PROGRAM_ID` (`planLocalFrame`). **npm consumers on devnet:** omit `programId` (default = devnet).
 
-Set `programId` once on **`FrameScratch`** (via `planNewFrame({ programId })` or `new FrameScratch(frame, tapeLen, 0, 0, programId)`). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; pass `IxOpts` only to override per ix.
+Set `programId` once on **`FrameScratch`** (via `planNewFrame({ programId })` or `NewFrameScratch` / constructor). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; **TS only:** pass `IxOpts` to override per ix. **Go:** `ProgramID` on `FrameScratch` only (no per-ix override).
 
 `planNewFrame` returns `{ scratch, ixCreate, frame, frameBump }` — do not re-derive the PDA outside.
 
@@ -51,7 +51,7 @@ Tx 2+ (each job):          ifx_reset_frame  →  let / user ix / assert / cpi / 
 ```
 
 - Rebuild `FrameScratch` from stored `frameId` + `tapeLen` + payer (same PDA derivation).
-- **Every business tx starts with `scratch.ixReset()`** (clears on-chain tape session + local `cursor` / `nextIndex`).
+- **Every business tx starts with `scratch.ixReset()`** (resets on-chain session: `cursor` / `index_count`, bumps `generation`; local planner syncs).
 - **Exception (advanced):** omit `reset` only when this tx continues Frame bindings from the **previous tx in the same landed Jito bundle** — see [Multi-tx & bundles](#multi-tx--jito-bundles) below. Default is still reset every tx.
 
 ```ts
@@ -65,7 +65,7 @@ const tapeLen = 256; // indexCap = 128; max tape MAX_FRAME_TAPE_LEN
 const { scratch, ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen,
   // localnet repo tests: programId: IFX_LOCALNET_PROGRAM_ID
 });
@@ -102,7 +102,7 @@ tx.add(after.buildIx());
 tx.add(scratch.ixAssert(expr.ge(expr.sub(solAfter, solBefore), fee)));
 ```
 
-Imports: `expr`, `arm`, `ifElseArgs`, `cpi`, `cpiPatch`, `staticCpi` from `@ifx-run/sdk`.
+Imports: `expr`, `arm`, `ifElseArgs`, `rawCpi`, `rawCpiPatch`, `staticCpi` from `@ifx-run/sdk`.
 
 ## Multi-tx & Jito bundles
 
@@ -114,7 +114,7 @@ Ifx **does not** implement bundling. When the user mentions **Jito**, **bundle**
 |---------|------|---------|--------------------------|
 | **1 — Single tx** | Fits in one tx (usual) | No | N/A — one tx only |
 | **2 — Split for size / ordering** | e.g. `tx_swap` + `tx_ifx_settlement` must land together | Optional Jito bundle for **order + atomicity among bundle txs** | **Yes** — each Ifx tx re-reads chain; do **not** rely on previous tx Frame tape |
-| **3 — Carry session (lab / advanced)** | tx2 continues tx1 Frame session without reset | **Required** landed bundle | tx2: `refreshFromChain()` — **tests / lab only**; not production wallet paths |
+| **3 — Carry session (lab / advanced)** | tx2 continues tx1 Frame session without reset | **Required** landed bundle | tx2: `refreshFromChain()` — sync **`cursor`**, **`index_count`**, read **`generation`**; tests / lab only |
 
 **What bundles do *not* guarantee:**
 
@@ -138,7 +138,7 @@ tx_ifx_settlement: ixReset → let → assert / patched_cpi …
 # Pattern 3 (rare)
 Bundle [ tx_a , tx_b ]
 tx_a: ixReset → let …
-tx_b: (no reset) → let → patched_cpi …
+tx_b: refreshFromChain() → letFrameGeneration() / letFrameIndexCount() (optional) → let → patched_cpi …
 ```
 
 ## CPI choice (critical)
@@ -146,15 +146,16 @@ tx_b: (no reset) → let → patched_cpi …
 | Situation | Pattern |
 |-----------|---------|
 | Instruction `data` **fully known** at build time | `tx.add(ix)` or `scratch.ixIfElse(..., arm.cpi(staticCpi(...)))` |
-| Must fill `data` from **Frame tape** (let result via binding index) | `scratch.ixCpi(cpi(template, { patches: [cpiPatch(dataOffset, slot)] }).build())` — emits **`ifx_patched_cpi`** |
+| **Official** System / SPL / Token-2022 ix + dynamic fields from tape | `scratch.ixCpi(structuredCpi(officialIx, structuredCpiPatch.*).build())` — see [structured-cpi-patches.md](../../docs/structured-cpi-patches.md) |
+| Non-registry layout / DEX — fill `data` from **Frame tape** | `scratch.ixCpi(rawCpi(template, { patches: [rawCpiPatch(dataOffset, value)] }).build())` — **RawPatched** |
 | Unconditional static CPI, no Ifx branch | **Prefer `tx.add(ix)`** — do not use `ifx_patched_cpi` with empty patches |
 
-`cpiPatch(byteOffset, scratchValue)` — byteOffset is into template `data`; scratchValue uses `ref.index`.
+`rawCpiPatch(byteOffset, scratchValue)` — byteOffset is into template `data`; scratchValue uses `ref.index`.
 
 ## if_else rules
 
 - Each arm: **`skip`**, **`revert`**, or **1–254** × [`Cpi`] step (`arm.cpis([...])`).
-- Wire: `0x00` skip · `0xff` revert · tag = step count · each step is [`Cpi`] with [`PatchList`] = `U16LenVec` (empty = static, non-empty = patched).
+- Wire: `0x00` skip · `0xff` revert · tag = step count · each step is [`Cpi`] with kind **`0` Static** · **`1` RawPatched** · **`2` Structured**.
 - Same cond + mixed static/patched (e.g. transfer + syncNative): one arm with `arm.cpis([patched.cpi, static.staticStep])`.
 - Re-`let` only when a CPI changed fields a later condition needs.
 
@@ -175,7 +176,7 @@ Match user intent → start from canonical file (extend, don't rewrite):
 | Token-2022 dust burn/harvest/close | `sdk/examples/dust-destroy-token2022.ts`, `tests/dust_destroy_token2022.ts` |
 | Two-hop A→USDC→B, patch hop2 amount | `sdk/examples/two-hop-token-swap.ts`, `tests/two_hop_swap.ts` |
 | Sponsored swap: assert profit, patch transfers | `tests/sponsored_buy.ts` |
-| if_else / patched CPI wire | `tests/ifx.ts`, `tests/sdk_patch_codec.ts` |
+| if_else / patched / structured CPI wire | `tests/ifx.ts`, `tests/sdk_patch_codec.ts`, `tests/ifx_structured_cpi_initialize_mint.ts` |
 
 Full decision tree: [scenarios.md](scenarios.md)
 
@@ -185,7 +186,8 @@ When the user asks to add Ifx to their tx:
 
 1. **Clarify** (if unclear): same-tx mid-read? which accounts? cluster (localnet vs devnet)?
 2. **Pick scenario** from table above; **open the canonical example** in this repo.
-3. **Map accounts** to `LetAccountInput` / `remaining` — use `letBuilder` or `cpi(...).build().remaining`.
+3. **Map accounts** to `LetAccountInput` / `remaining` — use `letBuilder` or `
+rawCpi(...).build().remaining`.
 4. **Insert ix order**: reset first; user swap/ATA ix where reads require; let after state changes.
 5. **Choose CPI type** (static vs patched vs if_else) — see [anti-patterns.md](anti-patterns.md).
 6. **Set `programId`** on `FrameScratch` for cluster (`planNewFrame` or constructor); plan `tapeLen` and binding count (`indexCapForTapeLen`).

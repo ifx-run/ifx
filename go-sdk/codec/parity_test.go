@@ -19,7 +19,7 @@ var exprVariantKeys = []string{
 	"not", "neg", "isZero", "nonZero", "asU64", "asU128",
 	"add", "sub", "mul", "div", "divFloor", "divCeil", "min", "max",
 	"eq", "ne", "gt", "ge", "lt", "le", "saturatingSub", "and", "or",
-	"bpsMulFloor", "bpsMulCeil", "mulDivFloor", "mulDivCeil", "clamp", "select",
+	"bpsMulFloor", "bpsMulCeil", 	"mulDivFloor", "mulDivCeil", "clamp", "select", "constPubkey",
 }
 
 var letBindingKeys = []string{
@@ -33,6 +33,8 @@ var letBindingKeys = []string{
 	"splToken2022AccountTransferFeeWithheld", "splToken2022MintTransferFeeBasisPoints",
 	"splToken2022MintTransferFeeMaximum", "splToken2022MintWithheldAmount",
 	"splToken2022MintDefaultAccountState", "accountDataLen",
+	"accountKey", "constPubkey",
+	"frameGeneration", "frameIndexCount",
 }
 
 type wireGolden struct {

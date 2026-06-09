@@ -50,6 +50,13 @@ exports.expr = {
     i128: (v) => (0, typed_1.taggedExpr)("i128", { constI128: [new bn_js_1.default(v.toString())] }),
     f32: (v) => (0, typed_1.taggedExpr)("f32", { constF32: [v] }),
     f64: (v) => (0, typed_1.taggedExpr)("f64", { constF64: [v] }),
+    pubkey: (pk) => {
+        const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+        if (bytes.length !== 32) {
+            throw new Error(`expr.pubkey requires 32 bytes, got ${bytes.length}`);
+        }
+        return (0, typed_1.taggedExpr)("pubkey", { constPubkey: [Array.from(bytes)] });
+    },
     not: (operand) => (0, typed_1.taggedExpr)("bool", { not: { operand } }),
     neg: (operand) => (0, typed_1.taggedExpr)(exprTy(operand), { neg: { operand } }),
     isZero: (operand) => (0, typed_1.taggedExpr)("bool", { isZero: { operand: toOperand(operand) } }),

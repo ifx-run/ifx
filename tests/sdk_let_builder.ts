@@ -1,9 +1,32 @@
 import { expect } from "chai";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import { randomBytes } from "crypto";
 
+import { DEFAULT_IFX_PROGRAM_ID } from "../sdk/src/constants";
 import { encodeLetArgs } from "../sdk/src/codec";
+import { frameAuthorityRequiresSigner } from "../sdk/src/frame-authority";
+import { framePda } from "../sdk/src/layout";
 import { FrameScratch } from "../sdk/src/scratch";
 import { Ty } from "../sdk/src/ty";
+
+function publicFrameScratch(tapeLen = 256): {
+  scratch: FrameScratch;
+  frame: PublicKey;
+} {
+  const payer = Keypair.generate().publicKey;
+  const frameId = randomBytes(32);
+  const [frame] = framePda(payer, frameId, DEFAULT_IFX_PROGRAM_ID);
+  const scratch = new FrameScratch(
+    frame,
+    tapeLen,
+    0,
+    0,
+    DEFAULT_IFX_PROGRAM_ID,
+    frame
+  );
+  expect(frameAuthorityRequiresSigner(frame)).to.be.false;
+  return { scratch, frame };
+}
 
 describe("sdk LetIxBuilder", () => {
   it("deduplicates remaining accounts by pubkey", () => {
@@ -79,14 +102,38 @@ describe("sdk LetIxBuilder", () => {
   });
 
   it("buildIx wires remaining into instruction keys", () => {
-    const frame = Keypair.generate().publicKey;
     const user = Keypair.generate().publicKey;
-    const builder = new FrameScratch(frame, 256).letBuilder();
+    const { scratch, frame } = publicFrameScratch();
+    const builder = scratch.letBuilder();
     builder.lamports(user);
 
     const ix = builder.buildIx();
     expect(ix.keys[0].pubkey.equals(frame)).to.be.true;
     expect(ix.keys[1].pubkey.equals(user)).to.be.true;
     expect(ix.keys).to.have.length(2);
+  });
+
+  it("buildIx prepends authority to remaining for private frames", () => {
+    const frame = Keypair.generate().publicKey;
+    const user = Keypair.generate().publicKey;
+    const authority = Keypair.generate().publicKey;
+    expect(frameAuthorityRequiresSigner(authority)).to.be.true;
+    const scratch = new FrameScratch(
+      frame,
+      256,
+      0,
+      0,
+      DEFAULT_IFX_PROGRAM_ID,
+      authority
+    );
+    const builder = scratch.letBuilder();
+    builder.lamports(user);
+
+    const ix = builder.buildIx();
+    expect(ix.keys[0].pubkey.equals(frame)).to.be.true;
+    expect(ix.keys[1].pubkey.equals(authority)).to.be.true;
+    expect(ix.keys[1].isSigner).to.be.true;
+    expect(ix.keys[2].pubkey.equals(user)).to.be.true;
+    expect(ix.keys).to.have.length(3);
   });
 });

@@ -19,9 +19,8 @@ import {randomBytes} from "crypto";
 import {
     arm,
     ifElseArgs,
-    cpiPatch,
-    cpi,
-    expr,
+    rawCpiPatch,
+    rawCpi,     expr,
     FrameScratch,
     framePda,
     IFX_LOCALNET_PROGRAM_ID,
@@ -44,32 +43,32 @@ describe("ifx", () => {
      */
     function buildTransferPatch(scratch: FrameScratch, recipient: PublicKey, amountLamports: number) {
         const transferAmount = scratch.letConstU64(amountLamports);
-        const xfer = cpi(
+        const xfer = rawCpi(
             SystemProgram.transfer({
                 fromPubkey: payer.publicKey,
                 toPubkey: recipient,
                 lamports: 0,
             }),
-            {patches: [cpiPatch(4, transferAmount)]}
+            {patches: [rawCpiPatch(4, transferAmount)]}
         ).build();
         return {transferAmount, xfer};
     }
 
     it("creates a frame and decodes on-chain state", async () => {
         const frameId = randomFrameId();
-        const closeAuthority = payer.publicKey;
+        const authority = payer.publicKey;
         const tapeLen = 256;
 
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority,
+            authority,
             tapeLen,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
         const decoded = await scratch.fetchDecodedFrame(provider.connection);
 
-        expect(decoded.closeAuthority.equals(closeAuthority)).to.be.true;
+        expect(decoded.authority.equals(authority)).to.be.true;
         expect(decoded.cursor).to.equal(0);
         expect(decoded.tape.length).to.equal(tapeLen);
         expect(decoded.tape.every((b) => b === 0)).to.be.true;
@@ -81,7 +80,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -103,19 +102,19 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
         const resetIx = scratch.ixReset();
         const letBatch = scratch.letBuilder();
-        const slot = letBatch.clockSlot();
+        const clockSlotValue = letBatch.clockSlot();
         const ts = letBatch.clockUnixTimestamp();
         const ataRent = letBatch.rentMinimumBalance(165);
         await sendAndConfirm(provider, "ifx · let Clock + Rent sysvars", resetIx, letBatch.buildIx());
 
         const onChain = await scratch.fetchDecodedFrame(provider.connection);
-        expect(onChain.readU64(slot) > 0n).to.equal(true);
+        expect(onChain.readU64(clockSlotValue) > 0n).to.equal(true);
         expect(onChain.readI64(ts) > 0n).to.equal(true);
         expect(onChain.readU64(ataRent) > 0n).to.equal(true);
     });
@@ -126,7 +125,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -182,7 +181,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -201,7 +200,7 @@ describe("ifx", () => {
         const { scratch, ixCreate, frame } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -218,7 +217,14 @@ describe("ifx", () => {
         expect(afterReset.cursor).to.equal(0);
         expect(afterReset.indexCount).to.equal(0);
 
-        const session = new FrameScratch(frame, 256, 0, 0, IFX_LOCALNET_PROGRAM_ID);
+        const session = new FrameScratch(
+            frame,
+            256,
+            0,
+            0,
+            IFX_LOCALNET_PROGRAM_ID,
+            payer.publicKey
+        );
         const two = session.letConstU64(2);
         await sendAndConfirm(
             provider,
@@ -235,7 +241,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -255,7 +261,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -280,7 +286,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -343,7 +349,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -389,7 +395,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -459,7 +465,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -482,7 +488,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -511,7 +517,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -534,7 +540,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: MIN_FRAME_LEN,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -553,7 +559,7 @@ describe("ifx", () => {
             FrameScratch.ixCreateFrame({
                 payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 0,
             });
             expect.fail("expected create to fail");
@@ -568,7 +574,7 @@ describe("ifx", () => {
             FrameScratch.ixCreateFrame({
                 payer: payer.publicKey,
                 frameId,
-                closeAuthority: payer.publicKey,
+                authority: payer.publicKey,
                 tapeLen: 70_000,
             });
             expect.fail("expected create to fail");
@@ -582,7 +588,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -621,7 +627,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -638,13 +644,13 @@ describe("ifx", () => {
         const letBatch = scratch.letBuilder();
         const condTrue = letBatch.letConstBool(true);
         const transferAmount = letBatch.letConstU64(1_000);
-        const xfer = cpi(
+        const xfer = rawCpi(
             SystemProgram.transfer({
                 fromPubkey: payer.publicKey,
                 toPubkey: recipient.publicKey,
                 lamports: 0,
             }),
-            {patches: [cpiPatch(4, transferAmount)]}
+            {patches: [rawCpiPatch(4, transferAmount)]}
         ).build();
 
         await sendAndConfirm(
@@ -667,7 +673,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -684,13 +690,13 @@ describe("ifx", () => {
         const letBatch = scratch.letBuilder();
         const condFalse = letBatch.letConstBool(false);
         const transferAmount = letBatch.letConstU64(2_000);
-        const xfer = cpi(
+        const xfer = rawCpi(
             SystemProgram.transfer({
                 fromPubkey: payer.publicKey,
                 toPubkey: recipient.publicKey,
                 lamports: 0,
             }),
-            {patches: [cpiPatch(4, transferAmount)]}
+            {patches: [rawCpiPatch(4, transferAmount)]}
         ).build();
 
         await sendAndConfirm(
@@ -713,7 +719,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -730,13 +736,13 @@ describe("ifx", () => {
         const letBatch = scratch.letBuilder();
         const condTrue = letBatch.letConstBool(true);
         const transferAmount = letBatch.letConstU64(3_000);
-        const xfer = cpi(
+        const xfer = rawCpi(
             SystemProgram.transfer({
                 fromPubkey: payer.publicKey,
                 toPubkey: recipient.publicKey,
                 lamports: 0,
             }),
-            {patches: [cpiPatch(4, transferAmount)]}
+            {patches: [rawCpiPatch(4, transferAmount)]}
         ).build();
 
         await sendAndConfirm(
@@ -759,7 +765,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -786,7 +792,7 @@ describe("ifx", () => {
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,
             frameId,
-            closeAuthority: payer.publicKey,
+            authority: payer.publicKey,
             tapeLen: 256,
         });
         await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);

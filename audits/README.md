@@ -28,7 +28,7 @@ Re-run review and add or refresh an `internal/` report when **any** of the follo
 
 - Instruction set, account layouts, or `Frame` tape semantics
 - CPI / patch / `if_else` execution model
-- PDA seeds, discriminators, or close authority rules
+- PDA seeds, discriminators, Frame `authority` rules
 - Security-relevant tests in `tests/ifx_anchor_security.ts` or tape/binding invariants
 
 **Release checklist (maintainers):**

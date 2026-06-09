@@ -12,7 +12,6 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/frame"
 	"github.com/ifx-run/ifx/go-sdk/immortal"
 	"github.com/ifx-run/ifx/go-sdk/ix"
-	"github.com/ifx-run/ifx/go-sdk/patchedcpi"
 	"github.com/ifx-run/ifx/go-sdk/typed"
 )
 
@@ -20,6 +19,7 @@ import (
 type FrameScratch struct {
 	Frame     solana.PublicKey
 	ProgramID solana.PublicKey
+	Authority solana.PublicKey
 	TapeLen   *int
 	IndexCap  *int
 	Cursor    uint32
@@ -36,13 +36,14 @@ type PlanNewFrameResult struct {
 }
 
 // NewFrameScratch creates a planner for an existing or future Frame PDA.
-func NewFrameScratch(framePK solana.PublicKey, tapeLen *int, programID solana.PublicKey) *FrameScratch {
+func NewFrameScratch(framePK solana.PublicKey, tapeLen *int, programID, authority solana.PublicKey) *FrameScratch {
 	if programID.IsZero() {
 		programID = constants.DefaultProgramID
 	}
 	s := &FrameScratch{
 		Frame:      framePK,
 		ProgramID:  programID,
+		Authority:  authority,
 		TapeLen:    tapeLen,
 		indexTypes: make(map[uint8]typed.IfxTy),
 	}
@@ -57,7 +58,7 @@ func NewFrameScratch(framePK solana.PublicKey, tapeLen *int, programID solana.Pu
 // Tests and local debugging only — not for production.
 func FromDecodedFrame(decoded *frame.DecodedFrame, framePK solana.PublicKey, programID solana.PublicKey) *FrameScratch {
 	tapeLen := len(decoded.Tape)
-	s := NewFrameScratch(framePK, &tapeLen, programID)
+	s := NewFrameScratch(framePK, &tapeLen, programID, decoded.Authority)
 	s.Cursor = decoded.Cursor
 	s.NextIndex = uint8(decoded.IndexCount)
 	return s
@@ -67,7 +68,7 @@ func FromDecodedFrame(decoded *frame.DecodedFrame, framePK solana.PublicKey, pro
 type PlanNewFrameParams struct {
 	Payer          solana.PublicKey
 	FrameID        [32]byte
-	CloseAuthority solana.PublicKey
+	Authority solana.PublicKey
 	TapeLen        uint32
 	ProgramID      solana.PublicKey
 }
@@ -83,11 +84,11 @@ func PlanNewFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 		return PlanNewFrameResult{}, err
 	}
 	tapeLen := int(p.TapeLen)
-	scratch := NewFrameScratch(framePK, &tapeLen, programID)
+	scratch := NewFrameScratch(framePK, &tapeLen, programID, p.Authority)
 	ixCreate, _, err := ix.BuildCreateFrame(ix.CreateFrameParams{
-		Payer:          p.Payer,
-		FrameID:        p.FrameID,
-		CloseAuthority: p.CloseAuthority,
+		Payer:     p.Payer,
+		FrameID:   p.FrameID,
+		Authority: p.Authority,
 		TapeLen:        p.TapeLen,
 		Options:        &ix.Options{ProgramID: programID},
 	})
@@ -108,7 +109,7 @@ func PlanPublicFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 	if programID.IsZero() {
 		programID = constants.DefaultProgramID
 	}
-	p.CloseAuthority = immortal.CloseAuthority(p.Payer, p.FrameID, programID)
+	p.Authority = immortal.CloseAuthority(p.Payer, p.FrameID, programID)
 	return PlanNewFrame(p)
 }
 
@@ -120,64 +121,58 @@ func (s *FrameScratch) LetBuilder() *LetBuilder {
 	}
 }
 
-func (s *FrameScratch) opts(o *ix.Options) *ix.Options {
-	if o == nil {
-		return &ix.Options{ProgramID: s.ProgramID}
-	}
-	if o.ProgramID.IsZero() {
-		o.ProgramID = s.ProgramID
-	}
-	return o
+func (s *FrameScratch) ixOpts() *ix.Options {
+	return &ix.Options{ProgramID: s.ProgramID}
 }
 
 // IxReset returns ifx_reset_frame and clears local planner state.
-func (s *FrameScratch) IxReset(o *ix.Options) solana.Instruction {
+func (s *FrameScratch) IxReset() solana.Instruction {
 	s.Cursor = 0
 	s.NextIndex = 0
 	s.indexTypes = make(map[uint8]typed.IfxTy)
-	return ix.BuildResetFrame(s.Frame, s.opts(o))
+	return ix.BuildResetFrame(s.Frame, s.Authority, s.ixOpts())
 }
 
 // IxLet emits ifx_let for one ScratchValue or a LetBuilder batch.
-func (s *FrameScratch) IxLet(target interface{}, o *ix.Options) (solana.Instruction, error) {
+func (s *FrameScratch) IxLet(target interface{}) (solana.Instruction, error) {
 	switch v := target.(type) {
 	case *LetBuilder:
 		fin := v.Finish()
-		return ix.BuildLet(s.Frame, fin.Args, fin.RemainingPubkeys(), s.opts(o))
+		return ix.BuildLet(s.Frame, s.Authority, fin.Args, fin.RemainingPubkeys(), s.ixOpts())
 	case typed.ScratchValue:
 		args := codec.LetArgs{Bindings: []binding.Node{v.Binding}}
 		var rem []solana.PublicKey
 		for _, m := range v.Remaining {
 			rem = append(rem, solana.MustPublicKeyFromBase58(m.Pubkey))
 		}
-		return ix.BuildLet(s.Frame, args, rem, s.opts(o))
+		return ix.BuildLet(s.Frame, s.Authority, args, rem, s.ixOpts())
 	default:
 		return nil, fmt.Errorf("IxLet expects typed.ScratchValue or *LetBuilder")
 	}
 }
 
 // IxAssert returns ifx_assert.
-func (s *FrameScratch) IxAssert(cond interface{}, o *ix.Options) (solana.Instruction, error) {
+func (s *FrameScratch) IxAssert(cond interface{}) (solana.Instruction, error) {
 	c, err := ToCond(cond)
 	if err != nil {
 		return nil, err
 	}
-	return ix.BuildAssert(s.Frame, c, s.opts(o))
+	return ix.BuildAssert(s.Frame, c, s.ixOpts())
 }
 
 // IxCpi returns ifx_patched_cpi.
-func (s *FrameScratch) IxCpi(built patchedcpi.BuildResult, o *ix.Options) (solana.Instruction, error) {
-	return ix.BuildCpi(s.Frame, built, s.opts(o))
+func (s *FrameScratch) IxCpi(built codec.WireBuildResult) (solana.Instruction, error) {
+	return ix.BuildCpi(s.Frame, built, s.ixOpts())
 }
 
 // IxIfElse returns ifx_if_else.
-func (s *FrameScratch) IxIfElse(args codec.IfElseArgs, remaining []typed.AccountMeta, o *ix.Options) (solana.Instruction, error) {
-	return ix.BuildIfElse(s.Frame, args, ToSolanaMetas(remaining), s.opts(o))
+func (s *FrameScratch) IxIfElse(args codec.IfElseArgs, remaining []typed.AccountMeta) (solana.Instruction, error) {
+	return ix.BuildIfElse(s.Frame, args, ToSolanaMetas(remaining), s.ixOpts())
 }
 
 // IxCloseFrame returns ifx_close_frame.
-func (s *FrameScratch) IxCloseFrame(authority solana.PublicKey, o *ix.Options) solana.Instruction {
-	return ix.BuildCloseFrame(s.Frame, authority, s.opts(o))
+func (s *FrameScratch) IxCloseFrame(authority solana.PublicKey) solana.Instruction {
+	return ix.BuildCloseFrame(s.Frame, authority, s.ixOpts())
 }
 
 // LetEval plans an Eval binding.

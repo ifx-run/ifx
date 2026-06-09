@@ -26,7 +26,7 @@ func FramePDA(programID, payer solana.PublicKey, frameID [32]byte) (solana.Publi
 // CreateFrameArgs is the Borsh payload after IX discriminator for ifx_create_frame.
 type CreateFrameArgs struct {
 	FrameID        [32]byte
-	CloseAuthority solana.PublicKey
+	Authority solana.PublicKey
 	TapeLen        uint32
 }
 
@@ -37,7 +37,7 @@ func EncodeCreateFrameArgs(args CreateFrameArgs) ([]byte, error) {
 	}
 	out := make([]byte, 0, 32+32+4)
 	out = append(out, args.FrameID[:]...)
-	out = append(out, args.CloseAuthority.Bytes()...)
+	out = append(out, args.Authority.Bytes()...)
 	var tail [4]byte
 	tail[0] = byte(args.TapeLen)
 	tail[1] = byte(args.TapeLen >> 8)

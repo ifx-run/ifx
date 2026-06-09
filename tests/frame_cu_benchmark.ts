@@ -30,7 +30,7 @@ import {
   sendAndConfirm,
 } from "./helpers";
 
-/** Clearly separated account sizes (~817 B / ~4.7 KB / ~8.8 KB; all under 10 KiB init cap). */
+/** Clearly separated account sizes (~569 B / ~4.7 KB / ~8.8 KB; all under 10 KiB init cap). */
 const TAPE_SIZES = [256, 4096, 8192] as const;
 
 type TapeSize = (typeof TAPE_SIZES)[number];
@@ -68,8 +68,19 @@ async function simulateCu(
   return cu;
 }
 
-function freshScratch(frame: PublicKey, tapeLen: TapeSize): FrameScratch {
-  return new FrameScratch(frame, tapeLen, 0, 0, IFX_LOCALNET_PROGRAM_ID);
+function freshScratch(
+  frame: PublicKey,
+  tapeLen: TapeSize,
+  authority: PublicKey
+): FrameScratch {
+  return new FrameScratch(
+    frame,
+    tapeLen,
+    0,
+    0,
+    IFX_LOCALNET_PROGRAM_ID,
+    authority
+  );
 }
 
 async function provisionFrame(
@@ -80,7 +91,7 @@ async function provisionFrame(
   const { ixCreate, frame } = planLocalFrame({
     payer,
     frameId: randomBytes(32),
-    closeAuthority: payer,
+    authority: payer,
     tapeLen,
   });
   await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
@@ -91,9 +102,10 @@ async function provisionFrame(
 async function seedOneBoolBinding(
   provider: anchor.AnchorProvider,
   frame: PublicKey,
-  tapeLen: TapeSize
+  tapeLen: TapeSize,
+  authority: PublicKey
 ): Promise<ReturnType<FrameScratch["letConstBool"]>> {
-  const scratch = freshScratch(frame, tapeLen);
+  const scratch = freshScratch(frame, tapeLen, authority);
   const bound = scratch.letConstBool(true);
   await sendAndConfirm(
     provider,
@@ -137,11 +149,11 @@ describe("frame CU benchmark", () => {
         connection,
         payer,
         payerSigner,
-        freshScratch(frame, tapeLen).ixReset()
+        freshScratch(frame, tapeLen, payer).ixReset()
       );
 
       // Fresh on-chain frame (cursor=0): single const append — mut write-back dominates.
-      const letScratch = freshScratch(frame, tapeLen);
+      const letScratch = freshScratch(frame, tapeLen, payer);
       const letCu = await simulateCu(
         connection,
         payer,
@@ -149,8 +161,8 @@ describe("frame CU benchmark", () => {
         letScratch.ixLet(letScratch.letConstU64(1))
       );
 
-      const bound = await seedOneBoolBinding(provider, frame, tapeLen);
-      const readScratch = freshScratch(frame, tapeLen);
+      const bound = await seedOneBoolBinding(provider, frame, tapeLen, payer);
+      const readScratch = freshScratch(frame, tapeLen, payer);
 
       const assertCu = await simulateCu(
         connection,
@@ -208,7 +220,7 @@ describe("frame CU benchmark", () => {
       [];
 
     for (const n of counts) {
-      const scratch = freshScratch(frame, tapeLen);
+      const scratch = freshScratch(frame, tapeLen, payer);
       const ixs: TransactionInstruction[] = [scratch.ixReset()];
       for (let i = 0; i < n; i++) {
         ixs.push(scratch.ixLet(scratch.letConstU64(i + 1)));

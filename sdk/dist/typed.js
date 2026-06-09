@@ -23,6 +23,7 @@ exports.IFX_TYS = [
     "i128",
     "f32",
     "f64",
+    "pubkey",
 ];
 function scratchValue(binding, ref, letRemaining, knownTy) {
     const base = letRemaining === undefined
@@ -108,6 +109,8 @@ function inferIfxTyFromExpr(e, indexTypes) {
         return "f32";
     if ("constF64" in node)
         return "f64";
+    if ("constPubkey" in node)
+        return "pubkey";
     if ("value" in node) {
         const idx = node.value.value.index;
         const ty = indexTypes?.get(idx);
@@ -178,6 +181,7 @@ function isExprLike(v) {
         "constI128",
         "constF32",
         "constF64",
+        "constPubkey",
         "not",
         "neg",
         "isZero",

@@ -252,6 +252,18 @@ fn eval_binding<'info>(
         LetBinding::AccountDataLen { account_index } => {
             load_account_data_len(remaining, *account_index, frame_key, frame_data_len)?
         }
+        LetBinding::AccountKey { account_index } => {
+            load_account_key(remaining, *account_index)?
+        }
+        LetBinding::ConstPubkey { bytes } => {
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(*bytes))?
+        }
+        LetBinding::FrameGeneration => {
+            encode_typed(ValueType::U64, TypedValue::U64(frame.generation()?))?
+        }
+        LetBinding::FrameIndexCount => {
+            encode_typed(ValueType::U16, TypedValue::U16(frame.index_count()?))?
+        }
         LetBinding::Eval { expr } => {
             let ty = infer_expr_ty(frame, expr)?;
             return Ok((ty, eval_expr(frame, ty, expr)?));
@@ -390,6 +402,14 @@ fn load_account_lamports<'info>(
     let acc = get_remaining(remaining, account_index)?;
     let lamports = acc.lamports();
     encode_typed(ValueType::U64, TypedValue::U64(lamports))
+}
+
+fn load_account_key<'info>(
+    remaining: &'info [AccountInfo<'info>],
+    account_index: u8,
+) -> Result<ValueBytes> {
+    let acc = get_remaining(remaining, account_index)?;
+    encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.key.to_bytes()))
 }
 
 fn load_account_data_len<'info>(

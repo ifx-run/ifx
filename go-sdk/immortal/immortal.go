@@ -1,4 +1,4 @@
-// Package immortal provides public / non-closeable Frame close_authority helpers.
+// Package immortal provides public / non-closeable Frame authority helpers.
 package immortal
 
 import (
@@ -7,7 +7,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/frame"
 )
 
-// CloseAuthority returns the Frame PDA as close_authority (no Signer can close).
+// CloseAuthority returns the Frame PDA as off-curve authority (no Signer can close).
 func CloseAuthority(payer solana.PublicKey, frameID [32]byte, programID solana.PublicKey) solana.PublicKey {
 	if programID.IsZero() {
 		programID = constants.DefaultProgramID
@@ -16,7 +16,7 @@ func CloseAuthority(payer solana.PublicKey, frameID [32]byte, programID solana.P
 	return pk
 }
 
-// IsImmortalCloseAuthority reports whether close_authority is the Frame PDA itself.
-func IsImmortalCloseAuthority(closeAuthority, framePK solana.PublicKey) bool {
-	return closeAuthority.Equals(framePK)
+// IsImmortalCloseAuthority reports whether authority is the Frame PDA itself.
+func IsImmortalCloseAuthority(authority, framePK solana.PublicKey) bool {
+	return authority.Equals(framePK)
 }

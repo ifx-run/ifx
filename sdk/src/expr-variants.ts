@@ -1,7 +1,7 @@
 /**
  * Wire tag order for on-chain [`Expr`](../../programs/ifx/src/state/types.rs).
  *
- * **Must match the Rust enum declaration exactly** (tags `0`–`42`). When adding a
+ * **Must match the Rust enum declaration exactly** (tags `0`–`43`). When adding a
  * variant: append here, extend `expr` builder + `codec` switch, program match arms, IDL.
  */
 export const EXPR_VARIANT = [
@@ -48,6 +48,7 @@ export const EXPR_VARIANT = [
   "mulDivCeil",
   "clamp",
   "select",
+  "constPubkey",
 ] as const;
 
 export type ExprVariantKey = (typeof EXPR_VARIANT)[number];

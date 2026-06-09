@@ -1,6 +1,6 @@
 {
   "name": "@ifx-run/sdk",
-  "version": "0.2.0-devnet.0",
+  "version": "0.3.0-devnet.0",
   "description": "TypeScript SDK for Ifx (devnet preview — no mainnet program yet). Instruction builders, Expr codec, FrameScratch.",
   "license": "Apache-2.0",
   "author": "The Ifx Authors",

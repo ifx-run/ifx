@@ -38,6 +38,9 @@ func EncodeLetBinding(b binding.Node) ([]byte, error) {
 	case binding.RentMinimumBalance:
 		buf := []byte{constants.LetTagSysvarRentMinimumBalance}
 		return wire.AppendU32LE(buf, v.DataLen)
+	case binding.ConstPubkey:
+		buf := []byte{constants.LetTagConstPubkey}
+		return append(buf, v.Bytes[:]...), nil
 	case binding.Empty:
 		return []byte{v.Tag}, nil
 	default:

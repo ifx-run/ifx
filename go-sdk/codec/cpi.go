@@ -1,22 +1,71 @@
 package codec
 
 import (
+	"fmt"
+
+	"github.com/ifx-run/ifx/go-sdk/constants"
 	"github.com/ifx-run/ifx/go-sdk/expr"
 	"github.com/ifx-run/ifx/go-sdk/wire"
 )
 
-// CpiPatch overwrites Cpi.data before invoke.
-type CpiPatch struct {
+// RawCpiPatch overwrites Cpi.data before invoke.
+type RawCpiPatch struct {
 	DataOffset  uint16
 	SourceIndex uint8
 }
 
-// Cpi is template CPI + PatchList (empty patches = static step).
+// Cpi is one ifx CPI step (Static | RawPatched | Structured).
 type Cpi struct {
 	AccountsStart uint8
 	AccountsLen   uint8
 	Data          []byte
 	Patches       PatchList
+	// Structured-only (Kind == CpiWireStructured). Payload is patch body after wire tag.
+	StructuredTag     uint8
+	StructuredPayload []byte
+}
+
+// CpiKind returns the wire kind for a CPI step.
+func CpiKind(c Cpi) uint8 {
+	if c.StructuredPayload != nil {
+		return constants.CpiWireStructured
+	}
+	if c.Patches.HasPatches() {
+		return constants.CpiWireRawPatched
+	}
+	return constants.CpiWireStatic
+}
+
+// EncodeCpi serializes one CPI step (matches on-chain Cpi::serialize_wire / TS encodeCpi).
+func EncodeCpi(c Cpi) ([]byte, error) {
+	kind := CpiKind(c)
+	switch kind {
+	case constants.CpiWireStatic:
+		buf := []byte{constants.CpiWireStatic, c.AccountsStart, c.AccountsLen}
+		return wire.AppendU16LenBytes(buf, c.Data)
+	case constants.CpiWireRawPatched:
+		buf := []byte{constants.CpiWireRawPatched, c.AccountsStart, c.AccountsLen}
+		var err error
+		buf, err = wire.AppendU16LenBytes(buf, c.Data)
+		if err != nil {
+			return nil, err
+		}
+		patchBody, err := EncodePatchList(c.Patches)
+		if err != nil {
+			return nil, err
+		}
+		return append(buf, patchBody...), nil
+	case constants.CpiWireStructured:
+		if c.StructuredPayload == nil {
+			return nil, fmt.Errorf("structured CPI requires StructuredPayload")
+		}
+		return append(
+			[]byte{constants.CpiWireStructured, c.StructuredTag, c.AccountsStart, c.AccountsLen},
+			c.StructuredPayload...,
+		), nil
+	default:
+		return nil, fmt.Errorf("invalid CPI kind %d", kind)
+	}
 }
 
 // IfElseArmKind selects ifx_if_else branch behavior (logical; wire uses step count tag).
@@ -41,27 +90,13 @@ type IfElseArgs struct {
 	ElseArm IfElseArm
 }
 
-func EncodeCpiPatch(p CpiPatch) ([]byte, error) {
+func EncodeRawCpiPatch(p RawCpiPatch) ([]byte, error) {
 	buf, err := wire.AppendU16LE(nil, p.DataOffset)
 	if err != nil {
 		return nil, err
 	}
 	buf = append(buf, p.SourceIndex)
 	return buf, nil
-}
-
-func EncodeCpi(c Cpi) ([]byte, error) {
-	buf := []byte{c.AccountsStart, c.AccountsLen}
-	var err error
-	buf, err = wire.AppendU16LenBytes(buf, c.Data)
-	if err != nil {
-		return nil, err
-	}
-	patchBody, err := EncodePatchList(c.Patches)
-	if err != nil {
-		return nil, err
-	}
-	return append(buf, patchBody...), nil
 }
 
 func encodeIfElseArm(arm IfElseArm) ([]byte, error) {

@@ -27,6 +27,10 @@ export declare const binding: {
     splToken2022MintTransferFeeMaximum(accountIndex: number): LetBinding;
     splToken2022MintWithheldAmount(accountIndex: number): LetBinding;
     splToken2022MintDefaultAccountState(accountIndex: number): LetBinding;
+    accountKey(accountIndex: number): LetBinding;
+    constPubkey(bytes: Buffer): LetBinding;
+    frameGeneration(): LetBinding;
+    frameIndexCount(): LetBinding;
 };
 /** Frame tape type implied by a `LetBinding` variant. */
 export declare function inferBindingTy(b: LetBinding, indexTypes?: ReadonlyMap<number, IfxTy>): IfxTy;

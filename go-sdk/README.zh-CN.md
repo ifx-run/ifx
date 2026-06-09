@@ -9,7 +9,7 @@ Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/s
 ## 两层 API
 
 1. **`scratch.FrameScratch`** — 规划 tape binding（`Let*` / `LetBuilder`），生成 `IxReset`、`IxLet`、`IxAssert`、`IxCpi`（`ifx_patched_cpi`）、`IxIfElse` 等指令
-2. **`expr` + `typed.ScratchValue`** — 构造链上 `Expr`，以及带 binding 序号、remaining 账户、类型的 scratch 槽位
+2. **`expr` + `typed.ScratchValue`** — 构造链上 `Expr`，以及带 binding 序号、remaining 账户、类型的 Frame binding
 
 业务代码优先用 `FrameScratch`；需要更细控制时可直调 `ix.BuildCreateFrame` 等（`ix` 包）。
 
@@ -44,7 +44,7 @@ if _, err := rand.Read(frameID[:]); err != nil {
 plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
     Payer:          payer,
     FrameID:        frameID,
-    CloseAuthority: payer,
+    Authority:      payer,
     TapeLen:        256, // 上限见 constants.MaxFrameTapeLen
     ProgramID:      constants.DevnetProgramID, // 本地链用 LocalnetProgramID
 })
@@ -80,23 +80,23 @@ import (
 )
 
 tapeLen := 256
-s := scratch.NewFrameScratch(plan.Frame, &tapeLen, constants.DevnetProgramID)
+s := scratch.NewFrameScratch(plan.Frame, &tapeLen, constants.DevnetProgramID, plan.Scratch.Authority)
 
 ixs := []solana.Instruction{
-    s.IxReset(nil),
+    s.IxReset(),
 }
 
 target, err := s.LetConstU64(10)
 if err != nil {
     return err
 }
-letIx, err := s.IxLet(target, nil)
+letIx, err := s.IxLet(target)
 if err != nil {
     return err
 }
 ixs = append(ixs, letIx)
 
-assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(target.Index)), nil)
+assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(target.Index)))
 if err != nil {
     return err
 }
@@ -107,7 +107,7 @@ ixs = append(ixs, assertIx)
 
 ### 生产环境：看日志，不要 decode Frame
 
-交易是否按预期执行，看 **Ifx program 的 transaction logs**（条件分支、`cpi` / `patched cpi`、patch 偏移、assert 结果等）— 已足够排查。模拟失败时同样以 logs + 错误码为准（[`errors` 包](./errors/) / [errors.zh-CN.md](../docs/errors.zh-CN.md)）。
+交易是否按预期执行，看 **Ifx program 的 transaction logs**（条件分支、`rawCpi` / `patched cpi`、patch 偏移、assert 结果等）— 已足够排查。模拟失败时同样以 logs + 错误码为准（[`errors` 包](./errors/) / [errors.zh-CN.md](../docs/errors.zh-CN.md)）。
 
 **不要在生产代码里**调用 `FetchDecodedFrame`、`DecodeFrameAccount`、`FromDecodedFrame`、`RefreshFromChain`。这些 API 留给 **集成测试、示例、本地调试**（例如 `integration/localnet_test.go` 里断言 tape 写回）。Frame 是共享草稿纸，RPC 快照在提交前可能已过期；用副本做规划或验收都不安全。
 
@@ -122,7 +122,7 @@ bal, err := s.LetLamports(userPubkey)
 if err != nil {
     return err
 }
-letIx, err := s.IxLet(bal, nil)
+letIx, err := s.IxLet(bal)
 ```
 
 需要读账户时，`ScratchValue.Remaining` 带上 remaining meta（单账户 let 在索引 0）。后续表达式引用：`expr.Ref(bal.Index)`。
@@ -143,14 +143,14 @@ x, err := b.Lamports(userAta)
 if err != nil {
     return err
 }
-letIx, err := b.BuildIx(nil)
+letIx, err := b.BuildIx()
 ```
 
 `Finish()` 返回 `{ Args, Bindings, Remaining, Scratch }`，需要拆开编码时使用。
 
 ## 何时写入 Frame（`let`）
 
-- **要落盘：** 后续 `IxAssert`、`CpiPatch`、或更晚的 `ifx_let` 还会读到的值
+- **要落盘：** 后续 `IxAssert`、`RawCpiPatch`、或更晚的 `ifx_let` 还会读到的值
 - **不必落盘：** 仅方便阅读的中间量 — 用 `LetEval` 嵌套 `expr`，或把比较直接写进 `IxAssert`
 
 创建 Frame 时固定 `tapeLen`，**没有** `extend_frame` / `shrink_frame`。`indexCap = min(256, tapeLen/2)`；超限链上报 `IndexCapReached` / `TapeOutOfBounds`（见 [errors.zh-CN.md](../docs/errors.zh-CN.md)）。
@@ -160,10 +160,10 @@ letIx, err := b.BuildIx(nil)
 | 方法 | 用途 |
 |------|------|
 | `PlanNewFrame` | 新 Frame：`Scratch` + `IxCreate` + PDA |
-| `PlanPublicFrame` | `close_authority` = Frame PDA（不可关闭） |
-| `NewFrameScratch(frame, &tapeLen, programID)` | 已有 Frame 上开新 session（生产路径） |
+| `PlanPublicFrame` | `authority` = Frame PDA（不可关闭；公共 scratch） |
+| `NewFrameScratch(frame, &tapeLen, programID, authority)` | 已有 Frame 上开新 session（生产路径） |
 
-公共 Frame 校验：`immortal.IsImmortalCloseAuthority(closeAuthority, frame)`。
+公共 Frame 校验：`immortal.IsImmortalCloseAuthority(decoded.Authority, frame)`（helper 名保留；参数为 `Frame.authority`）。
 
 ## SPL Token / Token-2022
 
@@ -173,7 +173,7 @@ letIx, err := b.BuildIx(nil)
 b := s.LetBuilder()
 amount, _ := b.SplTokenAmount(legacyAta)
 withheld, _ := b.SplToken2022TransferFeeWithheld(token2022Ata)
-letIx, _ := b.BuildIx(nil)
+letIx, _ := b.BuildIx()
 ```
 
 | 方法 | 读取内容 |
@@ -188,7 +188,22 @@ letIx, _ := b.BuildIx(nil)
 
 账户缺少对应 extension → `Token2022ExtensionNotPresent`（6026）。未覆盖字段用 `AccountDataSlice(account, ownerProgram, ty, offset)`。
 
-**条件 CPI 的 SPL 指令：** `spltoken` 提供 Token-2022 的 BurnChecked、CloseAccount、HarvestWithheldTokensToMint 等模板；其它程序指令用 `solana-go` 或你现有的 builder 构造后传入 `patchedcpi`。
+**条件 CPI 的 SPL 指令：** `spltoken` 提供 BurnChecked、CloseAccount、HarvestWithheldTokensToMint 等。**官方** System/SPL ix 且字段来自 tape：用 `structuredcpi.StructuredCpi` + `StructuredCpiPatch`。其它 layout：`patchedcpi`（RawPatched）。
+
+## Structured CPI
+
+```go
+import "github.com/ifx-run/ifx/go-sdk/structuredcpi"
+
+amount := structuredcpi.AsFrameValue(sv)
+built, _ := structuredcpi.StructuredCpi(
+    transferCheckedIx,
+    structuredcpi.StructuredCpiPatch.TokenTransferChecked().AmountOnly(amount, 9),
+).Build(nil)
+s.IxCpi(built) // ifx_patched_cpi — structured 或 raw-patched
+```
+
+见 [structured-cpi-patches.zh-CN.md](../docs/structured-cpi-patches.zh-CN.md)。Wire parity：`structuredcpi/patch_test.go`、`structuredcpi/patch_builders_test.go`、`codec/cpi_test.go`。
 
 ## Patched CPI 与条件分支
 
@@ -202,17 +217,17 @@ import (
 
 settle, _ := s.LetConstU64(1_000_000)
 
-built, err := patchedcpi.Cpi(
+built, err := patchedcpi.RawCpi(
     patchedcpi.SystemTransferTemplate(payer, recipient),
-    patch.CpiPatch(4, settle), // System transfer lamports @ byte 4
+    patch.RawCpiPatch(4, settle), // System transfer lamports @ byte 4
 ).Build(nil)
 if err != nil {
     return err
 }
-cpiIx, err := s.IxCpi(built, nil) // ifx_patched_cpi
+cpiIx, err := s.IxCpi(built.WireBuild()) // ifx_patched_cpi
 ```
 
-`patch.CpiPatch(offset, scratchValue)` 按 binding 类型宽度写入 `data[offset..]`，须与内层指令布局一致。
+`patch.RawCpiPatch(offset, scratchValue)` 按 binding 类型宽度写入 `data[offset..]`，须与内层指令布局一致。
 
 **无 patch 的 CPI 步：** `patchedcpi.StaticCpi(template, nil)`，用于 `ifx_if_else` 或无条件内联 CPI。
 
@@ -229,7 +244,7 @@ args, err := ifelse.Args(
     ifelse.Cpi(closeBuilt),
     ifelse.Skip,
 )
-closeIfElse, err := s.IxIfElse(args, remainingMetas, nil)
+closeIfElse, err := s.IxIfElse(args, remainingMetas)
 ```
 
 `Revert` 分支选中时整笔交易失败（`IfElseRevert`）。与分支无关的全局约束用 `IxAssert`。
@@ -243,10 +258,10 @@ closeIfElse, err := s.IxIfElse(args, remainingMetas, nil)
 | `expr` | 表达式 AST（`Add`、`Lt`、`MulDivFloor`、`Select`…） |
 | `binding` / `typed` / `codec` | LetBinding、类型推断、wire 编码 |
 | `ix` | 指令组装 |
-| `patchedcpi` / `patch` / `ifelse` | CPI 模板与条件分支 |
+| `patchedcpi` / `structuredcpi` / `patch` / `ifelse` | CPI（RawPatched + Structured）与条件分支 |
 | `spltoken` | Token-2022 常用 CPI 模板 |
 | `errors` | 链上错误码常量、`MessageIncludes` |
-| `immortal` | 不可关闭 Frame 的 close authority |
+| `immortal` | 不可关闭 Frame 的 `authority` helper（`IsImmortalCloseAuthority`） |
 | `constants` | Program ID、discriminator、tape 限制 |
 | `examples` | 可复用的业务 planner（见下） |
 
@@ -262,11 +277,11 @@ closeIfElse, err := s.IxIfElse(args, remainingMetas, nil)
 
 说明与 localnet 跑法：[`examples/README.zh-CN.md`](./examples/README.zh-CN.md)。
 
-Dust 集成测试会生成 TransferFee mint fixture（`scripts/dust-fixture.ts`，需 Node，仅测试 setup）。
+Dust 集成测试在 Go 内创建 TransferFee mint fixture（`integration/dust_fixture_test.go`，仅测试 setup）。
 
 ## 错误处理
 
-链上失败时解析 logs，用 `errors.MessageIncludes(logs, errors.AssertFailed)` 等匹配 [Ifx 错误码](../docs/errors.zh-CN.md)（6000–6029）。规划阶段（tape 满、类型不匹配）在提交前由 SDK 返回 Go `error`。
+链上失败时解析 logs，用 `errors.MessageIncludes(logs, errors.AssertFailed)` 等匹配 [Ifx 错误码](../docs/errors.zh-CN.md)（6000–6035）。规划阶段（tape 满、类型不匹配）在提交前由 SDK 返回 Go `error`。
 
 ## Program ID
 
@@ -276,7 +291,7 @@ Dust 集成测试会生成 TransferFee mint fixture（`scripts/dust-fixture.ts`�
 | `constants.DevnetProgramID` | Devnet 部署 |
 | `constants.LocalnetProgramID` | 本仓库 Surfpool / `anchor test` |
 
-单笔指令覆盖 program id：`s.IxReset(&ix.Options{ProgramID: id})`（其它 `Ix*` 同理）。
+Program id 在 `PlanNewFrame` / `NewFrameScratch` 时设一次（`ProgramID` 字段）；`FrameScratch` 的 `Ix*` 均使用该 id。
 
 ## 测试
 

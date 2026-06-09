@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.patchListStatic = exports.patchListPatched = exports.ifElseArmStepTag = exports.IF_ELSE_ARM = exports.EXPR_VARIANT_COUNT = exports.EXPR_VARIANT = exports.EXPR_TAG = exports.LET_BINDING_VARIANT = void 0;
+exports.encodeCpiPatch = exports.STRUCTURED_CPI_PATCH_WIRE = exports.CPI_WIRE = exports.patchListStatic = exports.patchListPatched = exports.ifElseArmStepTag = exports.IF_ELSE_ARM = exports.EXPR_VARIANT_COUNT = exports.EXPR_VARIANT = exports.EXPR_TAG = exports.LET_BINDING_VARIANT = void 0;
 exports.encodeValueType = encodeValueType;
 exports.encodeValue = encodeValue;
 exports.writeU8Len = writeU8Len;
@@ -14,7 +14,7 @@ exports.encodeU16LenBytes = encodeU16LenBytes;
 exports.encodeExpr = encodeExpr;
 exports.encodeLetBinding = encodeLetBinding;
 exports.encodeLetArgs = encodeLetArgs;
-exports.encodeCpiPatch = encodeCpiPatch;
+exports.encodeRawCpiPatch = encodeRawCpiPatch;
 exports.encodePatchList = encodePatchList;
 exports.encodeCpi = encodeCpi;
 exports.encodeIfElseArgs = encodeIfElseArgs;
@@ -22,7 +22,8 @@ const bn_js_1 = __importDefault(require("bn.js"));
 const let_binding_variants_1 = require("./let-binding-variants");
 const expr_variants_1 = require("./expr-variants");
 const if_else_arm_1 = require("./if-else-arm");
-const patch_list_1 = require("./patch-list");
+const types_1 = require("./types");
+const structured_cpi_patch_1 = require("./structured-cpi-patch");
 var let_binding_variants_2 = require("./let-binding-variants");
 Object.defineProperty(exports, "LET_BINDING_VARIANT", { enumerable: true, get: function () { return let_binding_variants_2.LET_BINDING_VARIANT; } });
 var expr_variants_2 = require("./expr-variants");
@@ -32,9 +33,13 @@ Object.defineProperty(exports, "EXPR_VARIANT_COUNT", { enumerable: true, get: fu
 var if_else_arm_2 = require("./if-else-arm");
 Object.defineProperty(exports, "IF_ELSE_ARM", { enumerable: true, get: function () { return if_else_arm_2.IF_ELSE_ARM; } });
 Object.defineProperty(exports, "ifElseArmStepTag", { enumerable: true, get: function () { return if_else_arm_2.ifElseArmStepTag; } });
-var patch_list_2 = require("./patch-list");
-Object.defineProperty(exports, "patchListPatched", { enumerable: true, get: function () { return patch_list_2.patchListPatched; } });
-Object.defineProperty(exports, "patchListStatic", { enumerable: true, get: function () { return patch_list_2.patchListStatic; } });
+var patch_list_1 = require("./patch-list");
+Object.defineProperty(exports, "patchListPatched", { enumerable: true, get: function () { return patch_list_1.patchListPatched; } });
+Object.defineProperty(exports, "patchListStatic", { enumerable: true, get: function () { return patch_list_1.patchListStatic; } });
+var types_2 = require("./types");
+Object.defineProperty(exports, "CPI_WIRE", { enumerable: true, get: function () { return types_2.CPI_WIRE; } });
+var structured_cpi_patch_2 = require("./structured-cpi-patch");
+Object.defineProperty(exports, "STRUCTURED_CPI_PATCH_WIRE", { enumerable: true, get: function () { return structured_cpi_patch_2.STRUCTURED_CPI_PATCH_WIRE; } });
 /** Borsh discriminant order — see `expr-variants.ts`. */
 const VALUE_TYPE_VARIANT = [
     "bool",
@@ -50,6 +55,7 @@ const VALUE_TYPE_VARIANT = [
     "i128",
     "f32",
     "f64",
+    "pubkey",
 ];
 function encodeValueType(ty) {
     const tag = VALUE_TYPE_VARIANT.findIndex((k) => k in ty);
@@ -301,6 +307,13 @@ function encodeExpr(expr) {
         const n = expr.select;
         return encodeTernary(expr_variants_1.EXPR_TAG.select, exprField(n, "cond"), exprField(n, "thenExpr", "then_expr"), exprField(n, "elseExpr", "else_expr"));
     }
+    if ("constPubkey" in expr) {
+        const bytes = Buffer.from(expr.constPubkey[0]);
+        if (bytes.length !== 32) {
+            throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+        }
+        return Buffer.concat([Buffer.from([expr_variants_1.EXPR_TAG.constPubkey]), bytes]);
+    }
     throw new Error("invalid Expr");
 }
 function encodeLetBinding(binding) {
@@ -325,8 +338,17 @@ function encodeLetBinding(binding) {
         }
         case "accountLamports":
         case "accountDataLen":
+        case "accountKey":
             parts.push(Buffer.from([v.accountIndex]));
             break;
+        case "constPubkey": {
+            const bytes = Buffer.from(v.bytes);
+            if (bytes.length !== 32) {
+                throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+            }
+            parts.push(bytes);
+            break;
+        }
         case "eval":
             parts.push(encodeExpr(v.expr));
             break;
@@ -361,6 +383,9 @@ function encodeLetBinding(binding) {
         case "splToken2022MintDefaultAccountState":
             parts.push(Buffer.from([v.accountIndex]));
             break;
+        case "frameGeneration":
+        case "frameIndexCount":
+            break;
         default:
             throw new Error(`unhandled LetBinding variant: ${key}`);
     }
@@ -369,26 +394,53 @@ function encodeLetBinding(binding) {
 function encodeLetArgs(args) {
     return encodeU8LenVec(args.bindings, encodeLetBinding);
 }
-function encodeCpiPatch(patch) {
+function encodeRawCpiPatch(patch) {
     const dataOffset = patch.dataOffset;
     if (dataOffset < 0 || dataOffset > 0xffff) {
-        throw new Error(`CpiPatch.dataOffset out of u16 range: ${dataOffset}`);
+        throw new Error(`RawCpiPatch.dataOffset out of u16 range: ${dataOffset}`);
     }
     const parts = [];
     writeU16(parts, dataOffset);
     parts.push(encodeValue(patch.source));
     return Buffer.concat(parts);
 }
+/** @deprecated Use {@link encodeRawCpiPatch} */
+exports.encodeCpiPatch = encodeRawCpiPatch;
 function encodePatchList(list) {
-    return encodeU16LenVec(list, encodeCpiPatch);
+    return encodeU16LenVec(list, encodeRawCpiPatch);
 }
-function encodeCpi(arm) {
-    const patches = arm.patches !== undefined ? arm.patches : (0, patch_list_1.patchListStatic)();
-    return Buffer.concat([
-        Buffer.from([arm.accountsStart, arm.accountsLen]),
-        encodeU16LenBytes(arm.data),
-        encodePatchList(patches),
-    ]);
+function encodeCpi(step) {
+    switch (step.kind) {
+        case "static":
+            return Buffer.concat([
+                Buffer.from([
+                    types_1.CPI_WIRE.static,
+                    step.accountsStart,
+                    step.accountsLen,
+                ]),
+                encodeU16LenBytes(step.data),
+            ]);
+        case "rawPatched":
+            return Buffer.concat([
+                Buffer.from([
+                    types_1.CPI_WIRE.rawPatched,
+                    step.accountsStart,
+                    step.accountsLen,
+                ]),
+                encodeU16LenBytes(step.data),
+                encodePatchList(step.patches),
+            ]);
+        case "structured":
+            return Buffer.concat([
+                Buffer.from([
+                    types_1.CPI_WIRE.structured,
+                    (0, structured_cpi_patch_1.structuredCpiPatchWireTag)(step.patch),
+                    step.accountsStart,
+                    step.accountsLen,
+                ]),
+                (0, structured_cpi_patch_1.encodeStructuredCpiPatchPayload)(step.patch),
+            ]);
+    }
 }
 function stepsFromArm(arm) {
     if (Array.isArray(arm.steps)) {

@@ -8,8 +8,8 @@ Anchor 将 [`ErrorCode`](../programs/ifx/src/error.rs) 各变体映射为 **`600
 |------|------|------|----------|
 | 6000 | `LetNotTopLevel` | `ifx_let` 必须在交易顶层调用 | 通过 CPI 从其它 program 调用了 `ifx_let` |
 | 6001 | `TapeOutOfBounds` | tape 偏移与类型超出 Frame::tape 边界 | 下一 binding 超出 `tape_len`；layout 规划不一致；读越界 |
-| 6002 | `UnauthorizedClose` | 仅 close authority 可关闭 | `ifx_close_frame` 签名者不对 |
-| 6003 | `InvalidCloseAuthority` | 无效的 close authority | `ifx_create_frame` 传入 `Pubkey::default()` |
+| 6002 | `UnauthorizedClose` | 仅 frame authority 可关闭 | `ifx_close_frame` 签名者不对 |
+| 6003 | `InvalidAuthority` | 无效的 frame authority | `ifx_create_frame` 传入 `Pubkey::default()` |
 | 6004 | `InvalidTapeLen` | Frame tape 长度至少为 1 | `tape_len` 为 0 或超过 `MAX_FRAME_TAPE_LEN`（65_535） |
 | 6005 | `AssertFailed` | 断言失败 | `ifx_assert` 条件为 `false` |
 | 6006 | `IfElseRevert` | `ifx_if_else` 选中 Revert 分支 | 执行的分支为 `IfElseArm::Revert` |
@@ -36,6 +36,15 @@ Anchor 将 [`ErrorCode`](../programs/ifx/src/error.rs) 各变体映射为 **`600
 | 6027 | `SplToken2022UnpackFailed` | Token-2022 账户/mint 解包失败 | layout 损坏 |
 | 6028 | `CastOverflow` | 转换值超出目标类型 | `AsU64` 时值 &gt; `u64::MAX` |
 | 6029 | `InvalidPatchedCpiPatches` | `ifx_patched_cpi` 要求至少一个 patch | 无条件静态 CPI 请用 `ifx_if_else` 或 `tx.add` |
+| 6030 | `InvalidStructuredCpiProgram` | Structured CPI 的 program id 与 patch 不匹配 | remaining 中 program 与所选 `StructuredCpiPatch` variant 不符 |
+| 6031 | `InvalidInstructionData` | 指令数据无效 | 尾部字节或 CPI payload 无效 |
+
+| 6032 | `ResetNotTopLevel` | `ifx_reset_frame` 须顶层 | CPI 包装 reset |
+| 6033 | `CloseNotTopLevel` | `ifx_close_frame` 须顶层 | CPI 包装 close |
+| 6034 | `CreateNotTopLevel` | `ifx_create_frame` 须顶层 | CPI 包装 create |
+| 6035 | `UnauthorizedFrameWrite` | 写 Frame 须 authority 签名 | 私有 Frame 的 `reset` / `let` 无 on-curve authority 签名 |
+
+完整表至 6035。见 [frame-authority.zh-CN.md](./frame-authority.zh-CN.md) 与 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)。
 
 ### Frame append：两种独立上限
 

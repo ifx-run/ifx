@@ -11,7 +11,7 @@ use anchor_lang::idl::types::IdlTypeDef;
 #[cfg(feature = "idl-build")]
 use super::u16_len_vec::U16LenVec;
 #[cfg(feature = "idl-build")]
-use super::CpiPatch;
+use super::RawCpiPatch;
 
 #[cfg(feature = "idl-build")]
 const U16_LEN_VEC_IDL_NAME: &str = "U16LenVec";
@@ -41,4 +41,4 @@ macro_rules! impl_idl_build_u16_len_vec {
 #[cfg(feature = "idl-build")]
 impl_idl_build_u16_len_vec!(u8, |_| ());
 #[cfg(feature = "idl-build")]
-impl_idl_build_u16_len_vec!(CpiPatch, |types| CpiPatch::insert_types(types));
+impl_idl_build_u16_len_vec!(RawCpiPatch, |types| RawCpiPatch::insert_types(types));

@@ -1,4 +1,5 @@
 import BN from "bn.js";
+import { PublicKey } from "@solana/web3.js";
 
 import { inferBindingTy } from "../binding";
 import type { Expr, Value } from "../types";
@@ -68,6 +69,13 @@ export const expr = {
     taggedExpr("i128", { constI128: [new BN(v.toString())] }),
   f32: (v: number): TypedExpr<"f32"> => taggedExpr("f32", { constF32: [v] }),
   f64: (v: number): TypedExpr<"f64"> => taggedExpr("f64", { constF64: [v] }),
+  pubkey: (pk: PublicKey | Buffer): TypedExpr<"pubkey"> => {
+    const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+    if (bytes.length !== 32) {
+      throw new Error(`expr.pubkey requires 32 bytes, got ${bytes.length}`);
+    }
+    return taggedExpr("pubkey", { constPubkey: [Array.from(bytes)] });
+  },
 
   not: (operand: TypedExpr<"bool">): TypedExpr<"bool"> =>
     taggedExpr("bool", { not: { operand } }),

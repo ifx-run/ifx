@@ -14,4 +14,5 @@ export declare const Ty: {
     readonly i128: () => ValueType;
     readonly f32: () => ValueType;
     readonly f64: () => ValueType;
+    readonly pubkey: () => ValueType;
 };

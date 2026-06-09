@@ -12,7 +12,7 @@
 
 ## 问题
 
-Frame PDA 随 `tape_len` 变大（测试档 **256 / 4096 / 8192** → 账户 body 约 817 B / 4.7 KB / 8.8 KB）。mut 指令使用 Anchor `Account<Frame>` 时：
+Frame PDA 随 `tape_len` 变大（测试档 **256 / 4096 / 8192** → 账户 body 约 569 B / 4.7 KB / 8.8 KB）。mut 指令使用 Anchor `Account<Frame>` 时：
 
 1. **Exit 时 Borsh 序列化 + 整账户写回** — 每次 `reset` / `let` 都碰完整账户。
 2. **`reset_session` 还会 `tape.fill(0)`** — 整段 buffer 清零，尽管 binding 是会话级的。
@@ -50,7 +50,7 @@ Frame PDA 随 `tape_len` 变大（测试档 **256 / 4096 / 8192** → 账户 bod
 
 **假设：** 跳过 8 KiB tape 的 `memset` 能显著省 CU。
 
-**实现：** `reset_session` 只写 `cursor = 0`、`index_count = 0`。旧 tape 字节在 re-append 前不可达（`index < index_count` 守卫）。
+**实现：** `reset_session` 只写 `cursor = 0`、`index_count = 0`，并对 **`generation.wrapping_add(1)`**。旧 tape 字节在 re-append 前不可达（`index < index_count` 守卫）。
 
 **结果：** 8192 档 reset **18,823**（较轮次 0 **−42 CU**）。`let` / 只读不变。多 let 总计 **118,135**（**−42 CU**）。
 
@@ -163,7 +163,7 @@ Harness 断言编码 Round 2 预期（曲线拉平、reset &lt; 2.5k、let &lt; 
 
 | `tape_len` | 账户约 | reset | let | assert | if_else (Skip) |
 |-----------|--------|-------|-----|--------|----------------|
-| 256 | 561 B | 10,585 | 11,590 | 3,772 | 4,100 |
+| 256 | 569 B | 10,585 | 11,590 | 3,772 | 4,100 |
 | 4096 | 4,657 B | 18,801 | 19,800 | 5,960 | 6,288 |
 | 8192 | 8,753 B | 18,865 | 19,848 | 5,992 | 6,320 |
 

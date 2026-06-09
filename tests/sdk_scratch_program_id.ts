@@ -27,7 +27,7 @@ describe("FrameScratch programId", () => {
       {
         payer,
         frameId,
-        closeAuthority: payer,
+        authority: payer,
         tapeLen,
         programId: IFX_DEVNET_PROGRAM_ID,
       }
@@ -45,7 +45,7 @@ describe("FrameScratch programId", () => {
     const { scratch } = FrameScratch.planNewFrame({
       payer,
       frameId,
-      closeAuthority: payer,
+      authority: payer,
       tapeLen,
       programId: IFX_LOCALNET_PROGRAM_ID,
     });

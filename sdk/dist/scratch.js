@@ -22,6 +22,7 @@ exports.letSplToken2022MintTransferFeeBasisPoints = letSplToken2022MintTransferF
 exports.letSplToken2022MintTransferFeeMaximum = letSplToken2022MintTransferFeeMaximum;
 exports.letSplToken2022MintWithheldAmount = letSplToken2022MintWithheldAmount;
 exports.letSplToken2022MintDefaultAccountState = letSplToken2022MintDefaultAccountState;
+const web3_js_1 = require("@solana/web3.js");
 const constants_1 = require("./constants");
 const immortal_close_1 = require("./immortal-close");
 const tape_layout_1 = require("./tape-layout");
@@ -37,10 +38,11 @@ const let_builder_1 = require("./let-builder");
  * Plan values with `let*`; build frame instructions via `ix*` (reset / let / assert / patched_cpi / if_else).
  */
 class FrameScratch {
-    constructor(frame, tapeLen, cursor = 0, nextIndex = 0, programId = constants_1.DEFAULT_IFX_PROGRAM_ID) {
+    constructor(frame, tapeLen, cursor = 0, nextIndex = 0, programId = constants_1.DEFAULT_IFX_PROGRAM_ID, authority = web3_js_1.PublicKey.unique()) {
         this.indexTypes = new Map();
         this.frame = frame;
         this.programId = programId;
+        this.authority = authority;
         this.tapeLen = tapeLen;
         this.indexCap =
             tapeLen === undefined ? undefined : (0, constants_1.indexCapForTapeLen)(tapeLen);
@@ -49,7 +51,7 @@ class FrameScratch {
     }
     /** Sync planner from a fetched frame account (`frame` must match the fetch address). Tests / local debug only. */
     static fromFrame(account, frame, programId = constants_1.DEFAULT_IFX_PROGRAM_ID) {
-        return new FrameScratch(frame, account.tape.length, account.cursor, account.indexCount, programId);
+        return new FrameScratch(frame, account.tape.length, account.cursor, account.indexCount, programId, account.authority);
     }
     /**
      * Plan a new frame PDA + scratch planner, and the `ifx_create_frame` instruction.
@@ -59,14 +61,14 @@ class FrameScratch {
         const programId = params.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
         const [frame, frameBump] = (0, layout_1.framePda)(params.payer, params.frameId, programId);
         return {
-            scratch: new FrameScratch(frame, params.tapeLen, 0, 0, programId),
+            scratch: new FrameScratch(frame, params.tapeLen, 0, 0, programId, params.authority),
             ixCreate: (0, ix_1.createIxCreateFrame)({ ...params, programId }),
             frame,
             frameBump,
         };
     }
     /**
-     * Like {@link planNewFrame}, but sets `close_authority` to the Frame PDA itself
+     * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
      * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
      * Reset and let remain open to anyone (scratch semantics).
      */
@@ -75,7 +77,7 @@ class FrameScratch {
         return FrameScratch.planNewFrame({
             ...params,
             programId,
-            closeAuthority: (0, immortal_close_1.immortalCloseAuthority)(params.payer, params.frameId, programId),
+            authority: (0, immortal_close_1.immortalCloseAuthority)(params.payer, params.frameId, programId),
         });
     }
     /** `ifx_create_frame` when you already have a {@link FrameScratch} planner. */
@@ -135,6 +137,24 @@ class FrameScratch {
     letDataLen(account) {
         const meta = (0, let_account_1.toLetAccountMeta)(account);
         return this.plan(binding_1.binding.accountDataLen(0), [meta]);
+    }
+    /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+    letAccountKey(account) {
+        const meta = (0, let_account_1.toLetAccountMeta)(account);
+        return this.plan(binding_1.binding.accountKey(0), [meta]);
+    }
+    /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+    letConstPubkey(pk) {
+        const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+        return this.plan(binding_1.binding.constPubkey(bytes));
+    }
+    /** `Frame.generation` (increments on reset; no remaining account). */
+    letFrameGeneration() {
+        return this.plan(binding_1.binding.frameGeneration());
+    }
+    /** `Frame.index_count` (bindings since last reset; no remaining account). */
+    letFrameIndexCount() {
+        return this.plan(binding_1.binding.frameIndexCount());
     }
     letAccountDataSlice(account, expectedOwner, ty, dataOffset) {
         const dataMeta = (0, let_account_1.toLetAccountMeta)(account);
@@ -221,16 +241,16 @@ class FrameScratch {
         this.cursor = 0;
         this.nextIndex = 0;
         this.indexTypes.clear();
-        return (0, ix_1.buildIxResetFrame)(this.frame, this.mergeIxOpts(opts));
+        return (0, ix_1.buildIxResetFrame)(this.frame, this.authority, this.mergeIxOpts(opts));
     }
     /** One `ifx_let` from a single {@link ScratchValue} or a {@link LetIxBuilder} batch. */
     ixLet(target, opts) {
         const ixOpts = this.mergeIxOpts(opts);
         if (target instanceof let_builder_1.LetIxBuilder) {
             const { args, remaining } = target.finish();
-            return (0, ix_1.buildIxLet)(this.frame, args, remaining, ixOpts);
+            return (0, ix_1.buildIxLet)(this.frame, this.authority, args, remaining, ixOpts);
         }
-        return (0, ix_1.buildIxLet)(this.frame, FrameScratch.toLetArgs([target]), [...(target.letRemaining ?? [])], ixOpts);
+        return (0, ix_1.buildIxLet)(this.frame, this.authority, FrameScratch.toLetArgs([target]), [...(target.letRemaining ?? [])], ixOpts);
     }
     ixAssert(cond, opts) {
         return (0, ix_1.buildIxAssert)(this.frame, cond, this.mergeIxOpts(opts));

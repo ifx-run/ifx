@@ -15,6 +15,8 @@ exports.IFX_ERROR = {
     LetNotTopLevel: 6000,
     TapeOutOfBounds: 6001,
     UnauthorizedClose: 6002,
+    InvalidAuthority: 6003,
+    /** @deprecated Use {@link IFX_ERROR.InvalidAuthority} */
     InvalidCloseAuthority: 6003,
     InvalidTapeLen: 6004,
     AssertFailed: 6005,
@@ -42,6 +44,12 @@ exports.IFX_ERROR = {
     SplToken2022UnpackFailed: 6027,
     CastOverflow: 6028,
     InvalidPatchedCpiPatches: 6029,
+    InvalidStructuredCpiProgram: 6030,
+    InvalidInstructionData: 6031,
+    ResetNotTopLevel: 6032,
+    CloseNotTopLevel: 6033,
+    CreateNotTopLevel: 6034,
+    UnauthorizedFrameWrite: 6035,
 };
 const ERROR_NAME_BY_CODE = Object.fromEntries(Object.entries(exports.IFX_ERROR).map(([name, code]) => [code, name]));
 /** Resolve a numeric Anchor code to its Ifx error name, if known. */

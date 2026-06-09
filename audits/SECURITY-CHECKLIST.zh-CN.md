@@ -86,8 +86,8 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 | IFX-SEC-A07 | Clock/Rent 走 syscall | `let_binding_exec.rs` |
 | IFX-SEC-A08 | CPI meta 的 writable/signer 来自 remaining | `patched_cpi.rs` |
 | IFX-SEC-A09 | Frame 归 Ifx program 所有 | 各 frame 指令 |
-| IFX-SEC-A10 | Close 退 rent 给 `close_authority` | `close_frame.rs` |
-| IFX-SEC-A11 | 存储 authority 与 signer 用 `constraint` / `has_one` 对齐 | `close_frame.rs` |
+| IFX-SEC-A10 | Close 退 rent 给 `authority` signer | `close_frame.rs` |
+| IFX-SEC-A11 | Close signer 匹配 `Frame.authority` | `close_frame.rs`, `frame_authority.rs` |
 | IFX-SEC-A12 | Frame 仅在 create/reset/let 为 `mut`；assert/CPI/if_else 只读 | 各 ix |
 | IFX-SEC-A13 | `Accounts` 用 typed 账户；裸 `AccountInfo` 仅在 `remaining` 处理 | `instructions/` |
 
@@ -100,8 +100,8 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 | IFX-SEC-B03 | `frame_id` 与 instruction/seeds 一致 | `create_frame.rs` |
 | IFX-SEC-B04 | 非 create：错误 pubkey 失败；**不** re-check seeds | ⚠️ |
 | IFX-SEC-B05 | 同 PDA 无冲突角色 | N/A |
-| IFX-SEC-B06 | 拒绝 default `close_authority` | `create_frame.rs` |
-| IFX-SEC-B07 | Close 需匹配 signer | `close_frame.rs` |
+| IFX-SEC-B06 | 拒绝 default `authority` | `create_frame.rs` |
+| IFX-SEC-B07 | Close signer == `Frame.authority` | `close_frame.rs` |
 | IFX-SEC-B08 | `tape_len` 在 MIN..MAX | `Frame::init`, `space_for` |
 | IFX-SEC-B09 | Create 用 Anchor `init`（rent-exempt；防 lamport griefing） | `create_frame.rs` |
 
@@ -128,12 +128,12 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 | IFX-SEC-D02 | `index_cap` 与 `tape_len` 一致 | `constants.rs` |
 | IFX-SEC-D03 | `TapeOutOfBounds` | `tape.rs` |
 | IFX-SEC-D04 | `IndexCapReached` | `tape.rs` |
-| IFX-SEC-D05 | 公开 reset | ⚠️ |
-| IFX-SEC-D06 | let/reset 无 session ACL | ⚠️ |
-| IFX-SEC-D07 | 不保证跨 tx 会话 | ⚠️ |
-| IFX-SEC-D08 | `close_authority` 创建后不可变 | `state/mod.rs` |
+| IFX-SEC-D05 | `reset` 仅顶层；on-curve `authority` signer | `reset_frame.rs`, `frame_authority.rs` |
+| IFX-SEC-D06 | `let` / `create` / `close` 仅顶层；on-curve 写 ACL | `let_binding_exec.rs`, `create_frame.rs` |
+| IFX-SEC-D07 | 不保证跨 tx 会话 | ⚠️ 文档化 |
+| IFX-SEC-D08 | `Frame.authority` 创建后不可变 | `frame_layout.rs` |
 | IFX-SEC-D09 | 无 realloc | — |
-| IFX-SEC-D10 | reset 清零 tape | `tape.rs` |
+| IFX-SEC-D10 | reset 清 counters（lazy tape） | `tape.rs` |
 | IFX-SEC-D11 | 坏 binding index / 类型不匹配 | `tape.rs` |
 
 ## E. let、绑定、表达式
@@ -141,7 +141,7 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 | ID | 检查项 | 阅读位置 |
 |----|--------|----------|
 | IFX-SEC-E01 | 仅 stack height 1 | `let_binding_exec.rs` |
-| IFX-SEC-E02 | CPI 调 let 拒绝 | ✅ `let_binding_exec.rs:203`；`tests/ifx_negative.ts` |
+| IFX-SEC-E02 | CPI 调写指令拒绝（`*NotTopLevel`） | `let_binding_exec.rs`, `reset_frame.rs`；`tests/ifx_negative.ts` |
 | IFX-SEC-E03 | `account_index` 边界 | `let_exec.rs` |
 | IFX-SEC-E04 | AccountDataSlice owner+边界 | `load_account_data_slice` |
 | IFX-SEC-E05 | AccountDataSlice 不验语义 layout | ⚠️ |

@@ -69,6 +69,14 @@ function sampleBinding(key: LetBindingVariantKey): LetBinding {
       return binding.splToken2022MintWithheldAmount(0);
     case "splToken2022MintDefaultAccountState":
       return binding.splToken2022MintDefaultAccountState(0);
+    case "accountKey":
+      return binding.accountKey(0);
+    case "constPubkey":
+      return binding.constPubkey(Buffer.alloc(32, 7));
+    case "frameGeneration":
+      return binding.frameGeneration();
+    case "frameIndexCount":
+      return binding.frameIndexCount();
     default: {
       const _exhaustive: never = key;
       throw new Error(`missing sample for ${String(_exhaustive)}`);
@@ -82,8 +90,8 @@ describe("sdk LetBinding wire parity", () => {
     expect(def?.type.kind).to.equal("enum");
     const idlKeys = def!.type.variants.map((v) => pascalToCamel(v.name));
     expect(idlKeys).to.deep.equal([...LET_BINDING_VARIANT]);
-    expect(LET_BINDING_VARIANT_COUNT).to.equal(25);
-    expect(LET_BINDING_NEXT_TAG).to.equal(25);
+    expect(LET_BINDING_VARIANT_COUNT).to.equal(29);
+    expect(LET_BINDING_NEXT_TAG).to.equal(29);
   });
 
   it("binding.* exposes a builder for every wire variant key", () => {

@@ -1,7 +1,7 @@
 import type { Expr, LetBinding, Value, ValueType } from "./types";
 import type { AccountMeta } from "@solana/web3.js";
 /** Compile-time Ifx value kind (mirrors on-chain `ValueType` keys). */
-export type IfxTy = "bool" | "u8" | "u16" | "u32" | "u64" | "u128" | "i8" | "i16" | "i32" | "i64" | "i128" | "f32" | "f64";
+export type IfxTy = "bool" | "u8" | "u16" | "u32" | "u64" | "u128" | "i8" | "i16" | "i32" | "i64" | "i128" | "f32" | "f64" | "pubkey";
 export declare const IFX_TYS: readonly IfxTy[];
 /** Types that support arithmetic / min / max on-chain. */
 export type ArithmeticTy = Exclude<IfxTy, "bool" | "f32" | "f64">;

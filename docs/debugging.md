@@ -43,6 +43,6 @@ let $0: u64 = eval(...); //= 42
 
 1. Run the same tx in simulation; collect program logs.
 2. Compare `$N` to `ScratchValue.ref.index` from your planner.
-3. After landing, `DecodedFrame.readValue(slot)` should match `//=` comments when types align.
+3. After landing, `DecodedFrame.readValue(binding)` should match `//=` comments when types align. `DecodedFrame.generation` is available when decoding Frame accounts (tests / debug).
 
 See [implementation.md](./implementation.md) §2 and [errors.md](./errors.md) if indices or tape bounds fail.

@@ -44,9 +44,9 @@ export type Ifx = {
         {
             "name": "ifxCloseFrame";
             "docs": [
-                "Close a [`Frame`] PDA and return rent to `close_authority`.",
+                "Close a [`Frame`] PDA and return rent to `authority`.",
                 "",
-                "Requires `authority` signer to match the `close_authority` stored at create.",
+                "Requires `authority` signer to match `Frame.authority` stored at create.",
                 "Typical usage: standalone teardown tx when the Frame is no longer needed."
             ];
             "discriminator": [
@@ -71,12 +71,14 @@ export type Ifx = {
                 "Create a new [`Frame`] PDA — one-time provisioning per `(payer, frame_id)`.",
                 "",
                 "Allocates `tape_len` bytes of scratch tape (+ fixed `payload_at` index table),",
-                "sets `cursor = 0`, `index_count = 0`, and stores `close_authority` for later",
-                "[`ifx_close_frame`]. The PDA seeds are `[FRAME_SEED, payer, frame_id]`.",
+                "sets `cursor = 0`, `index_count = 0`, and stores `authority` for later",
+                "[`ifx_close_frame`] and write gates on [`ifx_reset_frame`] / [`ifx_let`].",
+                "The PDA seeds are `[FRAME_SEED, payer, frame_id]`.",
                 "",
-                "Typical usage: standalone tx before business flows; not every swap/settlement tx.",
-                "There is no access control on who may [`ifx_reset_frame`] or append later —",
-                "treat `tape` as tx-scoped scratch, not durable application state."
+                "**Off-curve `authority`** (e.g. Frame PDA) → public scratch. **On-curve** → private Frame.",
+                "Top-level only. See `docs/frame-authority.md`.",
+                "",
+                "Typical usage: standalone tx before business flows; not every swap/settlement tx."
             ];
             "discriminator": [
                 0
@@ -132,7 +134,7 @@ export type Ifx = {
                     };
                 },
                 {
-                    "name": "closeAuthority";
+                    "name": "authority";
                     "type": "pubkey";
                 },
                 {
@@ -183,8 +185,9 @@ export type Ifx = {
                 "unpacks, and [`Expr`] evaluation (`Eval`). Bindings may reference earlier slots",
                 "in the same batch via [`Expr::Value`] (binding **index**).",
                 "",
-                "**Constraints:** must run at transaction top level (stack height 1). CPI",
-                "sources index [`remaining_accounts`] passed with this instruction."
+                "**Constraints:** must run at transaction top level (stack height 1).",
+                "**Private** Frame: `remaining_accounts[0]` = `authority` signer; let bindings",
+                "index `remaining_accounts[1..]`. **Public** Frame: bindings index from `[0]`."
             ];
             "discriminator": [
                 3
@@ -211,7 +214,7 @@ export type Ifx = {
             "docs": [
                 "Unconditional patched CPI into an existing program.",
                 "",
-                "`arm` is a [`Cpi`]: template instruction `data` plus optional [`CpiPatch`] ranges",
+                "`arm` is a [`Cpi`]: template instruction `data` plus optional [`RawCpiPatch`] ranges",
                 "copied from `Frame::tape` immediately before `invoke`. Accounts are taken from",
                 "`remaining_accounts[accounts_start .. accounts_start + accounts_len]` as",
                 "`[program_id, …inner_accounts]` (program id is not repeated in the inner slice).",
@@ -248,7 +251,9 @@ export type Ifx = {
                 "tape. Omit only when a later tx in the **same landed bundle** intentionally",
                 "continues bindings written by an earlier tx (same scratch session).",
                 "",
-                "Does not change `close_authority` or account size — only clears session data."
+                "Does not change `authority` or account size — only clears session data.",
+                "Top-level only. **Public** Frame: no `remaining_accounts`. **Private** Frame:",
+                "`remaining_accounts[0]` = on-curve `authority` signer."
             ];
             "discriminator": [
                 2
@@ -284,12 +289,12 @@ export type Ifx = {
         {
             "code": 6002;
             "name": "unauthorizedClose";
-            "msg": "Only the frame close authority may close this PDA";
+            "msg": "Only the frame authority may close this PDA";
         },
         {
             "code": 6003;
-            "name": "invalidCloseAuthority";
-            "msg": "Invalid close authority";
+            "name": "invalidAuthority";
+            "msg": "Invalid frame authority";
         },
         {
             "code": 6004;
@@ -420,68 +425,51 @@ export type Ifx = {
             "code": 6029;
             "name": "invalidPatchedCpiPatches";
             "msg": "ifx_patched_cpi requires at least one patch";
+        },
+        {
+            "code": 6030;
+            "name": "invalidStructuredCpiProgram";
+            "msg": "Structured CPI program id does not match patch";
+        },
+        {
+            "code": 6031;
+            "name": "invalidInstructionData";
+            "msg": "Invalid instruction data";
+        },
+        {
+            "code": 6032;
+            "name": "resetNotTopLevel";
+            "msg": "ifx_reset_frame must be invoked at transaction top level (stack height 1)";
+        },
+        {
+            "code": 6033;
+            "name": "closeNotTopLevel";
+            "msg": "ifx_close_frame must be invoked at transaction top level (stack height 1)";
+        },
+        {
+            "code": 6034;
+            "name": "createNotTopLevel";
+            "msg": "ifx_create_frame must be invoked at transaction top level (stack height 1)";
+        },
+        {
+            "code": 6035;
+            "name": "unauthorizedFrameWrite";
+            "msg": "Frame write requires authority signer";
         }
     ];
     "types": [
         {
             "name": "cpi";
             "docs": [
-                "Template CPI + optional tape patches (`ifx_patched_cpi` / `ifx_if_else` steps).",
-                "",
-                "`remaining[accounts_start..accounts_start + accounts_len]` must be",
-                "`[program, …cpi_accounts]`. Empty [`PatchList`] = static step (template `data` as-is)."
+                "CPI step wire: Static (tag 0) | RawPatched (tag 1) | Structured (tag 2 + StructuredCpiPatch)."
             ];
             "type": {
                 "kind": "struct";
-                "fields": [
-                    {
-                        "name": "accountsStart";
-                        "type": "u8";
-                    },
-                    {
-                        "name": "accountsLen";
-                        "type": "u8";
-                    },
-                    {
-                        "name": "data";
-                        "docs": [
-                            "Base instruction data; patches overwrite ranges before `invoke`."
-                        ];
-                        "type": {
-                            "defined": {
-                                "name": "ifx::state::u16_len_vec::U16LenVec<u8>";
-                                "generics": [
-                                    {
-                                        "kind": "type";
-                                        "type": "u8";
-                                    }
-                                ];
-                            };
-                        };
-                    },
-                    {
-                        "name": "patches";
-                        "type": {
-                            "defined": {
-                                "name": "ifx::state::u16_len_vec::U16LenVec<ifx::state::types::CpiPatch>";
-                                "generics": [
-                                    {
-                                        "kind": "type";
-                                        "type": {
-                                            "defined": {
-                                                "name": "cpiPatch";
-                                            };
-                                        };
-                                    }
-                                ];
-                            };
-                        };
-                    }
-                ];
+                "fields": [];
             };
         },
         {
-            "name": "cpiPatch";
+            "name": "rawCpiPatch";
             "docs": [
                 "Overwrite a slice of [`Cpi::data`] with bytes read from [`Frame::tape`] before invoke."
             ];
@@ -1197,6 +1185,17 @@ export type Ifx = {
                                 };
                             }
                         ];
+                    },
+                    {
+                        "name": "constPubkey";
+                        "fields": [
+                            {
+                                "array": [
+                                    "u8",
+                                    32
+                                ];
+                            }
+                        ];
                     }
                 ];
             };
@@ -1210,7 +1209,7 @@ export type Ifx = {
                 "kind": "struct";
                 "fields": [
                     {
-                        "name": "closeAuthority";
+                        "name": "authority";
                         "type": "pubkey";
                     },
                     {
@@ -1233,6 +1232,13 @@ export type Ifx = {
                             "Fixed at create: `payload_at.len()` (= `index_cap_for_tape_len(tape_len)`)."
                         ];
                         "type": "u16";
+                    },
+                    {
+                        "name": "generation";
+                        "docs": [
+                            "Incremented on each `ifx_reset_frame` (`wrapping_add`); `0` at create."
+                        ];
+                        "type": "u64";
                     },
                     {
                         "name": "payloadAt";
@@ -1348,7 +1354,7 @@ export type Ifx = {
             "docs": [
                 "One `ifx_let` binding: wire tag selects variant; Frame `ty` is implied (or explicit for slices/eval).",
                 "",
-                "Variant order matches opcode tags `0`–`24` (see `docs/typed-let-bindings.md`)."
+                "Variant order matches opcode tags `0`–`28` (see `docs/typed-let-bindings.md`)."
             ];
             "type": {
                 "kind": "enum";
@@ -1567,6 +1573,35 @@ export type Ifx = {
                                 "type": "u8";
                             }
                         ];
+                    },
+                    {
+                        "name": "accountKey";
+                        "fields": [
+                            {
+                                "name": "accountIndex";
+                                "type": "u8";
+                            }
+                        ];
+                    },
+                    {
+                        "name": "constPubkey";
+                        "fields": [
+                            {
+                                "name": "bytes";
+                                "type": {
+                                    "array": [
+                                        "u8",
+                                        32
+                                    ];
+                                };
+                            }
+                        ];
+                    },
+                    {
+                        "name": "frameGeneration";
+                    },
+                    {
+                        "name": "frameIndexCount";
                     }
                 ];
             };
@@ -1632,6 +1667,9 @@ export type Ifx = {
                     },
                     {
                         "name": "f64";
+                    },
+                    {
+                        "name": "pubkey";
                     }
                 ];
             };

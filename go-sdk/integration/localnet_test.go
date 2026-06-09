@@ -160,6 +160,26 @@ func airdropLamports(ctx context.Context, t *testing.T, client *rpc.Client, to s
 	return waitConfirmed(ctx, client, sig)
 }
 
+func waitForNextSlot(ctx context.Context, t *testing.T, client *rpc.Client) {
+	t.Helper()
+	start, err := client.GetSlot(ctx, rpc.CommitmentConfirmed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		slot, err := client.GetSlot(ctx, rpc.CommitmentConfirmed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if slot > start {
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	t.Fatalf("slot did not advance past %d", start)
+}
+
 func TestMinimalFrameLocalnet(t *testing.T) {
 	ctx := context.Background()
 	client := localRPC(t)
@@ -173,7 +193,7 @@ func TestMinimalFrameLocalnet(t *testing.T) {
 	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
 		Payer:          wallet.PublicKey(),
 		FrameID:        frameID,
-		CloseAuthority: wallet.PublicKey(),
+		Authority: wallet.PublicKey(),
 		TapeLen:        256,
 		ProgramID:      constants.LocalnetProgramID,
 	})
@@ -188,16 +208,16 @@ func TestMinimalFrameLocalnet(t *testing.T) {
 		t.Fatalf("create frame: %v", err)
 	}
 
-	resetIx := s.IxReset(nil)
+	resetIx := s.IxReset()
 	one, err := s.LetConstU64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	letIx, err := s.IxLet(one, nil)
+	letIx, err := s.IxLet(one)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index)), nil)
+	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index)))
 	if err != nil {
 		t.Fatal(err)
 	}

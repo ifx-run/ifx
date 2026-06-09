@@ -10,7 +10,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/constants"
 	"github.com/ifx-run/ifx/go-sdk/expr"
 	"github.com/ifx-run/ifx/go-sdk/frame"
-	"github.com/ifx-run/ifx/go-sdk/patchedcpi"
+	"github.com/ifx-run/ifx/go-sdk/frameauthority"
 )
 
 // Options overrides the default Ifx program id.
@@ -29,7 +29,7 @@ func programID(opts *Options) solana.PublicKey {
 type CreateFrameParams struct {
 	Payer          solana.PublicKey
 	FrameID        [32]byte
-	CloseAuthority solana.PublicKey
+	Authority solana.PublicKey
 	TapeLen        uint32
 	Options        *Options
 }
@@ -43,7 +43,7 @@ func BuildCreateFrame(p CreateFrameParams) (solana.Instruction, solana.PublicKey
 	}
 	args, err := frame.EncodeCreateFrameArgs(frame.CreateFrameArgs{
 		FrameID:        p.FrameID,
-		CloseAuthority: p.CloseAuthority,
+		Authority: p.Authority,
 		TapeLen:        p.TapeLen,
 	})
 	if err != nil {
@@ -59,15 +59,16 @@ func BuildCreateFrame(p CreateFrameParams) (solana.Instruction, solana.PublicKey
 }
 
 // BuildResetFrame returns ifx_reset_frame.
-func BuildResetFrame(framePK solana.PublicKey, opts *Options) solana.Instruction {
+func BuildResetFrame(framePK, authority solana.PublicKey, opts *Options) solana.Instruction {
 	programID := programID(opts)
 	data := []byte{constants.IxDiscResetFrame}
 	accounts := solana.AccountMetaSlice{solana.Meta(framePK).WRITE()}
+	accounts = append(accounts, frameauthority.PrependWriteAuthorityRemaining(authority, nil)...)
 	return solana.NewInstruction(programID, accounts, data)
 }
 
 // BuildLet returns ifx_let (top-level instruction only).
-func BuildLet(framePK solana.PublicKey, args codec.LetArgs, remaining solana.PublicKeySlice, opts *Options) (solana.Instruction, error) {
+func BuildLet(framePK, authority solana.PublicKey, args codec.LetArgs, remaining solana.PublicKeySlice, opts *Options) (solana.Instruction, error) {
 	programID := programID(opts)
 	body, err := codec.EncodeLetArgs(args)
 	if err != nil {
@@ -75,9 +76,11 @@ func BuildLet(framePK solana.PublicKey, args codec.LetArgs, remaining solana.Pub
 	}
 	data := append([]byte{constants.IxDiscLet}, body...)
 	accounts := solana.AccountMetaSlice{solana.Meta(framePK).WRITE()}
-	for _, pk := range remaining {
-		accounts = append(accounts, solana.Meta(pk))
+	letRemaining := make(solana.AccountMetaSlice, len(remaining))
+	for i, pk := range remaining {
+		letRemaining[i] = solana.Meta(pk)
 	}
+	accounts = append(accounts, frameauthority.PrependWriteAuthorityRemaining(authority, letRemaining)...)
 	return solana.NewInstruction(programID, accounts, data), nil
 }
 
@@ -104,12 +107,12 @@ func BuildCloseFrame(framePK, authority solana.PublicKey, opts *Options) solana.
 	return solana.NewInstruction(programID, accounts, data)
 }
 
-// BuildCpi returns ifx_patched_cpi.
-func BuildCpi(framePK solana.PublicKey, built patchedcpi.BuildResult, opts *Options) (solana.Instruction, error) {
-	if !built.Cpi.Patches.HasPatches() {
-		return nil, fmt.Errorf("ifx_patched_cpi requires at least one patch")
+// BuildCpi returns ifx_patched_cpi for raw-patched or structured CPI steps.
+func BuildCpi(framePK solana.PublicKey, built codec.WireBuildResult, opts *Options) (solana.Instruction, error) {
+	if err := codec.ValidateWireBuild(built); err != nil {
+		return nil, err
 	}
-	body, err := codec.EncodeCpi(built.Cpi)
+	body, err := codec.EncodeCpi(built.Step)
 	if err != nil {
 		return nil, err
 	}

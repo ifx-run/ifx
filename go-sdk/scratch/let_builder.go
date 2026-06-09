@@ -5,7 +5,6 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/binding"
 	"github.com/ifx-run/ifx/go-sdk/codec"
 	"github.com/ifx-run/ifx/go-sdk/expr"
-	"github.com/ifx-run/ifx/go-sdk/ix"
 	"github.com/ifx-run/ifx/go-sdk/typed"
 )
 
@@ -76,6 +75,39 @@ func (b *LetBuilder) DataLen(account interface{}) (typed.ScratchValue, error) {
 	return b.push(sv), nil
 }
 
+func (b *LetBuilder) LetAccountKey(account interface{}) (typed.ScratchValue, error) {
+	i := b.AccountIndex(account)
+	sv, err := b.scratch.PlanAtRemainingIndex(binding.AccountKey(0), uint8(i))
+	if err != nil {
+		return typed.ScratchValue{}, err
+	}
+	return b.push(sv), nil
+}
+
+func (b *LetBuilder) LetConstPubkey(bytes [32]byte) (typed.ScratchValue, error) {
+	sv, err := b.scratch.LetConstPubkey(bytes)
+	if err != nil {
+		return typed.ScratchValue{}, err
+	}
+	return b.push(sv), nil
+}
+
+func (b *LetBuilder) FrameGeneration() (typed.ScratchValue, error) {
+	sv, err := b.scratch.LetFrameGeneration()
+	if err != nil {
+		return typed.ScratchValue{}, err
+	}
+	return b.push(sv), nil
+}
+
+func (b *LetBuilder) FrameIndexCount() (typed.ScratchValue, error) {
+	sv, err := b.scratch.LetFrameIndexCount()
+	if err != nil {
+		return typed.ScratchValue{}, err
+	}
+	return b.push(sv), nil
+}
+
 func (b *LetBuilder) AccountDataSlice(account, expectedOwner interface{}, ty typed.IfxTy, offset uint32) (typed.ScratchValue, error) {
 	dataIdx := b.AccountIndex(account)
 	ownerIdx := b.AccountIndex(expectedOwner)
@@ -140,6 +172,6 @@ func (r FinishResult) RemainingPubkeys() []solana.PublicKey {
 }
 
 // BuildIx returns ifx_let for this batch.
-func (b *LetBuilder) BuildIx(o *ix.Options) (solana.Instruction, error) {
-	return b.scratch.IxLet(b, o)
+func (b *LetBuilder) BuildIx() (solana.Instruction, error) {
+	return b.scratch.IxLet(b)
 }

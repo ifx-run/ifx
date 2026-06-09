@@ -10,7 +10,7 @@
 
 ## `dust-destroy-token2022.ts`
 
-**单笔业务 tx** 内 Token-2022 dust 清理：`let` → burn（patched CPI，`cpi` + `cpiPatch`）→ harvest → close（`staticCpi`）。导出 `planDustDestroyTx(scratch, accounts)` 与 `buildHarvestWithheldToMintIx`（封装 `@solana/spl-token`）。集成测试：[`tests/dust_destroy_token2022.ts`](../../tests/dust_destroy_token2022.ts)。
+**单笔业务 tx** 内 Token-2022 dust 清理：`let` → burn（raw CPI，`rawCpi` + `rawCpiPatch`）→ harvest → close（`staticCpi`）。导出 `planDustDestroyTx(scratch, accounts)` 与 `buildHarvestWithheldToMintIx`（封装 `@solana/spl-token`）。集成测试：[`tests/dust_destroy_token2022.ts`](../../tests/dust_destroy_token2022.ts)。
 
 ## `two-hop-token-swap.ts`
 
@@ -23,6 +23,10 @@
 ## `personal-dex-onboarding.ts`
 
 运营方 helper：`personalDexAltAddresses`、`planPersonalDexFrame`。见 [docs/personal-amm.zh-CN.md §5.1](../../docs/personal-amm.zh-CN.md#51-pool-入驻与-address-lookup-table-alt)。
+
+## Structured CPI（参考）
+
+官方 System / SPL / Token-2022 指令 + tape 绑定字段 — 无独立 example 脚本。见 `tests/ifx_structured_cpi_initialize_mint.ts`（InitializeMint2 + `Pubkey` let）与 [structured-cpi-patches.zh-CN.md](../../docs/structured-cpi-patches.zh-CN.md)。
 
 ## 本地运行
 

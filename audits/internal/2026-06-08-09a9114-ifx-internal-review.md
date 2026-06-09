@@ -137,10 +137,10 @@ Scratch (maintainer): `audits/scratch/32231f9/{reader,attacker,test-gap,merge-di
 | IFX-SEC-D02 | ✅ | `constants.rs`, `state/mod.rs` init |
 | IFX-SEC-D03 | ✅ | `tests/ifx.ts`, `ifx_negative.ts`, `frame_layout.rs` |
 | IFX-SEC-D04 | ✅ | `IndexCapReached` — `tests/ifx_negative.ts` |
-| IFX-SEC-D05 | ⚠️ | Public reset — scratch model |
-| IFX-SEC-D06 | ⚠️ | No session ACL |
+| IFX-SEC-D05 | ✅ | Top-level reset + on-curve authority signer |
+| IFX-SEC-D06 | ✅ | Write ACL on let/reset/close/create |
 | IFX-SEC-D07 | ⚠️ | Cross-tx session not enforced on-chain |
-| IFX-SEC-D08 | ✅ | `close_authority` not writable |
+| IFX-SEC-D08 | ✅ | `Frame.authority` not writable |
 | IFX-SEC-D09 | ✅ | No realloc |
 | IFX-SEC-D10 | ⚠️ | **Lazy reset:** counters only (`frame_access.rs:238-240`); stale tape unreachable via `index_count` |
 | IFX-SEC-D11 | ✅ | `InvalidValueIndex` / `LoadTypeMismatch` — `frame_access.rs`, `tests/ifx_negative.ts` |

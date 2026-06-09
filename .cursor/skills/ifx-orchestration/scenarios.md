@@ -11,8 +11,10 @@ Need on-chain read in same tx?
     ├─ Lamports only (SOL settlement, sponsor repay)
     │     → L3: tests/sponsored_buy.ts
     ├─ SPL token balance on ATA (after swap / transfer)
-    │     ├─ Single hop, patch one CPI
-    │     │     → cpi + cpiPatch (see two-hop hop2 pattern)
+    │     ├─ Official SPL ix (TransferChecked, etc.) from tape
+    │     │     → structuredCpi + structuredCpiPatch (see tests/ifx_structured_cpi_initialize_mint.ts)
+    │     ├─ Single hop, patch one CPI (DEX / custom layout)
+    │     │     → rawCpi + rawCpiPatch (see two-hop hop2 pattern)
     │     └─ Two hops with intermediate mint
     │           → sdk/examples/two-hop-token-swap.ts
     ├─ Token-2022 + extensions (withheld fees, decimals for burn)
@@ -26,7 +28,7 @@ Must split across txs or use Jito bundle?
 ├─ No  → pattern 1: one business tx (default); see tests/sponsored_buy.ts
 └─ Yes → docs/bundles.md
           ├─ order only, fresh scratch each Ifx tx → pattern 2 (reset each tx)
-          └─ tx2 reads tx1 Frame without reset → pattern 3 (landed bundle only)
+          └─ tx2 reads tx1 Frame without reset → pattern 3 (landed bundle; sync generation / index_count)
 ```
 
 ## L0 — Frame smoke test
@@ -51,7 +53,7 @@ Must split across txs or use Jito bundle?
 
 ```text
 let(amount, withheld, decimals)
-→ if_else: dust ∧ amount > 0     → BurnChecked (patched CPI via cpi + cpiPatch)
+→ if_else: dust ∧ amount > 0     → BurnChecked (patched CPI via rawCpi + rawCpiPatch)
 → if_else: dust ∧ withheld > 0   → harvest (staticCpi / arm.cpi)
 → if_else: dust                  → closeAccount (staticCpi)
 ```
@@ -72,7 +74,8 @@ let(amount, withheld, decimals)
 **Flow:**
 
 ```text
-reset → tx.add(hop1 static) → let(usdcAta balance) → cpi(hop2) [→ optional deliver]
+reset → tx.add(hop1 static) → let(usdcAta balance) → 
+rawCpi(hop2) [→ optional deliver]
 ```
 
 **User must provide:**
@@ -98,8 +101,9 @@ reset → tx.add(hop1 static) → let(usdcAta balance) → cpi(hop2) [→ option
 ```text
 reset → let(sol before) → swap ix → let(sol after, settle, buyLamports)
 → assert delta ≥ settle
-→ cpi() repay sponsor (ifx_patched_cpi)
-→ if_else buyLamports > 0 → cpi() pay pool
+→ rawCpi() repay sponsor (ifx_patched_cpi)
+→ if_else buyLamports > 0 → 
+rawCpi() pay pool
 ```
 
 **Key formula:** `buyLamports = solAfter - solBefore - settle` (settle includes tx fee + ATA rent).
@@ -114,7 +118,7 @@ reset → let(sol before) → swap ix → let(sol after, settle, buyLamports)
 |---------|---------|
 | "Slippage guard after swap" | let balance before/after or read output ATA; ixAssert min out |
 | "Revert if swap fails profit test" | ixAssert (reverts whole tx) |
-| "Transfer exact swap output" | let splTokenAmount → cpi() + cpiPatch |
+| "Transfer exact swap output" | Official SPL: `structuredCpi` + `structuredCpiPatch`; DEX/custom: `rawCpi()` + `rawCpiPatch` |
 | "Skip close if balance too high" | if_else with cond on let value |
 | "Jupiter swap + settle" | tx.add(jupiterIx) between let blocks; same skeleton as L3 |
 | "Devnet" | omit `programId` (default) or `IFX_DEVNET_PROGRAM_ID` |
@@ -132,6 +136,7 @@ reset → let(sol before) → swap ix → let(sol after, settle, buyLamports)
 | L3 | `tests/sponsored_buy.ts` |
 | if_else arms | `tests/ifx.ts` |
 | Let builder / parity | `tests/sdk_let_builder.ts`, `tests/sdk_let_binding_parity.ts` |
+| Structured CPI + Pubkey + Frame metadata | `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/ifx_pubkey.ts`, `tests/ifx_frame_generation.ts` |
 
 After edits in ifx repo: `npm test` or target file with `anchor test`.
 
@@ -147,6 +152,6 @@ After edits in ifx repo: `npm test` or target file with `anchor test`.
 |------|---------|
 | Everything fits one tx | **1** — no bundle |
 | Swap + Ifx settlement must land together; each Ifx tx fresh scratch | **2** — bundle for order; **reset** on Ifx tx |
-| tx2 reads Frame bindings from tx1 without re-let | **3** — landed bundle; tx2 **no reset** |
+| tx2 reads Frame bindings from tx1 without re-let | **3** — landed bundle; tx2 **no reset**; sync planner + read **`generation`** / **`index_count`** |
 
 **Do not** bundle `ifx_create_frame` with business logic. Canonical single-tx flow: [`tests/sponsored_buy.ts`](../../../tests/sponsored_buy.ts).

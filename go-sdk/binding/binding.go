@@ -43,6 +43,12 @@ type Empty struct{ Tag uint8 }
 
 func (Empty) isLetBinding() {}
 
+type ConstPubkey struct {
+	Bytes [32]byte
+}
+
+func (ConstPubkey) isLetBinding() {}
+
 func AccountDataSliceU64(accountIndex, offset, expectedProgramOwner uint8) Node {
 	return AccountDataSlice{
 		ValueTypeTag:         constants.ValueTypeU64,
@@ -58,6 +64,22 @@ func AccountLamports(accountIndex uint8) Node {
 
 func AccountDataLen(accountIndex uint8) Node {
 	return AccountIndex{Tag: constants.LetTagAccountDataLen, AccountIndex: accountIndex}
+}
+
+func AccountKey(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountKey, AccountIndex: accountIndex}
+}
+
+func ConstPubkeyLiteral(bytes [32]byte) Node {
+	return ConstPubkey{Bytes: bytes}
+}
+
+func FrameGeneration() Node {
+	return Empty{Tag: constants.LetTagFrameGeneration}
+}
+
+func FrameIndexCount() Node {
+	return Empty{Tag: constants.LetTagFrameIndexCount}
 }
 
 func EvalExpr(e expr.Node) Node { return Eval{Expr: e} }
@@ -179,6 +201,18 @@ func Sample(tag int) Node {
 		return SplToken2022MintWithheldAmount(0)
 	case constants.LetTagSplToken2022MintDefaultAccountState:
 		return SplToken2022MintDefaultAccountState(0)
+	case constants.LetTagAccountKey:
+		return AccountKey(0)
+    case constants.LetTagConstPubkey:
+		var b [32]byte
+		for i := range b {
+			b[i] = 7
+		}
+		return ConstPubkeyLiteral(b)
+	case constants.LetTagFrameGeneration:
+		return FrameGeneration()
+	case constants.LetTagFrameIndexCount:
+		return FrameIndexCount()
 	default:
 		panic("invalid let binding sample tag")
 	}

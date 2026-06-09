@@ -31,7 +31,7 @@ func TestOrchestrationLocalnet(t *testing.T) {
 	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
 		Payer:          payer,
 		FrameID:        frameID,
-		CloseAuthority: payer,
+		Authority: payer,
 		TapeLen:        256,
 		ProgramID:      constants.LocalnetProgramID,
 	})
@@ -58,7 +58,7 @@ func TestOrchestrationLocalnet(t *testing.T) {
 		bonusLamports = uint64(1_000)
 	)
 
-	resetIx := s.IxReset(nil)
+	resetIx := s.IxReset()
 
 	b := s.LetBuilder()
 	slot, err := b.ClockSlot()
@@ -77,31 +77,31 @@ func TestOrchestrationLocalnet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	letIx, err := b.BuildIx(nil)
+	letIx, err := b.BuildIx()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(slot.Index)), nil)
+	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(slot.Index)))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mainXfer, err := patchedcpi.Cpi(
+	mainXfer, err := patchedcpi.RawCpi(
 		patchedcpi.SystemTransferTemplate(payer, recipientA),
-		patch.CpiPatch(4, mainAmount),
+		patch.RawCpiPatch(4, mainAmount),
 	).Build(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mainCpiIx, err := s.IxCpi(mainXfer, nil)
+	mainCpiIx, err := s.IxCpi(mainXfer.WireBuild())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	bonusXfer, err := patchedcpi.Cpi(
+	bonusXfer, err := patchedcpi.RawCpi(
 		patchedcpi.SystemTransferTemplate(payer, recipientB),
-		patch.CpiPatch(4, bonusAmount),
+		patch.RawCpiPatch(4, bonusAmount),
 	).Build(nil)
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +117,6 @@ func TestOrchestrationLocalnet(t *testing.T) {
 	ifElseIx, err := s.IxIfElse(
 		ifElseArgs,
 		bonusXfer.Remaining,
-		nil,
 	)
 	if err != nil {
 		t.Fatal(err)

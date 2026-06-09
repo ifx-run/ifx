@@ -81,3 +81,19 @@ func (s *FrameScratch) SplToken2022MintWithheldAmount(account interface{}) (type
 func (s *FrameScratch) SplToken2022MintDefaultAccountState(account interface{}) (typed.ScratchValue, error) {
 	return s.letToken2022(constants.LetTagSplToken2022MintDefaultAccountState, account)
 }
+
+func (s *FrameScratch) LetAccountKey(account interface{}) (typed.ScratchValue, error) {
+	return s.letOneAccount(constants.LetTagAccountKey, account)
+}
+
+func (s *FrameScratch) LetConstPubkey(bytes [32]byte) (typed.ScratchValue, error) {
+	return s.plan(binding.ConstPubkeyLiteral(bytes), nil)
+}
+
+func (s *FrameScratch) LetFrameGeneration() (typed.ScratchValue, error) {
+	return s.plan(binding.FrameGeneration(), nil)
+}
+
+func (s *FrameScratch) LetFrameIndexCount() (typed.ScratchValue, error) {
+	return s.plan(binding.FrameIndexCount(), nil)
+}

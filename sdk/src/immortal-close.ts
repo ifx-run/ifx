@@ -4,11 +4,11 @@ import { DEFAULT_IFX_PROGRAM_ID } from "./constants";
 import { framePda } from "./layout";
 
 /**
- * `close_authority` for a Frame that cannot be closed under current Ifx semantics:
- * the Frame PDA itself (no ed25519 key; no `invoke_signed` path in the program today).
+ * Off-curve `authority` for a public / non-closeable Frame: the Frame PDA itself
+ * (no ed25519 key; no `invoke_signed` path in the program).
  *
  * Even the Ifx program key holder cannot close — `ifx_close_frame` requires a Signer
- * matching `close_authority`, not the program id.
+ * matching `Frame.authority`, not the program id.
  */
 export function immortalCloseAuthority(
   payer: PublicKey,
@@ -19,10 +19,10 @@ export function immortalCloseAuthority(
   return frame;
 }
 
-/** True when `closeAuthority` is the Frame PDA (self-referential immortal sink). */
+/** True when `authority` is the Frame PDA (self-referential public / non-closeable Frame). */
 export function isImmortalCloseAuthority(
-  closeAuthority: PublicKey,
+  authority: PublicKey,
   frame: PublicKey
 ): boolean {
-  return closeAuthority.equals(frame);
+  return authority.equals(frame);
 }

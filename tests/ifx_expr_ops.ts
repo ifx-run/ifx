@@ -20,7 +20,7 @@ describe("ifx flat expr ops (on-chain)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);

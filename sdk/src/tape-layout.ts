@@ -17,6 +17,7 @@ export const VALUE_TYPE_TAG = [
   "i128",
   "f32",
   "f64",
+  "pubkey",
 ] as const;
 
 export function valueTypeToTag(ty: ValueType): number {

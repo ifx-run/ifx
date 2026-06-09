@@ -11,6 +11,12 @@ import {
   patchListStatic,
   type PatchList,
 } from "./patch-list";
+import { CPI_WIRE } from "./types";
+import {
+  encodeStructuredCpiPatchPayload,
+  structuredCpiPatchWireTag,
+} from "./structured-cpi-patch";
+import type { Cpi } from "./types";
 
 export { LET_BINDING_VARIANT } from "./let-binding-variants";
 export { EXPR_TAG, EXPR_VARIANT, EXPR_VARIANT_COUNT } from "./expr-variants";
@@ -23,6 +29,11 @@ export {
   patchListStatic,
   type PatchList,
 } from "./patch-list";
+export { CPI_WIRE } from "./types";
+export {
+  STRUCTURED_CPI_PATCH_WIRE,
+  type StructuredCpiPatchWireTag,
+} from "./structured-cpi-patch";
 
 /** Runtime shapes from {@link expr} / {@link binding} helpers (avoid recursive IDL types here). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,6 +56,7 @@ const VALUE_TYPE_VARIANT = [
   "i128",
   "f32",
   "f64",
+  "pubkey",
 ] as const;
 
 export function encodeValueType(ty: AnyRecord): Buffer {
@@ -347,6 +359,13 @@ export function encodeExpr(expr: AnyExpr): Buffer {
       exprField(n, "elseExpr", "else_expr")
     );
   }
+  if ("constPubkey" in expr) {
+    const bytes = Buffer.from(expr.constPubkey[0]);
+    if (bytes.length !== 32) {
+      throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+    }
+    return Buffer.concat([Buffer.from([EXPR_TAG.constPubkey]), bytes]);
+  }
 
   throw new Error("invalid Expr");
 }
@@ -374,8 +393,17 @@ export function encodeLetBinding(binding: AnyRecord): Buffer {
     }
     case "accountLamports":
     case "accountDataLen":
+    case "accountKey":
       parts.push(Buffer.from([v.accountIndex]));
       break;
+    case "constPubkey": {
+      const bytes = Buffer.from(v.bytes);
+      if (bytes.length !== 32) {
+        throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+      }
+      parts.push(bytes);
+      break;
+    }
     case "eval":
       parts.push(encodeExpr(v.expr));
       break;
@@ -410,6 +438,9 @@ export function encodeLetBinding(binding: AnyRecord): Buffer {
     case "splToken2022MintDefaultAccountState":
       parts.push(Buffer.from([v.accountIndex]));
       break;
+    case "frameGeneration":
+    case "frameIndexCount":
+      break;
     default:
       throw new Error(`unhandled LetBinding variant: ${key}`);
   }
@@ -420,10 +451,10 @@ export function encodeLetArgs(args: AnyRecord): Buffer {
   return encodeU8LenVec(args.bindings, encodeLetBinding);
 }
 
-export function encodeCpiPatch(patch: AnyRecord): Buffer {
+export function encodeRawCpiPatch(patch: AnyRecord): Buffer {
   const dataOffset = patch.dataOffset as number;
   if (dataOffset < 0 || dataOffset > 0xffff) {
-    throw new Error(`CpiPatch.dataOffset out of u16 range: ${dataOffset}`);
+    throw new Error(`RawCpiPatch.dataOffset out of u16 range: ${dataOffset}`);
   }
   const parts: Buffer[] = [];
   writeU16(parts, dataOffset);
@@ -431,18 +462,45 @@ export function encodeCpiPatch(patch: AnyRecord): Buffer {
   return Buffer.concat(parts);
 }
 
+/** @deprecated Use {@link encodeRawCpiPatch} */
+export const encodeCpiPatch = encodeRawCpiPatch;
+
 export function encodePatchList(list: PatchList): Buffer {
-  return encodeU16LenVec(list, encodeCpiPatch);
+  return encodeU16LenVec(list, encodeRawCpiPatch);
 }
 
-export function encodeCpi(arm: AnyRecord): Buffer {
-  const patches: PatchList =
-    arm.patches !== undefined ? (arm.patches as PatchList) : patchListStatic();
-  return Buffer.concat([
-    Buffer.from([arm.accountsStart, arm.accountsLen]),
-    encodeU16LenBytes(arm.data),
-    encodePatchList(patches),
-  ]);
+export function encodeCpi(step: Cpi): Buffer {
+  switch (step.kind) {
+    case "static":
+      return Buffer.concat([
+        Buffer.from([
+          CPI_WIRE.static,
+          step.accountsStart,
+          step.accountsLen,
+        ]),
+        encodeU16LenBytes(step.data),
+      ]);
+    case "rawPatched":
+      return Buffer.concat([
+        Buffer.from([
+          CPI_WIRE.rawPatched,
+          step.accountsStart,
+          step.accountsLen,
+        ]),
+        encodeU16LenBytes(step.data),
+        encodePatchList(step.patches),
+      ]);
+    case "structured":
+      return Buffer.concat([
+        Buffer.from([
+          CPI_WIRE.structured,
+          structuredCpiPatchWireTag(step.patch),
+          step.accountsStart,
+          step.accountsLen,
+        ]),
+        encodeStructuredCpiPatchPayload(step.patch),
+      ]);
+  }
 }
 
 function stepsFromArm(arm: AnyRecord): AnyRecord[] {

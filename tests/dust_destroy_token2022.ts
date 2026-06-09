@@ -203,7 +203,7 @@ describe("dust destroy token2022 (L1 example)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 

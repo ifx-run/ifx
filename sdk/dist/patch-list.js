@@ -1,5 +1,5 @@
 "use strict";
-/** `PatchList` wire: `U16LenVec<CpiPatch>` — u16 LE count + entries; `[]` = static step. */
+/** `PatchList` wire: `U16LenVec<RawCpiPatch>` — u16 LE count + entries; `[]` = static step. */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.patchListStatic = patchListStatic;
 exports.patchListPatched = patchListPatched;

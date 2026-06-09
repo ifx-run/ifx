@@ -4,7 +4,7 @@ exports.EXPR_TAG = exports.EXPR_NEXT_TAG = exports.EXPR_VARIANT_COUNT = exports.
 /**
  * Wire tag order for on-chain [`Expr`](../../programs/ifx/src/state/types.rs).
  *
- * **Must match the Rust enum declaration exactly** (tags `0`–`42`). When adding a
+ * **Must match the Rust enum declaration exactly** (tags `0`–`43`). When adding a
  * variant: append here, extend `expr` builder + `codec` switch, program match arms, IDL.
  */
 exports.EXPR_VARIANT = [
@@ -51,6 +51,7 @@ exports.EXPR_VARIANT = [
     "mulDivCeil",
     "clamp",
     "select",
+    "constPubkey",
 ];
 exports.EXPR_VARIANT_COUNT = exports.EXPR_VARIANT.length;
 /** Next append-only Expr tag (see `docs/implementation.md` §5). */

@@ -8,10 +8,10 @@
 
 Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
-> **预览版：** npm `0.2.0-devnet.0` 仅面向 **devnet**（尚无主网 program）。省略 `programId` 时使用 `DEFAULT_IFX_PROGRAM_ID`（= devnet）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。**与 `@ifx-run/sdk@0.1.0-devnet.0` 不兼容** — SDK 与 devnet 程序须同步升级。
+> **预览版：** npm `0.3.0-devnet.0` 仅面向 **devnet**（尚无主网 program）。省略 `programId` 时使用 `DEFAULT_IFX_PROGRAM_ID`（= devnet）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。**与 `@ifx-run/sdk@0.2.0-devnet.0` 不兼容** — SDK 与 devnet 程序须同步升级。
 
 1. **`FrameScratch`** — `let*` 规划 binding，`ix*` / `letBuilder().buildIx()` 产出指令；用 `tx.add(…)` 组装交易
-2. **`expr` / `Expr` / `ScratchValue`** — 构造器、链上 wire 类型、类型化 scratch 槽
+2. **`expr` / `Expr` / `ScratchValue`** — 构造器、链上 wire 类型、类型化 Frame binding
 
 `ix.ts` 中的底层 **`createIx*`** 仍导出；业务代码优先用 `FrameScratch` 方法。
 
@@ -37,19 +37,19 @@ const frameId = randomBytes(32); // 持久化 frameId + tapeLen（配置、DB �
 const { ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen,
 });
 
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**公共 / 不可关闭 Frame** — `close_authority` 设为 Frame PDA 自身（无 Signer 可 `ifx_close_frame`，含 Ifx program 私钥持有者）。reset/let 仍对所有人开放：
+**公共 / 不可关闭 Frame** — `authority` 设为 Frame PDA 自身（off-curve；无 Signer 可 `ifx_close_frame`，含 Ifx program 私钥持有者）。reset/let 仍对所有人开放（公共 scratch）：
 
 ```ts
 import { FrameScratch, isImmortalCloseAuthority } from "@ifx-run/sdk";
 
-const { ixCreate, frame } = FrameScratch.planPublicFrame({
+const { ixCreate, frame, scratch } = FrameScratch.planPublicFrame({
   payer,
   frameId,
   tapeLen,
@@ -57,7 +57,7 @@ const { ixCreate, frame } = FrameScratch.planPublicFrame({
 });
 ```
 
-链上读取后：`isImmortalCloseAuthority(decoded.closeAuthority, frame)`。需要日后回收 rent 时用 `planNewFrame` 并传 `closeAuthority: payer`。
+链上读取后：`isImmortalCloseAuthority(decoded.authority, frame)`。需要日后回收 rent 时用 `planNewFrame` 并传 `authority: payer`（私有 / 可关闭 Frame）。
 
 **Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）：
 
@@ -67,7 +67,7 @@ import { expr, framePda, FrameScratch } from "@ifx-run/sdk";
 
 // 从 Tx 1 落库处加载 frameId + tapeLen
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen);
+const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
 
 const tx = new Transaction();
 tx.add(scratch.ixReset());
@@ -79,7 +79,7 @@ await provider.sendAndConfirm(tx);
 
 仅需 create 指令时用 `FrameScratch.ixCreateFrame(params)`（参数同 `planNewFrame`）。
 
-执行后确认结果：看 **Ifx 链上 logs**（条件、`cpi` / patched CPI、assert 等），不要在生产代码里 `fetchDecodedFrame` 读 tape。decode / `fromFrame` / `refreshFromChain` 仅用于 **测试与本地调试**（见 `tests/`、`integration/`）。
+执行后确认结果：看 **Ifx 链上 logs**（条件、`rawCpi` / patched CPI、assert 等），不要在生产代码里 `fetchDecodedFrame` 读 tape。decode / `fromFrame` / `refreshFromChain` 仅用于 **测试与本地调试**（见 `tests/`、`integration/`）。
 
 ### 单条 binding（`scratch.let*` + `ixLet`）
 
@@ -111,7 +111,7 @@ tx.add(letBuilder.buildIx());
 
 ## 表达式（第三部分）
 
-`expr` / `FrameScratch` / `ScratchValue` / `LetIxBuilder` / `ifElseArgs` / `cpiPatch` — 类型化 SDK，链上类型 `Expr` 不变。**`Cond`** = `TypedExpr<"bool">`（`expr.gt`、`expr.ge` 等）**或** `ScratchValue<"bool">`。**`expr.add` / `expr.sub`** 直接收 `ScratchValue | TypedExpr`。
+`expr` / `FrameScratch` / `ScratchValue` / `LetIxBuilder` / `ifElseArgs` / `rawCpiPatch` — 类型化 SDK，链上类型 `Expr` 不变。**`Cond`** = `TypedExpr<"bool">`（`expr.gt`、`expr.ge` 等）**或** `ScratchValue<"bool">`。**`expr.add` / `expr.sub`** 直接收 `ScratchValue | TypedExpr`。
 
 ### Tape record 布局
 
@@ -125,12 +125,12 @@ tx.add(letBuilder.buildIx());
 
 **何时才 `let`（落盘到 Frame）**
 
-- **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `CpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
+- **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
 - **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?)`**：`framePk` 必填；`programId` 默认 `DEFAULT_IFX_PROGRAM_ID`（主网上线前 = devnet）。Localnet 须在 `planNewFrame({ programId })` 或构造函数传入 `IFX_LOCALNET_PROGRAM_ID` — 所有 `scratch.ix*` 自动继承。
 - **`FrameScratch.planNewFrame(...)`**：返回 `{ scratch, ixCreate, frame, frameBump }`；无需再调 `framePda`。
-- **`FrameScratch.planPublicFrame(...)`**：同上，但 `close_authority` = Frame PDA（`immortalCloseAuthority`）。校验：`isImmortalCloseAuthority(decoded.closeAuthority, frame)`。
+- **`FrameScratch.planPublicFrame(...)`**：同上，但 `authority` = Frame PDA（`immortalCloseAuthority`）。校验：`isImmortalCloseAuthority(decoded.authority, frame)`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
 ### SPL Token 与 Token-2022（应用层）
@@ -161,29 +161,45 @@ tx.add(batch.buildIx());
 
 ## Patched CPI（`ifx_patched_cpi` / `ifx_if_else`）
 
-用模板指令 + tape patch，避免手写 `programIndex` / 账户切片：
+**RawPatched** — 模板指令 + tape 字节 patch（DEX / 非 registry layout）：
 
 ```ts
-import { cpi, cpiPatch } from "@ifx-run/sdk";
+import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";
 import { SystemProgram } from "@solana/web3.js";
 
 const settle = scratch.letConstU64(1_000_000);
 
-const built = cpi(
+const built = 
+rawCpi(
   SystemProgram.transfer({
     fromPubkey: payer,
     toPubkey: recipient,
-    lamports: 0, // patch 写入真实 lamports
+    lamports: 0,
   }),
-  { patches: [cpiPatch(4, settle)] }
-).build(); // remaining = [SystemProgram, from, to]
+  { patches: [rawCpiPatch(4, settle)] }
+).build();
 
-tx.add(scratch.ixCpi(built)); // ifx_patched_cpi
+tx.add(scratch.ixCpi(built));
 ```
+
+## Structured CPI（官方 System / SPL / Token-2022）
+
+官方 registry ix 优先 **`structuredCpi`**，无需手编 `data` 模板或 `rawCpiPatch` 偏移。见 [structured-cpi-patches.zh-CN.md](../docs/structured-cpi-patches.zh-CN.md)。
+
+```ts
+import { structuredCpi, structuredCpiPatch } from "@ifx-run/sdk";
+
+const built = structuredCpi(splTransferCheckedIx,
+  structuredCpiPatch.tokenTransferChecked.amountOnly(amount, 9)
+).build();
+tx.add(scratch.ixCpi(built));
+```
+
+InitializeMint2 + Frame `Pubkey`：`tests/ifx_structured_cpi_initialize_mint.ts`。
 
 **默认**不传 `remaining` — 账户来自模板指令（`[programId, …keys]`）。仅在合并进更长列表时传入（例如 `ifx_if_else` 与 `ifx_let` 共用 remaining）；只传 `PublicKey[]` 会丢失 signer/writable。
 
-`cpiPatch(dataOffset, slot)` 接受任意 `ScratchValue<T>`；链上按 `T` 的宽度从 Frame 拷贝到 `data[dataOffset..]`，须与内层指令字段布局一致（例如 System transfer 的 lamports → `u64` @ 4）。
+`rawCpiPatch(dataOffset, value)` 接受任意 `ScratchValue<T>`；链上按 `T` 的宽度从 Frame 拷贝到 `data[dataOffset..]`，须与内层指令字段布局一致（例如 System transfer 的 lamports → `u64` @ 4）。
 
 **无 patch：** 用 `staticCpi(template)` → `ifx_if_else` 里 `arm.cpi(step.staticStep)`；无条件时也可直接把目标指令放进交易。
 

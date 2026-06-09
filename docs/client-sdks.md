@@ -23,7 +23,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 ## Shared principles (Go & Rust)
 
 1. **No RPC / wallet wrapper** — emit instructions and account metas only (same as TS).
-2. **Wire matches TS** — flat `Expr` Borsh tags **0–42**; `LetBinding` tags **0–23**; `Value.index` is u8 binding index. Do not use Anchor’s recursive coders for deep `Expr`.
+2. **Wire matches TS** — flat `Expr` Borsh tags **0–43**; `LetBinding` tags **0–28**; `Cpi` step kind **`0/1/2`**; `ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` use typed Anchor args (custom wire inside). Do not use Anchor’s recursive coders for deep `Expr`.
 3. **Layout matches on-chain** — `plan_record_offsets`, `index_cap_for_tape_len`, packed tape `[ty:1][payload]`; off-chain planner should fail fast before submit.
 4. **Tests** — byte-level golden parity with `tests/sdk_expr_parity.ts`, `tests/sdk_let_binding_parity.ts`, `tests/sdk_if_else_codec.ts`, etc.
 5. **IDL** — ship bundled `idl/ifx.json` (pin program id to the same revision as npm).
@@ -36,7 +36,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 
 ### Why
 
-Go is common for wallet and infra backends; today integrators must shell to Node or hand-encode wire. Goal is **parity with TS**, not a minimal subset.
+Go is common for wallet and infra backends; the [`go-sdk/`](../go-sdk/README.md) provides **parity with TS** (no Node bridge required).
 
 ### Target API (TS two-layer model)
 
@@ -46,14 +46,14 @@ Go is common for wallet and infra backends; today integrators must shell to Node
 | IR | `expr`, `ScratchValue`, `LetBinding` | `expr` package + typed scratch handles |
 | Codec | `sdk/src/codec.ts` | `codec` package — **hand-written flat encoding** |
 | Layout | `tape-layout.ts`, `layout.ts` | `tape`, `frame` decode / PDA |
-| CPI helpers | `cpi.ts`, `if-else-arm.ts`, `patch-list.ts` | `patchedcpi`, `ifelse` packages |
+| CPI helpers | `structured-cpi.ts`, `cpi.ts`, `if-else-arm.ts` | `structuredcpi`, `patchedcpi`, `ifelse` |
 
 ### Suggested repo layout
 
 ```
 go-sdk/                 # module github.com/ifx-run/ifx/go-sdk
   codec/ expr/ binding/ frame/ ix/ wire/ constants/
-  scratch/ patchedcpi/ ifelse/ patch/ spltoken/ errors/
+  scratch/ patchedcpi/ structuredcpi/ ifelse/ patch/ spltoken/ errors/
   examples/ integration/ testdata/ scripts/
 ```
 
@@ -61,16 +61,16 @@ go-sdk/                 # module github.com/ifx-run/ifx/go-sdk
 
 - Solana types: **`github.com/gagliardetto/solana-go`** (chosen).
 - Wide integers: `big.Int` for `constU128` / mul-div.
-- **No** CGO / Node bridge in v1 (except dust fixture script for tests).
+- **No** CGO / Node bridge in v1; integration fixtures are pure Go (`go-sdk/integration/`).
 
 ### Phased delivery
 
 | Phase | Scope | Done when |
 |-------|--------|-----------|
 | **G1 — Wire** | constants, PDA, `encodeExpr` / `encodeLetArgs` / patch & if_else codec | bytes match TS parity tests | ✅ |
-| **G2 — IR** | `expr` builders, `LetBinding` helpers, Eval type infer | opcode 0–23 samples | ✅ |
+| **G2 — IR** | `expr` builders, `LetBinding` helpers, Eval type infer | opcode 0–28 / Expr 0–43 samples | ✅ |
 | **G3 — Planner** | `FrameScratch`, `LetBuilder` (remaining dedup), `ix_*` | `scratch/*_test.go` | ✅ |
-| **G4 — Complete** | patched CPI, if_else, SPL/sysvar lets, L0–L1 examples + localnet e2e | `integration/*_test.go` | ✅ |
+| **G4 — Complete** | RawPatched + **Structured** CPI, if_else, Pubkey lets, L0–L1 e2e | `integration/*_test.go`, `structuredcpi/*_test.go` | ✅ |
 | **G5 — Docs** | Go SDK README, examples index | `go-sdk/README` | ✅ |
 
 **Follow-ups (non-blocking):** more `examples/` patterns, SPL CPI template helpers.

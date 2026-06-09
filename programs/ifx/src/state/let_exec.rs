@@ -159,6 +159,7 @@ pub fn eval_expr(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Re
                 eval_expr(frame, branch_ty, else_expr)
             }
         }
+        Expr::ConstPubkey(v) => encode_typed(dst_ty, TypedValue::Pubkey(*v)),
     }
 }
 
@@ -267,6 +268,7 @@ pub fn infer_expr_ty(frame: &impl FrameReader, expr: &Expr) -> Result<ValueType>
         Expr::MulDivFloor { a, .. } | Expr::MulDivCeil { a, .. } => infer_expr_ty(frame, a),
         Expr::Clamp { value, .. } => infer_expr_ty(frame, value),
         Expr::Select { then_expr, else_expr, .. } => infer_binary_ty(frame, then_expr, else_expr),
+        Expr::ConstPubkey(_) => Ok(ValueType::Pubkey),
     }
 }
 

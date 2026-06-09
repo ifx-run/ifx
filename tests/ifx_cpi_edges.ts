@@ -1,5 +1,5 @@
 /**
- * Patched CPI edge cases: overlap, static arm.cpi, multi-patch behavior.
+ * Patched CPI edge cases: overlap, static arm.cpi step, multi-patch behavior.
  */
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
@@ -8,10 +8,9 @@ import { randomBytes } from "crypto";
 
 import {
   arm,
-  cpiPatch,
+  rawCpiPatch,
   ifElseArgs,
-  cpi,
-  staticCpi,
+  rawCpi,   staticCpi,
 } from "../sdk/src";
 import { confirmSignature, provisionLocalFrame, sendAndConfirm } from "./helpers";
 
@@ -24,7 +23,7 @@ describe("ifx CPI edges (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -39,13 +38,13 @@ describe("ifx CPI edges (on-chain)", () => {
 
     const first = scratch.letConstU64(1_000);
     const second = scratch.letConstU64(2_000);
-    const built = cpi(
+    const built = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: recipient.publicKey,
         lamports: 0,
       }),
-      { patches: [cpiPatch(4, first), cpiPatch(4, second)] }
+      { patches: [rawCpiPatch(4, first), rawCpiPatch(4, second)] }
     ).build();
 
     const before = await provider.connection.getBalance(recipient.publicKey);
@@ -65,7 +64,7 @@ describe("ifx CPI edges (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -110,7 +109,7 @@ describe("ifx CPI edges (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -146,7 +145,7 @@ describe("ifx CPI edges (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -160,13 +159,13 @@ describe("ifx CPI edges (on-chain)", () => {
     );
 
     const amount = scratch.letConstU64(777);
-    const built = cpi(
+    const built = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: recipient.publicKey,
         lamports: 0,
       }),
-      { patches: [cpiPatch(4, amount)] }
+      { patches: [rawCpiPatch(4, amount)] }
     ).build();
 
     const before = await provider.connection.getBalance(recipient.publicKey);

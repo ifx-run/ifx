@@ -15,4 +15,5 @@ export const Ty = {
   i128: (): ValueType => ({ i128: {} }),
   f32: (): ValueType => ({ f32: {} }),
   f64: (): ValueType => ({ f64: {} }),
+  pubkey: (): ValueType => ({ pubkey: {} }),
 } as const;

@@ -18,13 +18,15 @@ Create Frame → business tx: reset → let → assert. E2e test may use `FetchD
 
 Single business tx: let → conditional burn (patched CPI) → harvest → close ATA.
 
-**E2e:** `TestDustDestroyLocalnet` · fixture via `scripts/dust-fixture.ts` (Node + Surfpool).
+**E2e:** `TestDustDestroyLocalnet` · TransferFee mint + dust ATA setup is pure Go in `integration/dust_fixture_test.go` (Surfpool required).
 
 ## Orchestration
 
 **Code:** `integration/orchestration_test.go` → `TestOrchestrationLocalnet`
 
 Reset / let / assert / patched System transfer / conditional bonus via `if_else`.
+
+**Structured CPI wire parity:** `structuredcpi/patch_test.go`, `structuredcpi/patch_builders_test.go`, `codec/cpi_test.go`. InitializeMint2 e2e: `integration/structured_cpi_test.go` (Go) and `tests/ifx_structured_cpi_initialize_mint.ts` (TS).
 
 ## Run locally
 

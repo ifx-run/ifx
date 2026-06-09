@@ -1,9 +1,9 @@
 import { expect } from "chai";
 import { Keypair } from "@solana/web3.js";
 
-import { encodeCpiPatch } from "../sdk/src/codec";
+import { encodeRawCpiPatch } from "../sdk/src/codec";
 import { FrameScratch } from "../sdk/src/scratch";
-import { cpiPatch } from "../sdk/src/patch";
+import { rawCpiPatch } from "../sdk/src/patch";
 
 describe("sdk patch codec", () => {
   const frame = Keypair.generate().publicKey;
@@ -11,7 +11,7 @@ describe("sdk patch codec", () => {
   it("encodes data_offset u16 LE + Value.index u8", () => {
     const scratch = new FrameScratch(frame, 256);
     const lamports = scratch.letConstU64(1);
-    const buf = encodeCpiPatch(cpiPatch(4, lamports));
+    const buf = encodeRawCpiPatch(rawCpiPatch(4, lamports));
     expect(buf).to.deep.equal(
       Buffer.from([4, 0, lamports.ref.index])
     );

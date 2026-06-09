@@ -4,8 +4,8 @@ use crate::error::ErrorCode;
 
 use super::types::ValueType;
 
-/// Max primitive payload width (`ValueType::U128` / `I128`).
-pub const MAX_VALUE_LEN: usize = 16;
+/// Max primitive payload width (`ValueType::Pubkey`).
+pub const MAX_VALUE_LEN: usize = 32;
 
 /// Stack-resident encoded primitive (no heap); wire bytes for one `ValueType`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -62,6 +62,7 @@ impl ValueBytes {
             }
             (ValueType::F32, TypedValue::F32(v)) => out.buf[..4].copy_from_slice(&v.to_le_bytes()),
             (ValueType::F64, TypedValue::F64(v)) => out.buf[..8].copy_from_slice(&v.to_le_bytes()),
+            (ValueType::Pubkey, TypedValue::Pubkey(v)) => out.buf[..32].copy_from_slice(&v),
             _ => return Err(ErrorCode::LoadTypeMismatch.into()),
         }
         Ok(out)
@@ -109,6 +110,11 @@ pub fn decode_typed(ty: ValueType, bytes: &[u8]) -> Result<TypedValue> {
         ValueType::I128 => TypedValue::I128(i128::from_le_bytes(read_le(bytes)?)),
         ValueType::F32 => TypedValue::F32(f32::from_le_bytes(read_le(bytes)?)),
         ValueType::F64 => TypedValue::F64(f64::from_le_bytes(read_le(bytes)?)),
+        ValueType::Pubkey => {
+            let mut arr = [0u8; 32];
+            arr.copy_from_slice(bytes);
+            TypedValue::Pubkey(arr)
+        }
     })
 }
 
@@ -136,4 +142,5 @@ pub enum TypedValue {
     I128(i128),
     F32(f32),
     F64(f64),
+    Pubkey([u8; 32]),
 }

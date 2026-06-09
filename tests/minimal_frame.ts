@@ -24,7 +24,7 @@ describe("minimal frame (L0 example)", () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
       frameId,
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen,
     });
 

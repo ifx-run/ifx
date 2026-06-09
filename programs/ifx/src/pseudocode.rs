@@ -131,6 +131,7 @@ pub fn ty_name(ty: ValueType) -> &'static str {
         ValueType::I128 => "i128",
         ValueType::F32 => "f32",
         ValueType::F64 => "f64",
+        ValueType::Pubkey => "pubkey",
     }
 }
 
@@ -151,6 +152,7 @@ fn expr_atom(expr: &Expr) -> bool {
             | Expr::ConstI128(_)
             | Expr::ConstF32(_)
             | Expr::ConstF64(_)
+            | Expr::ConstPubkey(_)
     )
 }
 
@@ -234,6 +236,7 @@ fn fmt_expr(buf: &mut LineBuf, expr: &Expr) -> bool {
                 && fmt_expr(buf, else_expr)
                 && buf.push_char(b')')
         }
+        Expr::ConstPubkey(_) => buf.push_str("pubkey(...)"),
     }
 }
 
@@ -257,6 +260,7 @@ fn fmt_typed_value(buf: &mut LineBuf, ty: ValueType, bytes: &[u8]) -> bool {
             buf.push_str("f32(") && buf.push_u64(n.to_bits() as u64) && buf.push_char(b')')
         }
         TypedValue::F64(n) => buf.push_str("f64(") && buf.push_u64(n.to_bits()) && buf.push_char(b')'),
+        TypedValue::Pubkey(_) => buf.push_str("pubkey(...)"),
     }
 }
 
@@ -287,6 +291,12 @@ fn fmt_binding_rhs(buf: &mut LineBuf, binding: &LetBinding) -> bool {
                 && buf.push_u64(u64::from(*account_index))
                 && buf.push_str("])")
         }
+        AccountKey { account_index } => {
+            buf.push_str("account_key(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        ConstPubkey { .. } => buf.push_str("const_pubkey(...)"),
         Eval { expr, .. } => fmt_expr(buf, expr),
         SysvarClockSlot => buf.push_str("clock.slot()"),
         SysvarClockEpochStartTimestamp => buf.push_str("clock.epoch_start_timestamp()"),
@@ -373,6 +383,8 @@ fn fmt_binding_rhs(buf: &mut LineBuf, binding: &LetBinding) -> bool {
                 && buf.push_u64(u64::from(*account_index))
                 && buf.push_str("])")
         }
+        FrameGeneration => buf.push_str("frame.generation()"),
+        FrameIndexCount => buf.push_str("frame.index_count()"),
     }
 }
 
@@ -463,31 +475,70 @@ pub fn log_if_else(
 
 pub fn log_cpi(arm: &Cpi) {
     emit_line(|b| {
-        let end = arm
-            .accounts_start
-            .checked_add(arm.accounts_len)
-            .unwrap_or(arm.accounts_start);
-        let mut ok = b.push_str("cpi accts[")
-            && b.push_u64(u64::from(arm.accounts_start))
+        let (accounts_start, accounts_len, data, label) = match arm {
+            Cpi::Static {
+                accounts_start,
+                accounts_len,
+                data,
+            } => (*accounts_start, *accounts_len, data.as_slice(), "static"),
+            Cpi::RawPatched {
+                accounts_start,
+                accounts_len,
+                data,
+                patches,
+            } => {
+                let end = accounts_start
+                    .checked_add(*accounts_len)
+                    .unwrap_or(*accounts_start);
+                let mut ok = b.push_str("cpi accts[")
+                    && b.push_u64(u64::from(*accounts_start))
+                    && b.push_str("..")
+                    && b.push_u64(u64::from(end))
+                    && b.push_str("] data=")
+                    && b.push_u64(data.len() as u64);
+                if patches.is_empty() {
+                    return ok && b.push_str(" static");
+                }
+                for (i, patch) in patches.iter().enumerate() {
+                    if i == 0 {
+                        ok = ok && b.push_str(" patch");
+                    } else {
+                        ok = ok && b.push_str(", ");
+                    }
+                    ok = ok
+                        && b.push_str(" +")
+                        && b.push_u64(u64::from(patch.data_offset))
+                        && b.push_str(" <- $")
+                        && b.push_u8(patch.source.index);
+                }
+                return ok;
+            }
+            Cpi::Structured {
+                accounts_start,
+                accounts_len,
+                patch,
+            } => {
+                let end = accounts_start
+                    .checked_add(*accounts_len)
+                    .unwrap_or(*accounts_start);
+                return b.push_str("cpi accts[")
+                    && b.push_u64(u64::from(*accounts_start))
+                    && b.push_str("..")
+                    && b.push_u64(u64::from(end))
+                    && b.push_str("] structured ")
+                    && b.push_str(patch.log_label());
+            }
+        };
+        let end = accounts_start
+            .checked_add(accounts_len)
+            .unwrap_or(accounts_start);
+        b.push_str("cpi accts[")
+            && b.push_u64(u64::from(accounts_start))
             && b.push_str("..")
             && b.push_u64(u64::from(end))
             && b.push_str("] data=")
-            && b.push_u64(arm.data.len() as u64);
-        if arm.patches.is_empty() {
-            return ok && b.push_str(" static");
-        }
-        for (i, patch) in arm.patches.iter().enumerate() {
-            if i == 0 {
-                ok = ok && b.push_str(" patch");
-            } else {
-                ok = ok && b.push_str(", ");
-            }
-            ok = ok
-                && b.push_str(" +")
-                && b.push_u64(u64::from(patch.data_offset))
-                && b.push_str(" <- $")
-                && b.push_u8(patch.source.index);
-        }
-        ok
+            && b.push_u64(data.len() as u64)
+            && b.push_str(" ")
+            && b.push_str(label)
     });
 }

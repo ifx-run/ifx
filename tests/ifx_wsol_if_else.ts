@@ -16,11 +16,10 @@ import { randomBytes } from "crypto";
 
 import {
   arm,
-  cpiPatch,
+  rawCpiPatch,
   expr,
   ifElseArgs,
-  cpi,
-  staticCpi,
+  rawCpi,   staticCpi,
 } from "../sdk/src";
 import { confirmSignature, provisionLocalFrame, sendAndConfirm } from "./helpers";
 
@@ -33,7 +32,7 @@ describe("ifx if_else · patched transfer + syncNative", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -45,13 +44,13 @@ describe("ifx if_else · patched transfer + syncNative", () => {
     const wrapLamports = 50_000_000;
     const amount = scratch.letConstU64(wrapLamports);
 
-    const transfer = cpi(
+    const transfer = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: wsolAta,
         lamports: 0,
       }),
-      { patches: [cpiPatch(4, amount)] }
+      { patches: [rawCpiPatch(4, amount)] }
     ).build();
 
     const sync = staticCpi(createSyncNativeInstruction(wsolAta));
@@ -107,7 +106,7 @@ describe("ifx if_else · patched transfer + syncNative", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -118,13 +117,13 @@ describe("ifx if_else · patched transfer + syncNative", () => {
 
     const wrapLamports = 50_000_000;
     const amount = scratch.letConstU64(wrapLamports);
-    const transfer = cpi(
+    const transfer = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: wsolAta,
         lamports: 0,
       }),
-      { patches: [cpiPatch(4, amount)] }
+      { patches: [rawCpiPatch(4, amount)] }
     ).build();
     const sync = staticCpi(createSyncNativeInstruction(wsolAta));
     const combinedRemaining = [

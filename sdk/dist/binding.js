@@ -89,6 +89,21 @@ exports.binding = {
     splToken2022MintDefaultAccountState(accountIndex) {
         return { splToken2022MintDefaultAccountState: { accountIndex } };
     },
+    accountKey(accountIndex) {
+        return { accountKey: { accountIndex } };
+    },
+    constPubkey(bytes) {
+        if (bytes.length !== 32) {
+            throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+        }
+        return { constPubkey: { bytes: Array.from(bytes) } };
+    },
+    frameGeneration() {
+        return { frameGeneration: {} };
+    },
+    frameIndexCount() {
+        return { frameIndexCount: {} };
+    },
 };
 /** Frame tape type implied by a `LetBinding` variant. */
 function inferBindingTy(b, indexTypes) {
@@ -102,6 +117,8 @@ function inferBindingTy(b, indexTypes) {
         return "u64";
     if ("accountDataLen" in b)
         return "u32";
+    if ("accountKey" in b || "constPubkey" in b)
+        return "pubkey";
     if ("sysvarClockSlot" in b ||
         "sysvarClockEpoch" in b ||
         "sysvarClockLeaderScheduleEpoch" in b ||
@@ -133,6 +150,10 @@ function inferBindingTy(b, indexTypes) {
     if ("splToken2022MintTransferFeeBasisPoints" in b) {
         return "u16";
     }
+    if ("frameGeneration" in b)
+        return "u64";
+    if ("frameIndexCount" in b)
+        return "u16";
     throw new Error("unknown LetBinding shape");
 }
 function valueTypeKey(ty) {
@@ -148,6 +169,9 @@ function remapBindingAccountIndex(b, accountIndex) {
     }
     if ("accountDataLen" in b) {
         return exports.binding.accountDataLen(accountIndex);
+    }
+    if ("accountKey" in b) {
+        return exports.binding.accountKey(accountIndex);
     }
     if ("accountDataSlice" in b && b.accountDataSlice) {
         const { ty, offset, expectedProgramOwner } = b.accountDataSlice;

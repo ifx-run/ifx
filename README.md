@@ -49,7 +49,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 | Key | Value |
 | --- | --- |
 | **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-08-09a9114-ifx-internal-review.md) (2026-06-08, commit `09a9114`); **not on mainnet** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.2.0-devnet.0` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.3.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
 | **Program (localnet / repo default)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
@@ -105,14 +105,14 @@ const frameId = randomBytes(32); // persist for later jobs
 const { ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
 // Tx 2 — business tx (rebuild planner from stored frameId)
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen);
+const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
 const tx = new Transaction();
 
 tx.add(scratch.ixReset());
@@ -146,7 +146,7 @@ import { FrameScratch } from "@ifx-run/sdk";
 const { scratch, ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen: 256,
 });
 
@@ -161,7 +161,7 @@ Devnet program: `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`. Use test SOL / te
 
 ## Using Cursor, Claude Code, or other AI agents
 
-> **Recommended:** Before an agent edits swap / settlement transactions, point it at the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**. It encodes the two-tx model, patched CPI (`cpi` + `ifx_patched_cpi`) vs static CPI, devnet `programId`, **when to use Jito bundles (and when not to)**, and which L0–L3 example to extend — so you get fewer wire-format mistakes and less hand-rolled `Expr`.
+> **Recommended:** Before an agent edits swap / settlement transactions, point it at the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**. It encodes the two-tx model, **Structured CPI** (`structuredCpi` for official System/SPL ix) vs **RawPatched** CPI (`rawCpi` + `ifx_patched_cpi`) vs static CPI, devnet `programId`, **when to use Jito bundles (and when not to)**, and which L0–L3 example to extend — so you get fewer wire-format mistakes and less hand-rolled `Expr`.
 
 | | |
 |---|---|
@@ -191,8 +191,8 @@ flowchart LR
 ```
 
 - **Frame** — PDA whose `tape` is **scratch paper for this tx** (`reset` clears session). Not trusted cross-tx app state.
-- **`ifx_if_else`** — each arm: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (static and/or patched). Multi-step with the same condition: `arm.cpis([...])`.
-- **`cpi()` vs `staticCpi`** — use **`cpi()`** + **`cpiPatch`** when invoke-time fields come from `ifx_let` (unconditional: **`scratch.ixCpi`** → **`ifx_patched_cpi`**); use **`staticCpi`** or **`tx.add(ix)`** when `data` is fixed at build time.
+- **`ifx_if_else`** — each arm: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (static, **Structured**, and/or RawPatched). Multi-step with the same condition: `arm.cpis([...])`.
+- **CPI choice** — official System / SPL / Token-2022 ix with tape-bound fields → **`structuredCpi()`** + **`structuredCpiPatch.*`** ([structured-cpi-patches.md](./docs/structured-cpi-patches.md)); DEX / custom layouts → **`rawCpi()`** + **`rawCpiPatch`** (unconditional: **`scratch.ixCpi`** → **`ifx_patched_cpi`**); fixed `data` at build time → **`staticCpi`** or **`tx.add(ix)`**.
 
 Details: [docs/implementation.md](./docs/implementation.md) · [docs/bundles.md](./docs/bundles.md)
 
@@ -205,7 +205,7 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 | Level | Example | You learn |
 |-------|---------|-----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame, `reset`, `let`, `assert` |
-| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`, patched + static CPI (`cpi` / `staticCpi`), chained `if_else` |
+| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`, patched + static CPI (`rawCpi` / `staticCpi`), chained `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | Two-hop A→USDC→B, read intermediate token balance, patch hop 2 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, multiple patches |
 
@@ -213,7 +213,7 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 
 **Rule:** raw balance `< DUST_THRESHOLD_RAW` → burn → harvest withheld (if any) → close; **`≥` threshold** → all steps skip.
 
-**One `ifx_let`**, **three `ifx_if_else`** (one CPI per arm). Burn uses **patched CPI** (`cpi` + `cpiPatch` for `amount` + mint `decimals`); harvest and close use **`staticCpi`**.
+**One `ifx_let`**, **three `ifx_if_else`** (one CPI per arm). Burn uses **patched CPI** (`rawCpi` + `rawCpiPatch` for `amount` + mint `decimals`); harvest and close use **`staticCpi`**.
 
 ```text
 let(amount, withheld, decimals)
@@ -226,7 +226,7 @@ Full code, SPL byte offsets, and `DUST_THRESHOLD_RAW` notes: **[`sdk/examples/du
 
 ### L2 — Two-hop token swap (A → USDC → B)
 
-**Same-tx orchestration:** hop 1 CPI credits intermediate USDC; Ifx reads **`splTokenAmount`** on that ATA; hop 2 **patched CPI** (`cpi` + `cpiPatch`) uses the on-chain amount as exact-in.
+**Same-tx orchestration:** hop 1 CPI credits intermediate USDC; Ifx reads **`splTokenAmount`** on that ATA; hop 2 **patched CPI** (`rawCpi` + `rawCpiPatch`) uses the on-chain amount as exact-in.
 
 **Out of scope in the example:** Token-2022, SOL / tx fees / WSOL — intermediate USDC ATA must exist before the business tx (balance 0 recommended).
 
@@ -242,7 +242,7 @@ Read SOL **on-chain**, **abort if profit is too low**, repay sponsor, **buy only
 
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";
-import { arm, ifElseArgs, cpi, cpiPatch, expr } from "@ifx-run/sdk";
+import { arm, ifElseArgs, rawCpi, rawCpiPatch, expr } from "@ifx-run/sdk";
 
 // … frame already created; scratch rebuilt from stored frameId …
 const tx = new Transaction();
@@ -263,15 +263,17 @@ tx.add(letAfter.buildIx());
 tx.add(scratch.ixAssert(expr.ge(expr.sub(solAfter, solBefore), settle)));
 
 // System Transfer `data`: u32 discriminant @ 0, u64 lamports @ 4 (little-endian)
-const sponsorXfer = cpi(
+const sponsorXfer = 
+rawCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: sponsor, lamports: 0 }),
-  { patches: [cpiPatch(4, settle)] }
+  { patches: [rawCpiPatch(4, settle)] }
 ).build();
 tx.add(scratch.ixCpi(sponsorXfer));
 
-const poolXfer = cpi(
+const poolXfer = 
+rawCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
-  { patches: [cpiPatch(4, buyLamports)] }
+  { patches: [rawCpiPatch(4, buyLamports)] }
 ).build();
 tx.add(scratch.ixIfElse(
   ifElseArgs(expr.gt(buyLamports, expr.u64(0)), arm.cpi(poolXfer.cpi)),
@@ -353,7 +355,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 **Why three `if_else` for dust destroy?** Burn, harvest, and close use **different conditions** — three `if_else` in order. Re-`let` only when a later condition needs fields that a CPI changed (the dust flow reuses the first `amount` / `withheld` bindings). Same condition + multiple steps → one `arm.cpis([...])`.
 
-**`cpi()` vs `staticCpi`?** Use **`cpi()`** + **`cpiPatch`** when invoke-time fields (lamports, token amount, decimals, …) come from `ifx_let`; emit via **`scratch.ixCpi`** (`ifx_patched_cpi`) when unconditional. Use **`staticCpi`** + **`arm.cpi(step.staticStep)`** when template `data` is complete at build time. Unconditional static ix can also be added to the transaction directly.
+**CPI choice?** Official System / SPL / Token-2022 with tape-bound fields → **`structuredCpi()`** + **`structuredCpiPatch.*`**. DEX / custom layouts → **`rawCpi()`** + **`rawCpiPatch`** (unconditional: **`scratch.ixCpi`** / **`ifx_patched_cpi`**). Fixed template `data` at build time → **`staticCpi`** + **`arm.cpi(step.staticStep)`** or direct **`tx.add(ix)`**.
 
 **Do I need a Rust / Go client?** Off-chain: [`@ifx-run/sdk`](./sdk/README.md) or the **[Go SDK](./go-sdk/README.md)**; on-chain CPI: [docs/rust-integration.md](./docs/rust-integration.md). Roadmap: [docs/client-sdks.md](./docs/client-sdks.md).
 

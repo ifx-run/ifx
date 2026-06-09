@@ -26,7 +26,7 @@ import {
   type ScratchValue,
   type TypedExpr,
 } from "./typed";
-import type { CpiBuildResult } from "./cpi";
+import type { CpiWireBuildResult } from "./cpi";
 import type { IfElseArgs } from "./types";
 import {
   buildIxAssert,
@@ -48,10 +48,10 @@ import { LetIxBuilder } from "./let-builder";
 
 export type { CreateIxCreateFrameParams } from "./ix";
 
-/** Params for {@link FrameScratch.planPublicFrame} — `close_authority` is set to {@link immortalCloseAuthority}. */
+/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link immortalCloseAuthority}. */
 export type PlanPublicFrameParams = Omit<
   CreateIxCreateFrameParams,
-  "closeAuthority"
+  "authority"
 >;
 
 /** Options for {@link FrameScratch.fetchDecodedFrame}. */
@@ -89,6 +89,8 @@ export class FrameScratch {
   readonly frame: PublicKey;
   /** Ifx program id for all {@link FrameScratch} `ix*` builders (override per call via `IxOpts`). */
   readonly programId: PublicKey;
+  /** Frame `authority` from create; required for `ixReset` / `ixLet`. */
+  readonly authority: PublicKey;
   private readonly indexTypes = new Map<number, IfxTy>();
 
   constructor(
@@ -96,10 +98,12 @@ export class FrameScratch {
     tapeLen?: number,
     cursor = 0,
     nextIndex = 0,
-    programId: PublicKey = DEFAULT_IFX_PROGRAM_ID
+    programId: PublicKey = DEFAULT_IFX_PROGRAM_ID,
+    authority: PublicKey = PublicKey.unique()
   ) {
     this.frame = frame;
     this.programId = programId;
+    this.authority = authority;
     this.tapeLen = tapeLen;
     this.indexCap =
       tapeLen === undefined ? undefined : indexCapForTapeLen(tapeLen);
@@ -118,7 +122,8 @@ export class FrameScratch {
       account.tape.length,
       account.cursor,
       account.indexCount,
-      programId
+      programId,
+      account.authority
     );
   }
 
@@ -130,7 +135,14 @@ export class FrameScratch {
     const programId = params.programId ?? DEFAULT_IFX_PROGRAM_ID;
     const [frame, frameBump] = framePda(params.payer, params.frameId, programId);
     return {
-      scratch: new FrameScratch(frame, params.tapeLen, 0, 0, programId),
+      scratch: new FrameScratch(
+        frame,
+        params.tapeLen,
+        0,
+        0,
+        programId,
+        params.authority
+      ),
       ixCreate: createIxCreateFrame({ ...params, programId }),
       frame,
       frameBump,
@@ -138,7 +150,7 @@ export class FrameScratch {
   }
 
   /**
-   * Like {@link planNewFrame}, but sets `close_authority` to the Frame PDA itself
+   * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
    * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
    * Reset and let remain open to anyone (scratch semantics).
    */
@@ -147,7 +159,7 @@ export class FrameScratch {
     return FrameScratch.planNewFrame({
       ...params,
       programId,
-      closeAuthority: immortalCloseAuthority(
+      authority: immortalCloseAuthority(
         params.payer,
         params.frameId,
         programId
@@ -236,6 +248,28 @@ export class FrameScratch {
   letDataLen(account: LetAccountInput): ScratchValue<"u32"> {
     const meta = toLetAccountMeta(account);
     return this.plan(binding.accountDataLen(0), [meta]);
+  }
+
+  /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+  letAccountKey(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const meta = toLetAccountMeta(account);
+    return this.plan(binding.accountKey(0), [meta]);
+  }
+
+  /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+  letConstPubkey(pk: PublicKey | Buffer): ScratchValue<"pubkey"> {
+    const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+    return this.plan(binding.constPubkey(bytes));
+  }
+
+  /** `Frame.generation` (increments on reset; no remaining account). */
+  letFrameGeneration(): ScratchValue<"u64"> {
+    return this.plan(binding.frameGeneration());
+  }
+
+  /** `Frame.index_count` (bindings since last reset; no remaining account). */
+  letFrameIndexCount(): ScratchValue<"u16"> {
+    return this.plan(binding.frameIndexCount());
   }
 
   letAccountDataSlice<T extends IfxTy>(
@@ -356,7 +390,11 @@ export class FrameScratch {
     this.cursor = 0;
     this.nextIndex = 0;
     this.indexTypes.clear();
-    return buildIxResetFrame(this.frame, this.mergeIxOpts(opts));
+    return buildIxResetFrame(
+      this.frame,
+      this.authority,
+      this.mergeIxOpts(opts)
+    );
   }
 
   /** One `ifx_let` from a single {@link ScratchValue} or a {@link LetIxBuilder} batch. */
@@ -367,10 +405,17 @@ export class FrameScratch {
     const ixOpts = this.mergeIxOpts(opts);
     if (target instanceof LetIxBuilder) {
       const { args, remaining } = target.finish();
-      return buildIxLet(this.frame, args, remaining, ixOpts);
+      return buildIxLet(
+        this.frame,
+        this.authority,
+        args,
+        remaining,
+        ixOpts
+      );
     }
     return buildIxLet(
       this.frame,
+      this.authority,
       FrameScratch.toLetArgs([target]),
       [...(target.letRemaining ?? [])],
       ixOpts
@@ -382,7 +427,7 @@ export class FrameScratch {
   }
 
   /** Patched CPI (`ifx_patched_cpi`). */
-  ixCpi(built: CpiBuildResult, opts?: IxOpts): TransactionInstruction {
+  ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction {
     return createIxCpi(this.frame, built, this.mergeIxOpts(opts));
   }
 

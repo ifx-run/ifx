@@ -68,6 +68,12 @@ type ConstF64 float64
 
 func (ConstF64) isExpr() {}
 
+type ConstPubkey struct {
+	Bytes [32]byte
+}
+
+func (ConstPubkey) isExpr() {}
+
 type Unary struct {
 	Tag     uint8
 	Operand Node
@@ -123,6 +129,8 @@ func I128Big(v *big.Int) Node {
 
 func F32(v float32) Node { return ConstF32(v) }
 func F64(v float64) Node { return ConstF64(v) }
+
+func Pubkey(bytes [32]byte) Node { return ConstPubkey{Bytes: bytes} }
 
 func Not(op Node) Node     { return Unary{Tag: constants.ExprTagNot, Operand: op} }
 func Neg(op Node) Node     { return Unary{Tag: constants.ExprTagNeg, Operand: op} }
@@ -250,6 +258,10 @@ func Sample(tag int) Node {
 		return Clamp(u64, u64, u64)
 	case 42:
 		return Select(b, u64, u64)
+	case 43:
+		var pk [32]byte
+		pk[0] = 7
+		return Pubkey(pk)
 	default:
 		panic("invalid expr sample tag")
 	}

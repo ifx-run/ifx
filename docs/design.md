@@ -38,7 +38,7 @@ Ifx expresses this logic on-chain with a **fixed, enumerable** instruction set; 
 - **SSA:** Each logical value is assigned once; enforced by compiler/SDK.
 - **Tape:** `Frame.tape` is a contiguous byte buffer — **not** a register file, **not** a fixed `ValueId → slot` table.
 - **Layout:** On-chain `Frame.cursor` **appends** to `tape`; `payload_at[i]` records binding **index** → payload byte offset. Off-chain `FrameScratch` tracks `cursor` + `nextIndex`.
-- **Reset:** `ifx_reset_frame` sets `cursor = 0`, `index_count = 0`, clears `tape` — a clean session, commonly at tx start when reusing a Frame PDA.
+- **Reset:** `ifx_reset_frame` sets `cursor = 0`, `index_count = 0`, and **`generation = generation.wrapping_add(1)`** (lazy tape — see [frame-cu-optimization.md](./frame-cu-optimization.md)). Commonly at tx start when reusing a Frame PDA.
 - **`ifx_let` batch order:** Append in `bindings` order; later bindings may reference earlier indices via `Expr::Value { index }`.
 
 Index addressing and `payload_at` are **shipped** — see [implementation.md](./implementation.md), [frame-memory-index.md](./frame-memory-index.md), and [glossary.md](./glossary.md).
@@ -46,14 +46,16 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 ### 3.2 Transaction scope & Frame as scratch
 
 - `tape` / `cursor` / `index_count` are **scratch for Ifx logic in a tx** — not a general-purpose state layer.
-- The Frame **PDA can persist** on-chain, but Ifx provides **no access control** on who may reset or append.
+- The Frame **PDA can persist** on-chain. **Public** Frames (off-curve `authority`) allow anyone to `reset`/`let`; **private** Frames (on-curve `authority`) require the authority signer on writes — [frame-authority.md](./frame-authority.md).
 - Ifx **does not guarantee** cross-tx consistency of tape session state. A **landed** Jito bundle only orders txs **inside that bundle** — see [bundles.md](./bundles.md). Prefer one business tx per Ifx flow.
 
-### 3.3 Statically analyzable
+### 3.3 Statically analyzable & top-level writes
 
 - No loops, recursion, or dynamic codegen
 - Expressions are finite-depth `Expr` trees
 - Execution graph is fully recoverable from instruction args
+- **Write** instructions (`create`, `reset`, `let`, `close`) are **transaction top-level only** — not for CPI wrap ([frame-authority.md](./frame-authority.md))
+- Outbound CPI uses **`invoke`** only (no **`invoke_signed`**): patched steps must match ix you could place in the **outer** tx
 
 ### 3.4 On-chain / off-chain split
 
@@ -69,14 +71,14 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 ## 4. Frame & addressing
 
 - **Frame PDA:** `["frame", payer, frame_id]`; `frame_id` is a 32-byte salt.
-- **`close_authority`:** Who may `ifx_close_frame` to reclaim rent.
+- **`authority`:** **off-curve** → public scratch writes; **on-curve** → private Frame (bot / relayer key signs `reset` / `let` / `close`). Full spec: [frame-authority.md](./frame-authority.md).
 - **`tape_len`:** Tape size allocated at creation (`index_cap = min(256, tape_len / 2)`).
 
 ---
 
 ## 5. Data loading
 
-On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–`23`):
+On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–`28`):
 
 | Tag | Variant | Role |
 |-----|---------|------|
@@ -84,7 +86,7 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
 | `1` | `AccountLamports` | Lamports → fixed `U64` |
 | `2` | `Eval` | Expression over frame tape (via binding index) |
 | `3`–`8` | Clock / Rent sysvar | `Clock::get()` / `Rent::get()` syscalls — no remaining account |
-| `9`–`23` | SPL Token / Token-2022 | Official unpack of named fields — no byte offset on wire |
+| `9`–`28` | SPL Token / Token-2022 + account metadata + `FrameGeneration` / `FrameIndexCount` | Official unpack / frame fields — see [typed-let-bindings.md](./typed-let-bindings.md) |
 
 **Prefer typed opcodes** over `AccountDataSlice` for sysvar fields, SPL balances, and mint fields.
 
@@ -99,9 +101,12 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
 - Arithmetic and comparisons in `ifx_let` via `Eval`.
 - Conditions are `Expr`; `ifx_assert` / `ifx_if_else` take `cond: Expr`.
 - `ifx_if_else` arms: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (wire u8 tag = step count).
-- Each **`Cpi`** step carries optional **`patches`** (`PatchList` = `U16LenVec`; empty = static, non-empty = patched before invoke).
-- Unconditional patched CPI: **`ifx_patched_cpi`** (same **`Cpi`** wire; requires non-empty `patches`).
-- **`CpiPatch`:** `{ data_offset: u16, source: Value }` — copy typed bytes from `Frame::tape` (via `payload_at[source.index]`) into template CPI `data` before invoke. `source.index` is a binding index (`u8`); `data_offset` indexes the CPI template.
+- Each **`Cpi`** step starts with wire kind **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md)).
+  - **RawPatched:** template `data` + optional **`patches`** (`PatchList`); byte overlay before invoke — DEX / escape hatch.
+  - **Structured:** official registry ix; ix `data` assembled from typed patch (no template blob).
+  - **Static:** template `data` invoked as-is (empty `PatchList`).
+- Unconditional patched CPI: **`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** or **Structured** (requires patch apply).
+- **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**.
 
 **Raw slices and byte patches** are escape hatches for layouts not in the typed registry; wallets should label them layout-unchecked.
 
@@ -135,7 +140,7 @@ Compiled output is Anchor instruction sequences + Borsh args (`LetBinding`, `IfE
 
 - On-chain dynamic patch of account meta (only patch `data` bytes)
 
-**Raw slices:** `AccountDataSlice` and generic `CpiPatch` byte offsets are escape hatches; prefer typed `LetBinding` variants when available.
+**Raw slices:** `AccountDataSlice` and generic `RawCpiPatch` byte offsets are escape hatches; prefer typed `LetBinding` variants when available.
 
 ---
 

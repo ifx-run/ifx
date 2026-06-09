@@ -16,7 +16,8 @@ export type IfxTy =
   | "i64"
   | "i128"
   | "f32"
-  | "f64";
+  | "f64"
+  | "pubkey";
 
 export const IFX_TYS: readonly IfxTy[] = [
   "bool",
@@ -32,6 +33,7 @@ export const IFX_TYS: readonly IfxTy[] = [
   "i128",
   "f32",
   "f64",
+  "pubkey",
 ] as const;
 
 /** Types that support arithmetic / min / max on-chain. */
@@ -157,6 +159,7 @@ export function inferIfxTyFromExpr(
   if ("constI128" in node) return "i128";
   if ("constF32" in node) return "f32";
   if ("constF64" in node) return "f64";
+  if ("constPubkey" in node) return "pubkey";
   if ("value" in node) {
     const idx = (node.value as { value: { index: number } }).value.index;
     const ty = indexTypes?.get(idx);
@@ -228,6 +231,7 @@ export function isExprLike(v: unknown): v is Expr {
     "constI128",
     "constF32",
     "constF64",
+    "constPubkey",
     "not",
     "neg",
     "isZero",

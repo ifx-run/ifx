@@ -23,7 +23,7 @@
 ## 共同原则（Go / Rust 均适用）
 
 1. **不包装 RPC / 钱包** — 与 TS 相同：只产出 `Instruction` / 账户 meta；签名与发送由集成方负责。
-2. **Wire 与 TS 一致** — `Expr` 扁平 Borsh tag **0–42**；`LetBinding` tag **0–23**；`Value.index` 为 u8 binding 序号。勿用 Anchor TS/Rust 递归 coder 编 deep `Expr`。
+2. **Wire 与 TS 一致** — `Expr` 扁平 Borsh tag **0–43**；`LetBinding` tag **0–28**；`Cpi` 步 kind **`0/1/2`**；`ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` 为强类型 Anchor 参数（内层 custom wire）。勿用 Anchor TS/Rust 递归 coder 编 deep `Expr`。
 3. **Layout 与链上一致** — `plan_record_offsets`、`index_cap_for_tape_len`、packed tape `[ty:1][payload]`；链下 planner 失败应 **fail fast**（对应链上 `TapeOutOfBounds` / `IndexCapReached`）。
 4. **测试** — 字节级 golden 对齐 `tests/sdk_expr_parity.ts`、`tests/sdk_let_binding_parity.ts`、`tests/sdk_if_else_codec.ts` 等；集成测试可复用 Surfpool / `anchor test` 场景。
 5. **IDL** — 分发 bundled `idl/ifx.json`（或与 npm SDK 同 revision pin program id）。
@@ -36,7 +36,7 @@
 
 ### 动机
 
-- 钱包公司与 Solana 基础设施常见 **Go 后端**；目前仅 TS SDK，Go 集成只能子进程调 Node 或手搓 wire。
+- 钱包公司与 Solana 基础设施常见 **Go 后端**；[`go-sdk/`](../go-sdk/README.zh-CN.md) 已与 TS **同等表达能力**（无需 Node 桥）。
 - TS SDK 已覆盖完整 L0–L3 编排能力；Go 侧目标是 **同等表达能力**，而非最小 subset。
 
 ### 目标 API（对齐 TS 两层）
@@ -47,14 +47,14 @@
 | IR | `expr`、`ScratchValue`、`LetBinding` | `expr` 包 + typed scratch 句柄 |
 | Codec | `sdk/src/codec.ts` | `codec` 包 — **手写扁平编码**（同 TS，不依赖 Anchor 递归） |
 | Layout | `tape-layout.ts`、`layout.ts` | `tape`、`frame` 解码 / PDA |
-| CPI 辅助 | `cpi.ts`、`if-else-arm.ts`、`patch-list.ts` | `patchedcpi`、`ifelse` 包 |
+| CPI 辅助 | `structured-cpi.ts`、`cpi.ts`、`if-else-arm.ts` | `structuredcpi`、`patchedcpi`、`ifelse` |
 
 ### 建议目录（仓库内）
 
 ```
 go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
   codec/ expr/ binding/ frame/ ix/ wire/ constants/
-  scratch/ patchedcpi/ ifelse/ patch/ spltoken/ errors/
+  scratch/ patchedcpi/ structuredcpi/ ifelse/ patch/ spltoken/ errors/
   examples/ integration/ testdata/ scripts/
 ```
 
@@ -62,16 +62,16 @@ go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
 
 - Solana 交易类型：**`github.com/gagliardetto/solana-go`**（已采用）。
 - 大整数：`big.Int` 用于 `constU128` / mul-div。
-- **不**在 v1 引入 CGO / Node 桥（dust fixture 脚本除外，仅测试用）。
+- **不**在 v1 引入 CGO / Node 桥；集成测试 fixture 为纯 Go（`go-sdk/integration/`）。
 
 ### 分阶段交付
 
 | 阶段 | 内容 | 验收 |
 |------|------|------|
 | **G1 — Wire** | constants、PDA、`encodeExpr` / `encodeLetArgs` / patch & if_else codec | 与 TS parity tests 字节一致 | ✅ |
-| **G2 — IR** | `expr` 构造、`LetBinding` helper、类型推断（Eval） | `codec/parity_test.go` | ✅ |
+| **G2 — IR** | `expr` 构造、`LetBinding` helper、类型推断（Eval） | opcode 0–28 / Expr 0–43 样例 | ✅ |
 | **G3 — Planner** | `FrameScratch`、`LetBuilder`（remaining 去重）、`ix_*` | `scratch/*_test.go` | ✅ |
-| **G4 — 完整** | patched CPI、if_else、SPL/sysvar let、L0–L1 示例 + localnet e2e | `integration/*_test.go` | ✅ |
+| **G4 — 完整** | RawPatched + **Structured** CPI、if_else、Pubkey let、L0–L1 e2e | `integration/*_test.go`、`structuredcpi/*_test.go` | ✅ |
 | **G5 — 文档** | Go SDK README、examples 说明 | `go-sdk/README` | ✅ |
 
 **后续增强（非阻塞）：** 更多 `examples/` 编排场景、SPL CPI 模板库扩展。

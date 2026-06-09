@@ -27,9 +27,13 @@ const (
 	LetTagSplToken2022MintWithheldAmount
 	LetTagSplToken2022MintDefaultAccountState
 	LetTagAccountDataLen
+	LetTagAccountKey
+	LetTagConstPubkey
+	LetTagFrameGeneration
+	LetTagFrameIndexCount
 )
 
-const LetBindingVariantCount = 25
+const LetBindingVariantCount = 29
 
 // ValueType wire tags for AccountDataSlice.ty (Borsh enum order).
 const (
@@ -46,4 +50,5 @@ const (
 	ValueTypeI128
 	ValueTypeF32
 	ValueTypeF64
+	ValueTypePubkey
 )

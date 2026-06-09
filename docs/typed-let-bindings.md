@@ -2,7 +2,7 @@ English | [中文](./typed-let-bindings.zh-CN.md)
 
 # Typed `ifx_let` bindings
 
-Wire format for [`LetBinding`](../programs/ifx/src/state/types.rs): a **single enum** (tags `0`–`24`). Each variant appends one frame record **`[ty:1][payload:ty.size()]`**; the type is implied by the variant (or explicit for slices / `Eval`).
+Wire format for [`LetBinding`](../programs/ifx/src/state/types.rs): a **single enum** (tags `0`–`28`). Each variant appends one frame record **`[ty:1][payload:ty.size()]`**; the type is implied by the variant (or explicit for slices / `Eval`).
 
 SDK helpers: [`@ifx-run/sdk`](../sdk/README.md) `FrameScratch` / `letBuilder`.
 
@@ -26,9 +26,9 @@ Always **8-byte LE u64** from `remaining[account_index].lamports`.
 
 ### `Eval`
 
-Evaluates `expr` over prior frame slots; storage type is inferred (on-chain `infer_expr_ty`, SDK `inferIfxTyFromExpr`).
+Evaluates `expr` over prior frame values; storage type is inferred (on-chain `infer_expr_ty`, SDK `inferIfxTyFromExpr`).
 
-**Note:** CPI `set_return_data` is not readable from a separate top-level `ifx_let` instruction. For post-CPI dynamic values, read an account field (e.g. token `amount`) or plan `Eval` over prior frame slots in the same batch.
+**Note:** CPI `set_return_data` is not readable from a separate top-level `ifx_let` instruction. For post-CPI dynamic values, read an account field (e.g. token `amount`) or plan `Eval` over prior frame values in the same batch.
 
 ---
 
@@ -102,6 +102,36 @@ Missing extension → `Token2022ExtensionNotPresent`.
 
 ---
 
+## Pubkey — tags 25–26
+
+Frame type **`Pubkey`** (`ValueType` tag `13`, 32-byte raw key). Comparisons: `Eq` / `Ne` only.
+
+| Tag | Variant | Source | Frame type | Wire fields |
+|-----|---------|--------|------------|-------------|
+| `25` | `AccountKey` | `remaining[account_index].key` | **Pubkey** | `account_index` |
+| `26` | `ConstPubkey` | ix-data literal | **Pubkey** | `bytes: [u8; 32]` |
+
+Prefer **`AccountKey`** (ALT-friendly, no 32 B in ix data). **`ConstPubkey`** is allowed when you accept wire cost.
+
+SDK: `scratch.letAccountKey(account)` — `PublicKey` or `AccountMeta` (only the pubkey is used; signer/writable flags are ignored). Also `scratch.letConstPubkey(pk)`, `expr.pubkey(pk)`.
+
+Structured CPI (`InitializeMint`): mint authority via `PubkeyValue::FromFrame` / `Literal`; freeze via `FreezeAuthPatch` (`None` / `SomeValue` / `SomeLiteral`). See [structured-cpi-patches.md](./structured-cpi-patches.md).
+
+---
+
+## Frame metadata — tags 27–28
+
+| Tag | Variant | Source | Frame type | Wire fields |
+|-----|---------|--------|------------|-------------|
+| `27` | `FrameGeneration` | `Frame.generation` | **U64** | _(none)_ |
+| `28` | `FrameIndexCount` | `Frame.index_count` | **U16** | _(none)_ |
+
+`generation` starts at `0` on create and `wrapping_add(1)` on each `ifx_reset_frame`. No `remaining` account.
+
+SDK: `scratch.letFrameGeneration()`, `scratch.letFrameIndexCount()` (also `letBuilder.frameGeneration()` / `frameIndexCount()`).
+
+---
+
 ## Account metadata — tag 24
 
 | Tag | Variant | Field | Frame type | Wire fields |
@@ -128,6 +158,10 @@ Prefer **`LetIxBuilder`** — pass `AccountMeta` / pubkey for account-scoped loa
 | `splToken2022Amount(account)` | `SplToken2022AccountAmount` |
 | `letEval(expr)` | `Eval { expr }` |
 | `accountDataSlice(...)` | `AccountDataSlice` |
+| `letAccountKey(account)` | `AccountKey` |
+| `letConstPubkey(pk)` | `ConstPubkey` |
+| `frameGeneration()` | `FrameGeneration` |
+| `frameIndexCount()` | `FrameIndexCount` |
 
 Low-level: `binding.*` + `scratch.plan` / `scratch.planAtRemainingIndex` (maintainers / codegen only).
 
@@ -135,6 +169,4 @@ Low-level: `binding.*` + `scratch.plan` / `scratch.planAtRemainingIndex` (mainta
 
 ## Adding opcodes
 
-Tags are **append-only**. Next free id: **25**. New variants require program + SDK + IDL + this doc update.
-
-Pubkey / `COption` fields are not in scope for typed bindings — use `AccountDataSlice` or off-chain planning.
+Tags are **append-only**. Next free id: **29**. New variants require program + SDK + IDL + this doc update.

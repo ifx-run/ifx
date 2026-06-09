@@ -47,12 +47,12 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const b = scratch.letBuilder();
-    const slot = b.clockSlot();
+    const clockSlotValue = b.clockSlot();
     const epochStart = b.clockEpochStartTimestamp();
     const epoch = b.clockEpoch();
     const leaderEpoch = b.clockLeaderScheduleEpoch();
@@ -64,9 +64,13 @@ describe("ifx let binding coverage (on-chain)", () => {
     );
 
     const on = await scratch.fetchDecodedFrame(provider.connection);
-    const chainSlot = BigInt(await provider.connection.getSlot());
-    expect(on.readU64(slot) >= chainSlot).to.equal(true);
-    expect(on.readU64(slot) <= chainSlot + 2n).to.equal(true);
+    const tapedSlot = on.readU64(clockSlotValue);
+    const chainSlot = BigInt(await provider.connection.getSlot("confirmed"));
+    expect(tapedSlot > 0n).to.equal(true);
+    // Clock was sampled at tx execution; after confirm the RPC slot is same or later.
+    expect(tapedSlot <= chainSlot).to.equal(true);
+    // Full `anchor test` runs ~1m — allow many slots between execute and fetch.
+    expect(tapedSlot >= chainSlot - 128n).to.equal(true);
     expect(on.readI64(epochStart)).to.be.a("bigint");
     expect(on.readU64(epoch) >= 0n).to.equal(true);
     expect(on.readU64(leaderEpoch) >= 0n).to.equal(true);
@@ -76,7 +80,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -133,7 +137,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 512,
     });
 
@@ -213,7 +217,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 512,
     });
 
@@ -291,7 +295,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -313,8 +317,9 @@ describe("ifx let binding coverage (on-chain)", () => {
           "ifx · Token2022ExtensionNotPresent (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            {
+      scratch.frame,
+      scratch.authority,
+      {
               bindings: [binding.splToken2022MintTransferFeeBasisPoints(0)],
             },
             [{ pubkey: mint, isSigner: false, isWritable: false }],
@@ -329,7 +334,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -364,7 +369,7 @@ describe("ifx let binding coverage (on-chain)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -383,8 +388,9 @@ describe("ifx let binding coverage (on-chain)", () => {
           "ifx · AccountDataLenMismatch (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.splTokenAccountAmount(0)] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.splTokenAccountAmount(0)] },
             [{ pubkey: mint, isSigner: false, isWritable: false }],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )

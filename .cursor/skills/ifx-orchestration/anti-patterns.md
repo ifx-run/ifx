@@ -7,7 +7,8 @@ Reject or refactor these when reviewing agent-generated integration code.
 | Anti-pattern | Why | Fix |
 |--------------|-----|-----|
 | Single tx: `create_frame` + swap + let | Frame provisioning is separate rent step | Tx1 create; Tx2+ reset + business |
-| Frame PDA as app state across days | No ACL; anyone can reset | Store real state in your PDAs; Frame = scratch |
+| Frame PDA as app state across days | Scratch, not durable app state | Store real state in your PDAs; Frame = scratch |
+| Private Frame / nonce custody without on-curve `authority` | Anyone can poison tape before pre-signed read tx | Set `authority` to bot hot wallet — [frame-authority.md](../../../docs/frame-authority.md) |
 | Cross-tx Frame `tape` without landed bundle | No ordering; race on reset | Pattern 3 + Jito only, or single tx / pattern 2 with reset each tx |
 | Jito bundle for every Ifx flow | Extra complexity, landing risk | Default single business tx ([pattern 1](../../../docs/bundles.md)) |
 | One-off program for a single conditional CPI | Same-tx orchestration over existing programs | Use if_else + CPI when Ifx fits; new programs for new state/rules |
@@ -17,18 +18,20 @@ Reject or refactor these when reviewing agent-generated integration code.
 
 | Anti-pattern | Why | Fix |
 |--------------|-----|-----|
+| `rawCpi()` + `rawCpiPatch` for official SPL/System ix | Manual offsets; easy to patch discriminator | `structuredCpi()` + `structuredCpiPatch.*` — see [structured-cpi-patches.md](../../../docs/structured-cpi-patches.md) |
 | `ifx_patched_cpi` with **empty** patches | Invalid (`InvalidPatchedCpiPatches`) | `tx.add(static ix)` or `ifx_if_else` with `staticCpi` |
 | Patched CPI (`ifx_patched_cpi`) for unconditional hop1 swap | Hop1 amount known at build | `tx.add(hop1)` |
-| `staticCpi` when amount comes from let | Wrong step — patches missing | `cpi()` + `cpiPatch` |
-| Wrong `cpiPatch` offset | Patch lands on discriminator | Match layout (e.g. SPL Transfer amount @ 1) |
+| `staticCpi` when amount comes from let | Wrong step — patches missing | Official ix: `structuredCpi()`; DEX/custom: `rawCpi()` + `rawCpiPatch` |
+| Wrong `rawCpiPatch` offset | Patch lands on discriminator | Match layout (e.g. SPL Transfer amount @ 1) |
 | Same cond, many CPIs as separate `ixIfElse` | Re-evaluates cond; extra ix overhead | `arm.cpis([...])` when cond is identical |
+| Ifx **write** ix (`reset` / `let` / `close` / `create`) in `ifx_if_else` CPI arm | Top-level guard (`*NotTopLevel`); anti-pattern | Only external program CPI in if_else arms |
 
 ## let / tape
 
 | Anti-pattern | Why | Fix |
 |--------------|-----|-----|
-| Binding B references slot written later in **same** ixLet | On-chain eval order | Second `ixLet` or reorder bindings |
-| `tapeLen` too small or too few index slots | `TapeOutOfBounds` or `IndexCapReached` | Size tape + binding count with `indexCapForTapeLen(tapeLen)` |
+| Binding B references a Value written later in **same** ixLet | On-chain eval order | Second `ixLet` or reorder bindings |
+| `tapeLen` too small or binding index cap too low | `TapeOutOfBounds` or `IndexCapReached` | Size tape + binding count with `indexCapForTapeLen(tapeLen)` |
 | Manual `Value.index` without SDK planner | Drift from on-chain append order | Use `let*` / `letBuilder` only |
 | Hand-encoded `Expr` / wrong tags | Wire mismatch | `expr.*`, `bindSpl*`, examples |
 | **Plan tx from fetched Frame without `ixReset`** | RPC snapshot is stale; anyone can `reset`/append; wrong `Ref` / patches | Every standalone business tx starts with **`ixReset`** |
@@ -39,7 +42,8 @@ Reject or refactor these when reviewing agent-generated integration code.
 | Anti-pattern | Why | Fix |
 |--------------|-----|-----|
 | Duplicate remaining entries | Bloat, confusion | `letBuilder` dedupes by pubkey |
-| Wrong remaining order for patched CPI | Invoke fails | Use `.build().remaining` from `cpi(...).build()` |
+| Wrong remaining order for patched CPI | Invoke fails | Use `.build().remaining` from `
+rawCpi(...).build()` |
 | Missing writable/signer on meta | Simulation fail | Pass `AccountMeta` not bare `PublicKey` when needed |
 
 ## Cluster / deploy

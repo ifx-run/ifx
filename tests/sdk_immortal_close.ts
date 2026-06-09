@@ -44,10 +44,10 @@ describe("immortal close authority", () => {
       frameId,
       tapeLen: 256,
     });
-    const closeAuthority = new PublicKey(
+    const authority = new PublicKey(
       ixCreate.data.subarray(1 + 32, 1 + 32 + 32)
     );
-    expect(closeAuthority.equals(frame)).to.be.true;
-    expect(isImmortalCloseAuthority(closeAuthority, frame)).to.be.true;
+    expect(authority.equals(frame)).to.be.true;
+    expect(isImmortalCloseAuthority(authority, frame)).to.be.true;
   });
 });

@@ -27,6 +27,7 @@ pub struct FrameMut<'a> {
 /// Tape read API shared by [`Frame`], [`FrameRef`], and [`FrameMut`].
 pub trait FrameReader {
     fn index_count(&self) -> Result<u16>;
+    fn generation(&self) -> Result<u64>;
     fn index_cap(&self) -> u16;
     fn cursor(&self) -> Result<u32>;
     fn tape_len(&self) -> u32;
@@ -187,6 +188,10 @@ impl FrameReader for FrameRef<'_> {
         self.layout.read_index_count(self.data).map_err(Error::from)
     }
 
+    fn generation(&self) -> Result<u64> {
+        self.layout.read_generation(self.data).map_err(Error::from)
+    }
+
     fn index_cap(&self) -> u16 {
         self.layout.index_cap
     }
@@ -213,6 +218,10 @@ impl FrameReader for FrameMut<'_> {
         self.as_ref().index_count()
     }
 
+    fn generation(&self) -> Result<u64> {
+        self.as_ref().generation()
+    }
+
     fn index_cap(&self) -> u16 {
         self.layout.index_cap
     }
@@ -236,6 +245,13 @@ impl FrameReader for FrameMut<'_> {
 
 impl FrameWriter for FrameMut<'_> {
     fn reset_session(&mut self) -> Result<()> {
+        let gen = self
+            .layout
+            .read_generation(self.data)
+            .map_err(Error::from)?;
+        self.layout
+            .write_generation(self.data, gen.wrapping_add(1))
+            .map_err(Error::from)?;
         self.layout.write_cursor(self.data, 0).map_err(Error::from)?;
         self.layout.write_index_count(self.data, 0).map_err(Error::from)
     }
@@ -260,10 +276,11 @@ mod tests {
     fn empty_frame(tape_len: u32) -> Frame {
         let index_cap = index_cap_for_tape_len(tape_len);
         Frame {
-            close_authority: Pubkey::new_unique(),
+            authority: Pubkey::new_unique(),
             cursor: 0,
             index_count: 0,
             index_cap,
+            generation: 0,
             payload_at: vec![0u16; index_cap as usize],
             tape: vec![0u8; tape_len as usize],
         }
@@ -314,6 +331,7 @@ mod tests {
         view.reset_session().unwrap();
         assert_eq!(view.cursor().unwrap(), 0);
         assert_eq!(view.index_count().unwrap(), 0);
+        assert_eq!(view.generation().unwrap(), 1);
         assert_eq!(layout.tape(&wire).unwrap(), tape_before.as_slice());
     }
 

@@ -52,10 +52,11 @@ Renaming the wire field to `Value.index` is used in shipped code and docs; keepi
 
 ```text
 Frame {
-  close_authority: Pubkey
+  authority: Pubkey
   cursor: u32              // next append position in memory (bytes)
   index_count: u16         // bindings appended since last reset
   index_cap: u16           // = payload_at.len(); fixed at create
+  generation: u64          // 0 at create; wrapping_add(1) on each reset
   payload_at: Vec<u16>     // len = index_cap; payload_at[i] = byte offset of binding i's payload
   memory: Vec<u8>          // physical tape, len = memory_len at create
 }
@@ -100,7 +101,7 @@ For each binding in order:
 5. `cursor = endCursor`; `index_count += 1`.
 6. Fail if `index_count >= index_cap` (**index cap reached**) or `endCursor > memory.len()` (**tape full**).
 
-### 4.2 Read (`eval_expr`, `CpiPatch`, …)
+### 4.2 Read (`eval_expr`, `RawCpiPatch`, …)
 
 ```text
 resolve(index k):
@@ -117,7 +118,8 @@ resolve(index k):
 
 - `cursor = 0`
 - `index_count = 0`
-- Zero `memory` (O(`memory_len`))
+- `generation = generation.wrapping_add(1)` (`0` at create)
+- **Lazy tape:** does not zero `memory` (O(`memory_len`) avoided); stale bytes unreachable until re-append (`index < index_count` guard)
 - **`payload_at` need not be cleared** — entries are only read for `k < index_count`.
 
 ### 4.4 Account size / rent
@@ -176,7 +178,7 @@ Protocol hard cap:
 
 After **`ifx_reset_frame`**: local `cursor = 0`, `nextIndex = 0`.
 
-**Bundle pattern 3** (no reset on later tx): **`refreshFromChain`** should sync **`cursor`** and **`index_count`** from the Frame account before planning more bindings.
+**Bundle pattern 3** (no reset on later tx): **`refreshFromChain`** / **`fromFrame`** should sync **`cursor`**, **`index_count`**, and read **`generation`** from the Frame account before planning more bindings (tests / lab only — not production wallet paths).
 
 Index alone is **not** enough to check tape space (256 `bool` vs 256 `u128` differ); **cursor simulation stays required** for layout parity and overflow checks.
 

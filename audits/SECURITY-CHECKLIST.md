@@ -134,8 +134,8 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | IFX-SEC-A07 | Clock/Rent from syscalls, not user-passed sysvar accounts | `let_binding_exec.rs` |
 | IFX-SEC-A08 | CPI `AccountMeta` writable/signer flags copied from `remaining` | `patched_cpi.rs` |
 | IFX-SEC-A09 | Frame account owned by Ifx program id (Anchor `Account<Frame>`) | all frame instructions |
-| IFX-SEC-A10 | Close returns rent to `close_authority`; Anchor `close` on Frame | `close_frame.rs` |
-| IFX-SEC-A11 | Stored authority fields match signers via `constraint` / `has_one` | `close_frame.rs` (`authority == close_authority`) |
+| IFX-SEC-A10 | Close returns rent to `authority` signer | `close_frame.rs` |
+| IFX-SEC-A11 | Close signer matches stored `Frame.authority` | `close_frame.rs`, `frame_authority.rs` |
 | IFX-SEC-A12 | Frame `mut` only where written (create/reset/let); read-only on assert/CPI/if_else | `assert.rs`, `IfElse`, `IfxPatchedCpi` |
 | IFX-SEC-A13 | `Accounts` structs use `Account` / `Signer` / `Program`; raw `AccountInfo` only in `remaining` handlers | all `instructions/*.rs` |
 
@@ -150,8 +150,8 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | IFX-SEC-B03 | `frame_id` in `#[instruction]` matches init seeds | `create_frame.rs` |
 | IFX-SEC-B04 | Non-create ix: wrong Frame pubkey → decode/layout fail (seeds **not** re-verified) | `reset_frame.rs`, `let_op.rs` — ⚠️ if accepted |
 | IFX-SEC-B05 | Same PDA not used for conflicting roles | N/A — single Frame type |
-| IFX-SEC-B06 | `close_authority == Pubkey::default()` rejected at create | `create_frame.rs` |
-| IFX-SEC-B07 | Close requires signer == stored `close_authority` | `close_frame.rs` |
+| IFX-SEC-B06 | `authority == Pubkey::default()` rejected at create | `create_frame.rs` |
+| IFX-SEC-B07 | Close requires signer == stored `Frame.authority` | `close_frame.rs` |
 | IFX-SEC-B08 | `tape_len` within `MIN_TAPE_LEN..=MAX_FRAME_TAPE_LEN` at create | `Frame::init`, `space_for` |
 | IFX-SEC-B09 | Frame PDA create uses Anchor `init` (rent-exempt; mitigates lamport griefing) | `create_frame.rs` |
 
@@ -182,12 +182,12 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | IFX-SEC-D02 | `index_cap` vs `tape_len` consistent at init | `constants.rs`, `state/mod.rs` |
 | IFX-SEC-D03 | `TapeOutOfBounds` on bad cursor/offsets | `tape.rs` |
 | IFX-SEC-D04 | `IndexCapReached` when binding table full | `tape.rs` |
-| IFX-SEC-D05 | `ifx_reset_frame` has no authority (public reset) | `reset_frame.rs` — ⚠️ if accepted |
-| IFX-SEC-D06 | `ifx_let` / reset: no session ACL on Frame | `let_op.rs` — ⚠️ if accepted |
+| IFX-SEC-D05 | `ifx_reset_frame` top-level only; on-curve `authority` signer | `reset_frame.rs`, `frame_authority.rs` |
+| IFX-SEC-D06 | `ifx_let` / `create` / `close` top-level; on-curve write ACL | `let_binding_exec.rs`, `create_frame.rs`, `close_frame.rs` |
 | IFX-SEC-D07 | Program does not enforce cross-tx tape session continuity | design — ⚠️ documented |
-| IFX-SEC-D08 | `close_authority` not writable after create | `state/mod.rs` |
+| IFX-SEC-D08 | `Frame.authority` not writable after create | `frame_layout.rs` |
 | IFX-SEC-D09 | No `realloc` on Frame | instruction set |
-| IFX-SEC-D10 | `reset_session` zeroes full `tape` and resets counters | `tape.rs` |
+| IFX-SEC-D10 | `reset_session` clears counters (lazy tape — not zeroed) | `tape.rs` |
 | IFX-SEC-D11 | `InvalidValueIndex` / `LoadTypeMismatch` on bad binding reads | `tape.rs` |
 
 ---
@@ -197,7 +197,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | ID | Check | Where to read |
 |----|-------|---------------|
 | IFX-SEC-E01 | `ifx_let` only at stack height 1 | `let_binding_exec.rs` |
-| IFX-SEC-E02 | CPI-invoked `ifx_let` rejected (`LetNotTopLevel`) | `let_binding_exec.rs:203`; `tests/ifx_negative.ts` |
+| IFX-SEC-E02 | CPI-invoked write ix rejected (`*NotTopLevel`) | `let_binding_exec.rs`, `reset_frame.rs`, `tests/ifx_negative.ts` |
 | IFX-SEC-E03 | `account_index` bounded: `get_remaining` | `let_exec.rs` |
 | IFX-SEC-E04 | `AccountDataSlice`: owner match + offset/length bounds | `load_account_data_slice` |
 | IFX-SEC-E05 | `AccountDataSlice`: semantic layout not verified (raw bytes) | — ⚠️ if accepted |
@@ -225,6 +225,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | IFX-SEC-F06 | `Revert` arm → `IfElseRevert` | `if_else.rs` |
 | IFX-SEC-F07 | `ifx_assert` / condition eval: read-only Frame account | `assert.rs`, `IfElse` accounts |
 | IFX-SEC-F08 | Post-CPI re-read of callee-mutated accounts when logic depends on them | — **N/A** (patches read tape pre-CPI only) |
+| IFX-SEC-F09 | `ifx_if_else` evaluates `cond` then CPI without holding frame read borrow | `if_else.rs`, `patched_cpi.rs` |
 
 ---
 
@@ -246,10 +247,10 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 
 | Instruction | Signer | Frame mut | Other constraints |
 |-------------|--------|-----------|-------------------|
-| `ifx_create_frame` | `payer` | init PDA | System program; seeds + `tape_len` |
-| `ifx_close_frame` | `authority` | close | `authority == close_authority` |
-| `ifx_reset_frame` | — | mut | no ACL |
-| `ifx_let` | — | mut | top-level only; `remaining` for CPI reads |
+| `ifx_create_frame` | `payer` | init PDA | top-level only; System program; seeds + `tape_len` |
+| `ifx_close_frame` | `authority` | close | top-level only; signer == `Frame.authority` |
+| `ifx_reset_frame` | `authority` (on-curve) | mut | top-level only; off-curve = public |
+| `ifx_let` | `authority` (on-curve) | mut | top-level only; `remaining` for CPI reads |
 | `ifx_assert` | — | read | |
 | `ifx_patched_cpi` | — | read | `remaining` for CPI |
 | `ifx_if_else` | — | read | `remaining` when arm CPIs |

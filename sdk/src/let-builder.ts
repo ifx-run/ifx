@@ -130,6 +130,31 @@ export class LetIxBuilder {
     );
   }
 
+  /** `remaining[i].key` (account address; ALT-friendly). */
+  /** `remaining[i].key` (account address; ALT-friendly). Pass {@link PublicKey} only — readonly, non-signer. */
+  letAccountKey(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const i = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.accountKey(0), i)
+    );
+  }
+
+  /** Wire literal pubkey on `ifx_let` args (no ALT — prefer {@link letAccountKey}). */
+  letConstPubkey(pk: PublicKey | Buffer): ScratchValue<"pubkey"> {
+    const bytes = Buffer.isBuffer(pk) ? pk : pk.toBuffer();
+    return this.push(this.scratch.plan(binding.constPubkey(bytes)));
+  }
+
+  /** `Frame.generation` (increments on reset; no remaining account). */
+  frameGeneration(): ScratchValue<"u64"> {
+    return this.push(this.scratch.plan(binding.frameGeneration()));
+  }
+
+  /** `Frame.index_count` (bindings since last reset; no remaining account). */
+  frameIndexCount(): ScratchValue<"u16"> {
+    return this.push(this.scratch.plan(binding.frameIndexCount()));
+  }
+
   accountDataSlice<T extends IfxTy>(
     account: LetAccountInput,
     expectedOwner: LetAccountInput,

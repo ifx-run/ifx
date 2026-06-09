@@ -16,7 +16,7 @@
  */
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 
-import { cpiPatch, cpi, type FrameScratch } from "../src/index";
+import { rawCpiPatch, rawCpi, type FrameScratch } from "../src/index";
 
 /** SPL Token `Transfer` ix: u8 tag @ 0, u64 amount @ 1 (LE). */
 export const SPL_TRANSFER_AMOUNT_OFFSET = 1;
@@ -55,8 +55,8 @@ export function planTwoHopTokenSwapTx(
   const usdcOut = letBatch.splTokenAmount(accounts.userUsdcAta);
   tx.add(letBatch.buildIx());
 
-  const hop2 = cpi(hops.hop2Template, {
-    patches: [cpiPatch(hops.amountInOffset, usdcOut)],
+  const hop2 = rawCpi(hops.hop2Template, {
+    patches: [rawCpiPatch(hops.amountInOffset, usdcOut)],
   }).build();
   tx.add(scratch.ixCpi(hop2));
 

@@ -21,6 +21,7 @@ exports.VALUE_TYPE_TAG = [
     "i128",
     "f32",
     "f64",
+    "pubkey",
 ];
 function valueTypeToTag(ty) {
     const tag = exports.VALUE_TYPE_TAG.findIndex((k) => k in ty);

@@ -49,7 +49,7 @@ Solana 交易是 **instruction 列表**，没有原生 if/else。条件逻辑必
 | 项 | 说明 |
 | --- | --- |
 | **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-08-09a9114-ifx-internal-review.zh-CN.md)（2026-06-08，commit `09a9114`）；**未上 mainnet** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.2.0-devnet.0` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.3.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
 | **Program（localnet / 仓库默认）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
@@ -105,14 +105,14 @@ const frameId = randomBytes(32); // 持久化，供后续任务用
 const { ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
 // Tx 2 — 业务 tx（用已存的 frameId 重建 planner）
 const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(frame, tapeLen);
+const scratch = new FrameScratch(frame, tapeLen, 0, 0, undefined, payer);
 const tx = new Transaction();
 
 tx.add(scratch.ixReset());
@@ -145,7 +145,7 @@ import { FrameScratch } from "@ifx-run/sdk";
 const { scratch, ixCreate } = FrameScratch.planNewFrame({
   payer,
   frameId,
-  closeAuthority: payer,
+  authority: payer,
   tapeLen: 256,
 });
 
@@ -160,7 +160,7 @@ Devnet program：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。仅使用测试
 
 ## 用 Cursor、Claude Code 或其他 AI agent
 
-> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、patched CPI（`cpi` + `ifx_patched_cpi`）与静态 CPI 的取舍、devnet `programId`、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 示例扩展，减少手写 wire format 和 `Expr` 错误。
+> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、**Structured CPI**（官方 System/SPL 用 `structuredCpi`）与 **RawPatched** CPI（`rawCpi` + `ifx_patched_cpi`）及静态 CPI 的取舍、devnet `programId`、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 示例扩展，减少手写 wire format 和 `Expr` 错误。
 
 | | |
 |---|---|
@@ -190,8 +190,8 @@ flowchart LR
 ```
 
 - **Frame** — PDA 的 `tape` 是**本 tx 草稿纸**（`reset` 清空会话），不是跨 tx 业务状态。
-- **`ifx_if_else`** — 每臂：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（可混静态与 patched）。同一条件多步：`arm.cpis([...])`。
-- **`cpi()` vs `staticCpi`** — 字段来自 `ifx_let` 时用 **`cpi()`** + **`cpiPatch`**（无条件走 **`scratch.ixCpi`** → **`ifx_patched_cpi`**）；组 tx 时 `data` 已完整用 **`staticCpi`** 或 **`tx.add(ix)`**。
+- **`ifx_if_else`** — 每臂：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（可混静态、**Structured** 与 RawPatched）。同一条件多步：`arm.cpis([...])`。
+- **CPI 选型** — 官方 System / SPL / Token-2022 且字段来自 tape → **`structuredCpi()`** + **`structuredCpiPatch.*`**（[structured-cpi-patches.zh-CN.md](./docs/structured-cpi-patches.zh-CN.md)）；DEX / 自定义 layout → **`rawCpi()`** + **`rawCpiPatch`**（无条件 **`scratch.ixCpi`** → **`ifx_patched_cpi`**）；组 tx 时 `data` 已完整 → **`staticCpi`** 或 **`tx.add(ix)`**。
 
 细节：[docs/implementation.zh-CN.md](./docs/implementation.zh-CN.md) · [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)
 
@@ -204,7 +204,7 @@ flowchart LR
 | 级别 | 示例 | 你会学到 |
 |------|------|----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame、`reset`、`let`、`assert` |
-| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`、patched + static CPI（`cpi` / `staticCpi`）、链式 `if_else` |
+| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`、patched + static CPI（`rawCpi` / `staticCpi`）、链式 `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | 两跳 A→USDC→B、读中间 token 余额、patch 第二跳 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | tx 中途读、assert 硬失败、多处 patch |
 
@@ -212,7 +212,7 @@ flowchart LR
 
 **规则：** 原始余额 `< DUST_THRESHOLD_RAW` → burn → harvest（如有）→ close；**≥ 阈值** → 全部 skip。
 
-**一次 `ifx_let`**，**三次 `ifx_if_else`**（每臂一条 CPI）。burn 用 **patched CPI**（`cpi` + `cpiPatch` 读 amount + decimals）；harvest / close 用 **`staticCpi`**。
+**一次 `ifx_let`**，**三次 `ifx_if_else`**（每臂一条 CPI）。burn 用 **patched CPI**（`rawCpi` + `rawCpiPatch` 读 amount + decimals）；harvest / close 用 **`staticCpi`**。
 
 ```text
 let(amount, withheld, decimals)
@@ -225,7 +225,7 @@ let(amount, withheld, decimals)
 
 ### L2 — 两跳 token swap（A → USDC → B）
 
-**同一 tx 内编排：** 第一跳 CPI 产出中间 USDC；Ifx **`splTokenAmount`** 读该 ATA；第二跳 **patched CPI**（`cpi` + `cpiPatch`）用链上读到的数量作 exact-in。
+**同一 tx 内编排：** 第一跳 CPI 产出中间 USDC；Ifx **`splTokenAmount`** 读该 ATA；第二跳 **patched CPI**（`rawCpi` + `rawCpiPatch`）用链上读到的数量作 exact-in。
 
 **示例范围外：** Token-2022、SOL/手续费/WSOL — 中间 USDC ATA 须在业务 tx 前建好（建议余额从 0 开始）。
 
@@ -241,7 +241,7 @@ reset → CPI 第一跳（A→USDC）→ let(usdcOut) → patched CPI 第二跳�
 
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";
-import { arm, ifElseArgs, cpi, cpiPatch, expr } from "@ifx-run/sdk";
+import { arm, ifElseArgs, rawCpi, rawCpiPatch, expr } from "@ifx-run/sdk";
 
 const tx = new Transaction();
 const userMeta = { pubkey: user, isSigner: true, isWritable: true };
@@ -261,15 +261,17 @@ tx.add(letAfter.buildIx());
 tx.add(scratch.ixAssert(expr.ge(expr.sub(solAfter, solBefore), settle)));
 
 // System Transfer data：u32 discriminant @ 0，u64 lamports @ 4（小端）
-const sponsorXfer = cpi(
+const sponsorXfer = 
+rawCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: sponsor, lamports: 0 }),
-  { patches: [cpiPatch(4, settle)] }
+  { patches: [rawCpiPatch(4, settle)] }
 ).build();
 tx.add(scratch.ixCpi(sponsorXfer));
 
-const poolXfer = cpi(
+const poolXfer = 
+rawCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
-  { patches: [cpiPatch(4, buyLamports)] }
+  { patches: [rawCpiPatch(4, buyLamports)] }
 ).build();
 tx.add(scratch.ixIfElse(
   ifElseArgs(expr.gt(buyLamports, expr.u64(0)), arm.cpi(poolXfer.cpi)),
@@ -349,7 +351,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **为什么要两笔 tx？** 创建 Frame 是一次性开通；业务 tx 开头 `reset`。多 tx 拆分见 [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)。
 
-**`cpi()` 和 `staticCpi`？** 字段来自 `ifx_let` → **`cpi()`** + **`cpiPatch`**，无条件走 **`scratch.ixCpi`**（**`ifx_patched_cpi`**）；组 tx 时 data 已完整 → **`staticCpi`** + **`arm.cpi(step.staticStep)`**。无条件静态 ix 也可直接 `tx.add`。
+**CPI 怎么选？** 官方 System / SPL / Token-2022 且字段来自 tape → **`structuredCpi()`** + **`structuredCpiPatch.*`**。DEX / 自定义 layout → **`rawCpi()`** + **`rawCpiPatch`**（无条件 **`scratch.ixCpi`** / **`ifx_patched_cpi`**）。组 tx 时 data 已完整 → **`staticCpi`** + **`arm.cpi(step.staticStep)`** 或直接 **`tx.add(ix)`**。
 
 **dust 为什么要三个 `if_else`？** burn / harvest / close **条件不同** → 三个 `if_else` 按序。只有 CPI 改动了后续条件依赖的字段时才再 `let`（dust 流程复用首次 `amount` / `withheld`）。同一条件多步 → 一个 `arm.cpis([...])`。
 

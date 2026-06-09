@@ -14,10 +14,9 @@ import {
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 
 import {
-  cpiPatch,
+  rawCpiPatch,
   expr,
-  cpi,
-  type FrameScratch,
+  rawCpi,   type FrameScratch,
   type IxOpts,
   type ScratchValue,
 } from "../src/index";
@@ -143,7 +142,7 @@ export function planPersonalAmmSwapInstructions(
     )
   );
 
-  const transferOut = cpi(
+  const transferOut = rawCpi(
     createTransferInstruction(
       accounts.poolTokenBAta,
       accounts.userTokenBAta,
@@ -152,7 +151,7 @@ export function planPersonalAmmSwapInstructions(
       [],
       tokenProgram
     ),
-    { patches: [cpiPatch(SPL_TRANSFER_AMOUNT_OFFSET, amountOut)] }
+    { patches: [rawCpiPatch(SPL_TRANSFER_AMOUNT_OFFSET, amountOut)] }
   ).build();
   instructions.push(scratch.ixCpi(transferOut, opts));
 

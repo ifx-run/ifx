@@ -5,21 +5,28 @@ import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import { randomBytes } from "crypto";
+import {
+  createTransferCheckedInstruction,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 
 import {
   arm,
   binding,
   buildIxAssert,
   buildIxLet,
-  cpiPatch,
+  rawCpiPatch,
   encodeCpi,
   expr,
   IFX_LOCALNET_PROGRAM_ID,
   ifElseArgs,
-  cpi,
+  rawCpi,
   staticCpi,
+  structuredCpi,
+  structuredCpiPatch,
 } from "../sdk/src";
 import { IX_DISC_PATCHED_CPI } from "../sdk/src/constants";
+import { createIxResetFrame, IX_DISCRIMINATOR } from "../sdk/src/ix";
 import { TransactionInstruction } from "@solana/web3.js";
 import type { Expr } from "../sdk/src/types";
 import {
@@ -37,12 +44,13 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const nestedLetIx = buildIxLet(
       scratch.frame,
+      scratch.authority,
       { bindings: [binding.eval(expr.u8(1))] },
       [],
       { programId: IFX_LOCALNET_PROGRAM_ID }
@@ -72,12 +80,13 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const nestedLetIx = buildIxLet(
       scratch.frame,
+      scratch.authority,
       { bindings: [binding.eval(expr.u8(99))] },
       [],
       { programId: IFX_LOCALNET_PROGRAM_ID }
@@ -107,7 +116,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -118,8 +127,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · InvalidAccountIndex (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.accountLamports(3)] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.accountLamports(3)] },
             [{ pubkey: payer.publicKey, isSigner: false, isWritable: false }],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )
@@ -132,7 +142,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -145,8 +155,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · InvalidValueIndex forward ref (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.eval(forwardRef)] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.eval(forwardRef)] },
             [],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )
@@ -159,7 +170,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -168,8 +179,9 @@ describe("ifx negative (on-chain errors)", () => {
       "ifx · empty let batch",
       scratch.ixReset(),
       buildIxLet(
-        scratch.frame,
-        { bindings: [] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [] },
         [],
         { programId: IFX_LOCALNET_PROGRAM_ID }
       )
@@ -184,7 +196,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 20,
     });
 
@@ -196,7 +208,7 @@ describe("ifx negative (on-chain errors)", () => {
           provider,
           "ifx · IndexCapReached (expect fail)",
           scratch.ixReset(),
-          buildIxLet(scratch.frame, { bindings }, [], {
+          buildIxLet(scratch.frame, scratch.authority, { bindings }, [], {
             programId: IFX_LOCALNET_PROGRAM_ID,
           })
         ),
@@ -208,7 +220,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 20,
     });
 
@@ -224,7 +236,7 @@ describe("ifx negative (on-chain errors)", () => {
           provider,
           "ifx · TapeOutOfBounds (expect fail)",
           scratch.ixReset(),
-          buildIxLet(scratch.frame, { bindings }, [], {
+          buildIxLet(scratch.frame, scratch.authority, { bindings }, [], {
             programId: IFX_LOCALNET_PROGRAM_ID,
           })
         ),
@@ -236,7 +248,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -260,12 +272,12 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const recipient = Keypair.generate();
-    const built = cpi(
+    const built = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: recipient.publicKey,
@@ -300,19 +312,19 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const recipient = Keypair.generate();
     const amount = scratch.letConstU64(1);
-    const built = cpi(
+    const built = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: recipient.publicKey,
         lamports: 0,
       }),
-      { patches: [cpiPatch(100, amount)] }
+      { patches: [rawCpiPatch(100, amount)] }
     ).build();
 
     await expectIfxTxFail(
@@ -332,19 +344,19 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
     const recipient = Keypair.generate();
     const amount = scratch.letConstU64(1);
-    const built = cpi(
+    const built = rawCpi(
       SystemProgram.transfer({
         fromPubkey: payer.publicKey,
         toPubkey: recipient.publicKey,
         lamports: 0,
       }),
-      { patches: [cpiPatch(4, amount)] }
+      { patches: [rawCpiPatch(4, amount)] }
     ).build();
     built.cpi.accountsLen = 99;
 
@@ -365,7 +377,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -376,8 +388,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · DivisionByZero (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.eval(expr.div(expr.u64(1), expr.u64(0)))] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.eval(expr.div(expr.u64(1), expr.u64(0)))] },
             [],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )
@@ -390,7 +403,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -401,8 +414,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · IntegerOverflow (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            {
+      scratch.frame,
+      scratch.authority,
+      {
               bindings: [
                 binding.eval(
                   expr.add(expr.u64(18446744073709551615n), expr.u64(1))
@@ -421,7 +435,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -432,8 +446,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · IntegerUnderflow (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.eval(expr.sub(expr.u64(0), expr.u64(1)))] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.eval(expr.sub(expr.u64(0), expr.u64(1)))] },
             [],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )
@@ -446,7 +461,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -457,8 +472,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · UnsupportedBinaryOp (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            {
+      scratch.frame,
+      scratch.authority,
+      {
               bindings: [
                 binding.eval({
                   add: {
@@ -480,7 +496,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -491,8 +507,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · UnsupportedUnaryOp (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.eval(expr.neg(expr.u64(1)))] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.eval(expr.neg(expr.u64(1)))] },
             [],
             { programId: IFX_LOCALNET_PROGRAM_ID }
           )
@@ -505,7 +522,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -516,8 +533,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · FloatUnordered (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            {
+      scratch.frame,
+      scratch.authority,
+      {
               bindings: [
                 binding.eval({
                   sub: {
@@ -545,7 +563,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -556,8 +574,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · AccountOwnerMismatch SPL (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            { bindings: [binding.splTokenAccountAmount(0)] },
+      scratch.frame,
+      scratch.authority,
+      { bindings: [binding.splTokenAccountAmount(0)] },
             [
               {
                 pubkey: payer.publicKey,
@@ -576,7 +595,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -602,7 +621,7 @@ describe("ifx negative (on-chain errors)", () => {
     const scratch = await provisionLocalFrame(provider, {
       payer: payer.publicKey,
       frameId: randomBytes(32),
-      closeAuthority: payer.publicKey,
+      authority: payer.publicKey,
       tapeLen: 256,
     });
 
@@ -613,8 +632,9 @@ describe("ifx negative (on-chain errors)", () => {
           "ifx · LoadTypeMismatch cross-type add (expect fail)",
           scratch.ixReset(),
           buildIxLet(
-            scratch.frame,
-            {
+      scratch.frame,
+      scratch.authority,
+      {
               bindings: [
                 binding.eval(expr.u64(1)),
                 binding.eval(expr.u32(2)),
@@ -631,6 +651,115 @@ describe("ifx negative (on-chain errors)", () => {
           )
         ),
       "LoadTypeMismatch"
+    );
+  });
+
+  it("ifx_reset_frame rejects CPI nested in ifx_if_else static arm (ResetNotTopLevel)", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 256,
+    });
+
+    const nestedReset = createIxResetFrame(
+      scratch.frame,
+      scratch.authority,
+      { programId: IFX_LOCALNET_PROGRAM_ID }
+    );
+    const nested = staticCpi(nestedReset);
+
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · ResetNotTopLevel via if_else cpi (expect fail)",
+          scratch.ixIfElse(
+            ifElseArgs(expr.bool(true), arm.cpi(nested.staticStep), arm.skip()),
+            nested.remaining
+          )
+        ),
+      "ResetNotTopLevel"
+    );
+  });
+
+  it("ifx_reset_frame rejects private frame without authority signer (UnauthorizedFrameWrite)", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 256,
+    });
+
+    const stranger = Keypair.generate();
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · UnauthorizedFrameWrite on reset (expect fail)",
+          new TransactionInstruction({
+            programId: IFX_LOCALNET_PROGRAM_ID,
+            keys: [
+              { pubkey: scratch.frame, isSigner: false, isWritable: true },
+              {
+                pubkey: stranger.publicKey,
+                isSigner: false,
+                isWritable: false,
+              },
+            ],
+            data: IX_DISCRIMINATOR.ifxResetFrame,
+          })
+        ),
+      "UnauthorizedFrameWrite"
+    );
+  });
+
+  it("ifx_patched_cpi rejects Token structured patch with wrong program id (InvalidStructuredCpiProgram)", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 256,
+    });
+
+    const amount = scratch.letEval(expr.u64(1));
+    const source = Keypair.generate().publicKey;
+    const mint = Keypair.generate().publicKey;
+    const dest = Keypair.generate().publicKey;
+
+    const template = createTransferCheckedInstruction(
+      source,
+      mint,
+      dest,
+      payer.publicKey,
+      1n,
+      9,
+      [],
+      TOKEN_PROGRAM_ID
+    );
+
+    const built = structuredCpi(
+      template,
+      structuredCpiPatch.tokenTransferChecked.amountOnly(amount, 9)
+    ).build();
+
+    const wrongRemaining = built.remaining.map((m) => ({ ...m }));
+    wrongRemaining[built.cpi.accountsStart] = {
+      pubkey: SystemProgram.programId,
+      isSigner: false,
+      isWritable: false,
+    };
+
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · InvalidStructuredCpiProgram (expect fail)",
+          scratch.ixReset(),
+          scratch.ixLet(amount),
+          scratch.ixCpi({ cpi: built.cpi, remaining: wrongRemaining })
+        ),
+      "InvalidStructuredCpiProgram"
     );
   });
 });

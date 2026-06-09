@@ -115,6 +115,25 @@ export const binding = {
   splToken2022MintDefaultAccountState(accountIndex: number): LetBinding {
     return { splToken2022MintDefaultAccountState: { accountIndex } };
   },
+
+  accountKey(accountIndex: number): LetBinding {
+    return { accountKey: { accountIndex } };
+  },
+
+  constPubkey(bytes: Buffer): LetBinding {
+    if (bytes.length !== 32) {
+      throw new Error(`constPubkey must be 32 bytes, got ${bytes.length}`);
+    }
+    return { constPubkey: { bytes: Array.from(bytes) } };
+  },
+
+  frameGeneration(): LetBinding {
+    return { frameGeneration: {} };
+  },
+
+  frameIndexCount(): LetBinding {
+    return { frameIndexCount: {} };
+  },
 };
 
 /** Frame tape type implied by a `LetBinding` variant. */
@@ -130,6 +149,7 @@ export function inferBindingTy(
   }
   if ("accountLamports" in b) return "u64";
   if ("accountDataLen" in b) return "u32";
+  if ("accountKey" in b || "constPubkey" in b) return "pubkey";
   if (
     "sysvarClockSlot" in b ||
     "sysvarClockEpoch" in b ||
@@ -169,6 +189,8 @@ export function inferBindingTy(
   if ("splToken2022MintTransferFeeBasisPoints" in b) {
     return "u16";
   }
+  if ("frameGeneration" in b) return "u64";
+  if ("frameIndexCount" in b) return "u16";
   throw new Error("unknown LetBinding shape");
 }
 
@@ -188,6 +210,9 @@ export function remapBindingAccountIndex(
   }
   if ("accountDataLen" in b) {
     return binding.accountDataLen(accountIndex);
+  }
+  if ("accountKey" in b) {
+    return binding.accountKey(accountIndex);
   }
   if ("accountDataSlice" in b && b.accountDataSlice) {
     const { ty, offset, expectedProgramOwner } = b.accountDataSlice;

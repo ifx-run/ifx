@@ -84,7 +84,7 @@ impl<T: BorshDeserialize> BorshDeserialize for U8LenVec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{CpiPatch, LetBinding, Value};
+    use crate::state::{RawCpiPatch, LetBinding, Value};
 
     #[test]
     fn roundtrip_bindings() {
@@ -127,13 +127,13 @@ mod tests {
 
     #[test]
     fn roundtrip_patch() {
-        let v = U8LenVec(vec![CpiPatch {
+        let v = U8LenVec(vec![RawCpiPatch {
             data_offset: 4,
             source: Value { index: 10 },
         }]);
         let encoded = borsh::to_vec(&v).unwrap();
         assert_eq!(encoded, [1u8, 4, 0, 10]);
-        let back = borsh::from_slice::<U8LenVec<CpiPatch>>(&encoded).unwrap();
+        let back = borsh::from_slice::<U8LenVec<RawCpiPatch>>(&encoded).unwrap();
         assert_eq!(back, v);
     }
 }

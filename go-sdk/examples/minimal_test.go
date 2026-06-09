@@ -16,7 +16,7 @@ func TestPlanMinimalFrameBusiness(t *testing.T) {
 	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
 		Payer:          payer,
 		FrameID:        frameID,
-		CloseAuthority: payer,
+		Authority: payer,
 		TapeLen:        256,
 		ProgramID:      constants.LocalnetProgramID,
 	})
@@ -24,15 +24,15 @@ func TestPlanMinimalFrameBusiness(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := plan.Scratch
-	s.IxReset(nil)
+	s.IxReset()
 	one, err := s.LetConstU64(1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.IxLet(one, nil); err != nil {
+	if _, err := s.IxLet(one); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index)), nil); err != nil {
+	if _, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index))); err != nil {
 		t.Fatal(err)
 	}
 	if plan.IxCreate == nil || plan.Frame.IsZero() {

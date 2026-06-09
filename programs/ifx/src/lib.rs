@@ -6,7 +6,7 @@
 //!   planning and instruction encoding.
 //! - **On-chain CPI:** depend on this crate with `features = ["cpi"]`.
 //! - **Wire types:** [`Expr`](state::types::Expr) serializes with **Borsh** (flat enum,
-//!   tags 0–42). Do not encode `Expr` with Anchor's recursive instruction coder.
+//!   tags 0–43). Do not encode `Expr` with Anchor's recursive instruction coder.
 //!
 //! See `docs/rust-integration.md`, `docs/implementation.md`, and `docs/errors.md`.
 
@@ -47,25 +47,25 @@ pub mod ifx {
     /// Create a new [`Frame`] PDA — one-time provisioning per `(payer, frame_id)`.
     ///
     /// Allocates `tape_len` bytes of scratch tape (+ fixed `payload_at` index table),
-    /// sets `cursor = 0`, `index_count = 0`, and stores `close_authority` for later
-    /// [`ifx_close_frame`]. The PDA seeds are `[FRAME_SEED, payer, frame_id]`.
+    /// sets `cursor = 0`, `index_count = 0`, and stores `authority` for later
+    /// [`ifx_close_frame`] and write gates on [`ifx_reset_frame`] / [`ifx_let`].
+    /// The PDA seeds are `[FRAME_SEED, payer, frame_id]`.
     ///
-    /// Typical usage: standalone tx before business flows; not every swap/settlement tx.
-    /// There is no access control on who may [`ifx_reset_frame`] or append later —
-    /// treat `tape` as tx-scoped scratch, not durable application state.
+    /// **Off-curve `authority`** (e.g. Frame PDA) → public scratch. **On-curve** → private Frame.
+    /// Top-level only. See `docs/frame-authority.md`.
     #[instruction(discriminator = [IX_DISC_CREATE_FRAME])]
     pub fn ifx_create_frame(
         ctx: Context<CreateFrame>,
         frame_id: [u8; 32],
-        close_authority: Pubkey,
+        authority: Pubkey,
         tape_len: u32,
     ) -> Result<()> {
-        create_frame::handler(ctx, frame_id, close_authority, tape_len)
+        create_frame::handler(ctx, frame_id, authority, tape_len)
     }
 
-    /// Close a [`Frame`] PDA and return rent to `close_authority`.
+    /// Close a [`Frame`] PDA and return rent to `authority`.
     ///
-    /// Requires `authority` signer to match the `close_authority` stored at create.
+    /// Requires `authority` signer to match `Frame.authority`. Top-level only.
     /// Typical usage: standalone teardown tx when the Frame is no longer needed.
     #[instruction(discriminator = [IX_DISC_CLOSE_FRAME])]
     pub fn ifx_close_frame<'info>(ctx: Context<'info, CloseFrame<'info>>) -> Result<()> {
@@ -78,7 +78,9 @@ pub mod ifx {
     /// tape. Omit only when a later tx in the **same landed bundle** intentionally
     /// continues bindings written by an earlier tx (same scratch session).
     ///
-    /// Does not change `close_authority` or account size — only clears session data.
+    /// Does not change `authority` or account size — only clears session data.
+    /// Top-level only. **Public** Frame (off-curve `authority`): no `remaining_accounts`.
+    /// **Private** Frame: `remaining_accounts[0]` = on-curve `authority` signer.
     #[instruction(discriminator = [IX_DISC_RESET_FRAME])]
     pub fn ifx_reset_frame<'info>(ctx: Context<'info, ResetFrame<'info>>) -> Result<()> {
         reset_frame::handler(ctx)
@@ -91,8 +93,9 @@ pub mod ifx {
     /// unpacks, and [`Expr`] evaluation (`Eval`). Bindings may reference earlier slots
     /// in the same batch via [`Expr::Value`] (binding **index**).
     ///
-    /// **Constraints:** must run at transaction top level (stack height 1). CPI
-    /// sources index [`remaining_accounts`] passed with this instruction.
+    /// **Constraints:** must run at transaction top level (stack height 1).
+    /// **Private** Frame: `remaining_accounts[0]` = `authority` signer; let bindings
+    /// index `remaining_accounts[1..]`. **Public** Frame: bindings index from `[0]`.
     #[instruction(discriminator = [IX_DISC_LET])]
     pub fn ifx_let<'info>(ctx: Context<'info, Let<'info>>, args: LetArgs) -> Result<()> {
         let_op::handler(ctx, args)
@@ -110,14 +113,7 @@ pub mod ifx {
 
     /// Unconditional patched CPI into an existing program.
     ///
-    /// `arm` is a [`Cpi`]: template instruction `data` plus optional [`CpiPatch`] ranges
-    /// copied from `Frame::tape` immediately before `invoke`. Accounts are taken from
-    /// `remaining_accounts[accounts_start .. accounts_start + accounts_len]` as
-    /// `[program_id, …inner_accounts]` (program id is not repeated in the inner slice).
-    ///
-    /// Use when CPI fields (e.g. transfer lamports) were bound on-chain in the same tx
-    /// via [`ifx_let`]. For unconditional CPI without patches, add the target ix to the
-    /// transaction directly; use [`ifx_if_else`] [`IfElseArm::Cpi`] for conditional static CPI.
+    /// `arm` is a [`Cpi`] step (see [`state::cpi`] wire: Static | RawPatched | Structured).
     #[instruction(discriminator = [IX_DISC_PATCHED_CPI])]
     pub fn ifx_patched_cpi<'info>(
         ctx: Context<'info, IfxPatchedCpi<'info>>,

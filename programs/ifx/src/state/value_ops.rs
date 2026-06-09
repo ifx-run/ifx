@@ -217,6 +217,11 @@ pub(crate) fn apply_compare(ty: ValueType, op: CompareOp, lhs: &[u8], rhs: &[u8]
         return Ok(matches!(op, CompareOp::Eq) == (l == r));
     }
 
+    if ty == ValueType::Pubkey {
+        require!(matches!(op, CompareOp::Eq | CompareOp::Ne), ErrorCode::UnsupportedBinaryOp);
+        return compare_typed(ty, op, decode_typed(ty, lhs)?, decode_typed(ty, rhs)?);
+    }
+
     require!(ty.supports_ordering(), ErrorCode::UnsupportedBinaryOp);
     compare_typed(ty, op, decode_typed(ty, lhs)?, decode_typed(ty, rhs)?)
 }
@@ -457,6 +462,13 @@ fn compare_typed(ty: ValueType, op: CompareOp, l: TypedValue, r: TypedValue) -> 
         (ValueType::I128, TypedValue::I128(a), TypedValue::I128(b)) => cmp_ord!(a, b),
         (ValueType::F32, TypedValue::F32(a), TypedValue::F32(b)) => cmp_float!(a, b),
         (ValueType::F64, TypedValue::F64(a), TypedValue::F64(b)) => cmp_float!(a, b),
+        (ValueType::Pubkey, TypedValue::Pubkey(a), TypedValue::Pubkey(b)) => {
+            Ok(match op {
+                CompareOp::Eq => a == b,
+                CompareOp::Ne => a != b,
+                _ => return Err(ErrorCode::UnsupportedBinaryOp.into()),
+            })
+        }
         _ => Err(ErrorCode::LoadTypeMismatch.into()),
     }
 }

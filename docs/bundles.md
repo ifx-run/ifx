@@ -31,7 +31,7 @@ So if tx1 writes Frame `tape` / `cursor` / `index_count` and tx2 (same bundle, l
 | **Frame locked after the bundle** | Anyone can still `reset` or append in a **later** tx / block |
 | **Safety between standalone txs** | `create` in tx A and business in tx B **days apart** — bundle does not connect them unless both are in **one** bundle |
 | **Cross-tx scratch without a bundle** | Two normal RPC sends — **no** ordering; someone can reset your Frame in between |
-| **Ifx access control** | Frame remains a shared PDA; bundle is not a permission model |
+| **Ifx access control** | Public Frames (off-curve `authority`); private Frames require on-curve **`authority`** signer on writes — [frame-authority.md](./frame-authority.md). Bundle is not a substitute |
 
 **Ifx does not wrap or vouch for Jito.** Treat bundle guarantees as **third-party, conditional on landing**.
 
@@ -84,7 +84,7 @@ tx_a: ifx_reset_frame → ifx_let → …
 tx_b: (no reset) → ifx_let → ifx_patched_cpi …
 ```
 
-**Only if the bundle lands:** tx2 sees tx1’s Frame writes; no tx between them inside the bundle. Plan combined `tape_len`. If the bundle fails auction, retry with a new bundle — there is **no partial commit**.
+**Only if the bundle lands:** tx2 sees tx1’s Frame writes; no tx between them inside the bundle. Plan combined `tape_len`. When continuing without reset, sync planner from chain (`fromFrame` / `refreshFromChain` in tests) and read **`generation`** / **`index_count`** before appending. If the bundle fails auction, retry with a new bundle — there is **no partial commit**.
 
 ---
 

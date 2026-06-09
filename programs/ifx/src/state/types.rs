@@ -1,15 +1,14 @@
 //! Wire types for Ifx instructions and Frame tape.
 //!
-//! - [`Expr`]: Borsh flat enum, discriminant **0–42** (see `docs/implementation.md` §5).
+//! - [`Expr`]: Borsh flat enum, discriminant **0–43** (see `docs/implementation.md` §5).
 //!   Encoded with `borsh`, not `AnchorSerialize`. IDL shape: `state/expr_idl_type.json`.
-//! - [`LetBinding`]: Anchor enum, discriminant **0–24** (see `docs/typed-let-bindings.md`).
+//! - [`LetBinding`]: Anchor enum, discriminant **0–28** (see `docs/typed-let-bindings.md`).
 //! - [`Value`]: binding index into `Frame::payload_at` / `tape`.
 
 use anchor_lang::prelude::*;
 
-use super::patch_list::PatchList;
+use super::cpi::Cpi;
 use super::u8_len_vec::U8LenVec;
-use super::u16_len_vec::U16LenVec;
 
 /// Reference to a bound value by **binding index** (0-based append order).
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,6 +45,8 @@ pub enum ValueType {
     F32,
     /// 8 bytes, IEEE-754
     F64,
+    /// 32 bytes, Solana public key (raw).
+    Pubkey,
 }
 
 impl ValueType {
@@ -56,6 +57,7 @@ impl ValueType {
             ValueType::U32 | ValueType::I32 | ValueType::F32 => 4,
             ValueType::U64 | ValueType::I64 | ValueType::F64 => 8,
             ValueType::U128 | ValueType::I128 => 16,
+            ValueType::Pubkey => 32,
         }
     }
 
@@ -83,7 +85,7 @@ impl ValueType {
 
 /// Flat expression tree: one wire tag per operator (no nested `Unary`/`Binary` shells).
 ///
-/// Variant order is the Borsh discriminant (0–42). See `docs/implementation.md` §5.
+/// Variant order is the Borsh discriminant (0–43). See `docs/implementation.md` §5.
 ///
 /// Uses `borsh` derives (not `#[derive(AnchorSerialize)]`) so we can supply a
 /// non-recursive [`IdlBuild`] impl under `idl-build` without stack overflow.
@@ -248,6 +250,8 @@ pub enum Expr {
         then_expr: Box<Expr>,
         else_expr: Box<Expr>,
     },
+    /// Literal. **→ `Pubkey`.**
+    ConstPubkey([u8; 32]),
 }
 
 /// One `ifx_let` binding: wire tag selects variant; Frame `ty` is implied (or explicit for slices/eval).
@@ -318,6 +322,14 @@ pub enum LetBinding {
     SplToken2022MintDefaultAccountState { account_index: u8 },
     /// `remaining[i].data_len()` (account data byte length). **→ `U32`.**
     AccountDataLen { account_index: u8 },
+    /// `remaining[i].key` (account address). **→ `Pubkey`.**
+    AccountKey { account_index: u8 },
+    /// Wire literal public key (no ALT; prefer [`LetBinding::AccountKey`] when possible). **→ `Pubkey`.**
+    ConstPubkey { bytes: [u8; 32] },
+    /// `Frame.generation` (increments on reset). **→ `U64`.** No `remaining` account.
+    FrameGeneration,
+    /// `Frame.index_count` (bindings since last reset). **→ `U16`.** No `remaining` account.
+    FrameIndexCount,
 }
 
 impl LetBinding {
@@ -353,6 +365,9 @@ impl LetBinding {
             | SplToken2022MintDefaultAccountState { .. } => U8,
             SplToken2022MintTransferFeeBasisPoints { .. } => U16,
             AccountDataLen { .. } => U32,
+            AccountKey { .. } | ConstPubkey { .. } => Pubkey,
+            FrameGeneration => U64,
+            FrameIndexCount => U16,
         }
     }
 }
@@ -363,26 +378,16 @@ pub struct LetArgs {
     pub bindings: U8LenVec<LetBinding>,
 }
 
-/// Overwrite a slice of [`Cpi::data`] with bytes read from [`Frame::tape`] before invoke.
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub struct CpiPatch {
-    /// Byte offset into [`Cpi::data`] (not a Frame index; may exceed 255).
-    pub data_offset: u16,
-    /// Binding index in the Frame (`payload_at[index]` → tape payload bytes).
-    pub source: Value,
-}
-
-/// Template CPI + optional tape patches (`ifx_patched_cpi` / `ifx_if_else` steps).
+/// Byte overlay on template CPI `data` for **Raw** patched steps (wire tag `1`).
 ///
 /// `remaining[accounts_start..accounts_start + accounts_len]` must be
 /// `[program, …cpi_accounts]`. Empty [`PatchList`] = static step (template `data` as-is).
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
-pub struct Cpi {
-    pub accounts_start: u8,
-    pub accounts_len: u8,
-    /// Base instruction data; patches overwrite ranges before `invoke`.
-    pub data: U16LenVec<u8>,
-    pub patches: PatchList,
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RawCpiPatch {
+    /// Byte offset into template CPI `data` (not a Frame index; may exceed 255).
+    pub data_offset: u16,
+    /// Binding index in the Frame (`payload_at[index]` → tape payload bytes).
+    pub source: Value,
 }
 
 /// One side of `ifx_if_else`: skip, revert, or an ordered CPI step list.
@@ -391,7 +396,7 @@ pub struct Cpi {
 #[derive(Clone, Debug)]
 pub enum IfElseArm {
     Skip,
-    /// Ordered steps (each [`Cpi`]; static steps use an empty [`PatchList`]).
+    /// Ordered steps (each [`Cpi`]; static steps use [`Cpi::Static`]).
     Cpi(Vec<Cpi>),
     Revert,
 }

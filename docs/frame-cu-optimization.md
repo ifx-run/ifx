@@ -12,7 +12,7 @@ How we reduced compute cost for **`ifx_reset_frame`**, **`ifx_let`**, **`ifx_ass
 
 ## Problem
 
-A Frame PDA grows with `tape_len` (test tiers **256 / 4096 / 8192** → ~817 B / ~4.7 KB / ~8.8 KB account bodies). With Anchor `Account<Frame>` on mut instructions:
+A Frame PDA grows with `tape_len` (test tiers **256 / 4096 / 8192** → ~569 B / ~4.7 KB / ~8.8 KB account bodies). With Anchor `Account<Frame>` on mut instructions:
 
 1. **Exit-time Borsh serialize + write-back** touched the **entire** account every `reset` / `let`.
 2. **`reset_session`** also **`tape.fill(0)`**, clearing the whole buffer even though bindings are session-scoped.
@@ -50,7 +50,7 @@ See [§ Benchmark — Round 0](#round-0--baseline) for full matrix.
 
 **Hypothesis:** Skipping `memset` on an 8 KiB tape saves meaningful CU.
 
-**Implementation:** `reset_session` only writes `cursor = 0`, `index_count = 0`. Stale tape bytes are unreachable until re-appended (`index < index_count` guard).
+**Implementation:** `reset_session` only writes `cursor = 0`, `index_count = 0`, and **`generation.wrapping_add(1)`**. Stale tape bytes are unreachable until re-appended (`index < index_count` guard).
 
 **Result:** reset **18,823** at 8192 (**−42 CU** vs Round 0). `let` / readonly unchanged. Multi-let total **118,135** (**−42 CU**).
 
@@ -163,7 +163,7 @@ Assertions in the harness encode Round 2 expectations (flat curve, reset &lt; 2.
 
 | `tape_len` | account ≈ | reset | let | assert | if_else (Skip) |
 |-----------|-----------|-------|-----|--------|----------------|
-| 256 | 561 B | 10,585 | 11,590 | 3,772 | 4,100 |
+| 256 | 569 B | 10,585 | 11,590 | 3,772 | 4,100 |
 | 4096 | 4,657 B | 18,801 | 19,800 | 5,960 | 6,288 |
 | 8192 | 8,753 B | 18,865 | 19,848 | 5,992 | 6,320 |
 

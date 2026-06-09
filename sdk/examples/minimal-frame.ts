@@ -18,7 +18,7 @@ import type { ScratchValue } from "../src/index";
 
 export type MinimalFrameBusinessPlan = {
   tx: Transaction;
-  /** Bound u64 slot — pass to {@link DecodedFrame.readU64} after the tx lands. */
+  /** Bound u64 Value — pass to {@link DecodedFrame.readU64} after the tx lands. */
   one: ScratchValue<"u64">;
 };
 
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   const { scratch, ixCreate, frame, frameBump } = FrameScratch.planNewFrame({
     payer,
     frameId,
-    closeAuthority: payer,
+    authority: payer,
     tapeLen,
     programId: IFX_LOCALNET_PROGRAM_ID,
   });

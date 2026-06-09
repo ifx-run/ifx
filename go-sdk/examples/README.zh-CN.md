@@ -16,20 +16,22 @@
 **文件：** `dust_destroy.go`  
 **导出：** `PlanDustDestroyInstructions(scratch, DustDestroyAccounts) []solana.Instruction`
 
-单笔业务 tx：`let`（amount / withheld / decimals）→ 条件 burn（`patchedcpi` + `CpiPatch`）→ 条件 harvest（`staticCpi`）→ 条件 close。
+单笔业务 tx：`let`（amount / withheld / decimals）→ 条件 burn（`patchedcpi` + `RawCpiPatch`）→ 条件 harvest（`staticCpi`）→ 条件 close。
 
 常量 `DustThresholdRaw = 1000`（raw 单位，非 UI 金额）。
 
 **集成：** `integration/dust_test.go` → `TestDustDestroyLocalnet`  
-**Fixture：** 测试前由 `scripts/dust-fixture.ts` 写入 TransferFee mint + dust ATA（需 Node + Surfpool）。
+**Fixture：** 测试内纯 Go setup（`integration/dust_fixture_test.go` + `spltoken/setup.go`），需 Surfpool。
 
 ## Orchestration（patched transfer + if_else）
 
 **文件：** `integration/orchestration_test.go` → `TestOrchestrationLocalnet`
 
-单条 business tx：`LetBuilder`（slot + 常量 + bool）→ assert → patched System transfer → 条件 bonus transfer（`if_else`）。
+单条 business tx：`LetBuilder`（Value + 常量 + bool）→ assert → patched System transfer → 条件 bonus transfer（`if_else`）。
 
 适合作为「reset / let / assert / patched_cpi / if_else 组合」的参考实现。
+
+**Structured CPI wire parity：** `structuredcpi/patch_test.go`、`structuredcpi/patch_builders_test.go`、`codec/cpi_test.go`。InitializeMint2 集成：`integration/structured_cpi_test.go`（Go）与 TS `tests/ifx_structured_cpi_initialize_mint.ts`。
 
 ## 本地运行
 

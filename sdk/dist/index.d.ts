@@ -1,6 +1,7 @@
 export * from "./typed";
 export * from "./constants";
 export * from "./immortal-close";
+export * from "./frame-authority";
 export * from "./errors";
 export * from "./layout";
 export * from "./tape-layout";
@@ -16,6 +17,8 @@ export * from "./scratch";
 export type { FrameScratchReadOpts } from "./scratch";
 export * from "./let-account";
 export * from "./let-builder";
+export * from "./structured-cpi-patch";
+export * from "./structured-cpi";
 export * from "./codec";
 export * from "./ix";
 export * from "./spl";

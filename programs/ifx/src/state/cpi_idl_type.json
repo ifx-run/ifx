@@ -1,0 +1,10 @@
+{
+  "name": "Cpi",
+  "docs": [
+    "CPI step wire: Static (tag 0) | RawPatched (tag 1) | Structured (tag 2 + StructuredCpiPatch)."
+  ],
+  "type": {
+    "kind": "struct",
+    "fields": []
+  }
+}
