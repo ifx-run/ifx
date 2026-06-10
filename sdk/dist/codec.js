@@ -434,11 +434,10 @@ function encodeCpi(step) {
             return Buffer.concat([
                 Buffer.from([
                     types_1.CPI_WIRE.structured,
-                    (0, structured_cpi_patch_1.structuredCpiPatchWireTag)(step.patch),
                     step.accountsStart,
                     step.accountsLen,
                 ]),
-                (0, structured_cpi_patch_1.encodeStructuredCpiPatchPayload)(step.patch),
+                (0, structured_cpi_patch_1.encodeStructuredCpiPatch)(step.patch),
             ]);
     }
 }

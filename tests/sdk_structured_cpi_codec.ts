@@ -11,6 +11,7 @@ import {
 import { encodeCpi } from "../sdk/src/codec";
 import {
   asValue,
+  encodeStructuredCpiPatch,
   encodeStructuredCpiPatchPayload,
   structuredCpiPatch,
   structuredCpiPatchWireTag,
@@ -20,13 +21,16 @@ import { structuredCpi, structuredCpiStep } from "../sdk/src/structured-cpi";
 import { inferStructuredCpiPatchTag } from "../sdk/src/structured-cpi-infer";
 
 describe("sdk structured CPI codec", () => {
-  it("encodeStructuredCpiPatchPayload amountOnly matches on-chain layout", () => {
+  it("encodeStructuredCpiPatchPayload amountOnly matches nested Borsh body", () => {
     const patch = structuredCpiPatch.tokenTransferChecked.amountOnly(
       asValue({ index: 3 }),
       9
     );
     const buf = encodeStructuredCpiPatchPayload(patch);
     expect(buf).to.deep.equal(Buffer.from([0, 3, 9]));
+    expect(encodeStructuredCpiPatch(patch)).to.deep.equal(
+      Buffer.from([STRUCTURED_CPI_PATCH_WIRE.tokenTransferChecked, 0, 3, 9])
+    );
     expect(structuredCpiPatchWireTag(patch)).to.equal(
       STRUCTURED_CPI_PATCH_WIRE.tokenTransferChecked
     );
@@ -43,11 +47,7 @@ describe("sdk structured CPI codec", () => {
       patch,
     });
     const wire = encodeCpi(step);
-    expect(wire[0]).to.equal(2);
-    expect(wire[1]).to.equal(STRUCTURED_CPI_PATCH_WIRE.tokenTransferChecked);
-    expect(wire[2]).to.equal(1);
-    expect(wire[3]).to.equal(4);
-    expect(wire.subarray(4)).to.deep.equal(Buffer.from([0, 3, 9]));
+    expect(wire).to.deep.equal(Buffer.from([2, 1, 4, 7, 0, 3, 9]));
   });
 
   it("structuredCpi builder derives accountsStart/Len from instruction", () => {
@@ -75,7 +75,7 @@ describe("sdk structured CPI codec", () => {
     expect(built.remaining[0].pubkey.equals(TOKEN_PROGRAM_ID)).to.equal(true);
 
     const wire = encodeCpi(built.cpi);
-    expect(wire.subarray(4)).to.deep.equal(Buffer.from([0, 3, 9]));
+    expect(wire.subarray(3)).to.deep.equal(Buffer.from([7, 0, 3, 9]));
   });
 
   it("inferStructuredCpiPatchTag from transferChecked ix", () => {
@@ -145,7 +145,10 @@ describe("sdk structured CPI codec", () => {
       patch,
     });
     const wire = encodeCpi(step);
-    expect(wire[1]).to.equal(STRUCTURED_CPI_PATCH_WIRE.tokenInitializeMint2);
+    expect(wire[0]).to.equal(2);
+    expect(wire[1]).to.equal(0);
+    expect(wire[2]).to.equal(2);
+    expect(wire[3]).to.equal(STRUCTURED_CPI_PATCH_WIRE.tokenInitializeMint2);
     const payloadWire = wire.subarray(4);
     expect(payloadWire[0]).to.equal(4);
     expect(payloadWire[1]).to.equal(1);

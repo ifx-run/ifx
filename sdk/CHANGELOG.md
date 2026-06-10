@@ -4,19 +4,23 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** Current devnet npm release is **`0.3.0-devnet.0`** — devnet-only preview (no mainnet program). **`0.2.0-devnet.0` is incompatible** (Frame layout, authority, Structured CPI); upgrade SDK and redeployed devnet program together.
+**Status:** Current devnet npm release is **`0.4.0-devnet.0`** — devnet-only preview (no mainnet program). **`0.3.0-devnet.0` is incompatible** on Structured CPI wire (Borsh layout); upgrade SDK and redeployed devnet program together.
 
 ## [Unreleased]
 
+## [0.4.0-devnet.0] - 2026-06-08
+
 ### Breaking
 
-- **`immortalCloseAuthority` / `isImmortalCloseAuthority` removed** — use **`publicFrameAuthority` / `isPublicFrameAuthority`** from `@ifx-run/sdk` (`frame-authority` module). Same semantics: Frame PDA as public Frame `authority`.
-- **`IFX_ERROR.InvalidCloseAuthority` removed** — use **`InvalidAuthority`** (6003).
+- **`Cpi::Structured` wire layout (Borsh):** `[2][accounts_start][accounts_len][StructuredCpiPatch…]` — patch variant tag moved **after** account slice (was `[2][patch_tag][start][len][payload]`). Single-slot `Value` fields are **one byte** (binding index only; removed legacy `[0][index]` prefix). Requires program redeploy.
+- **`encodeStructuredCpiPatchPayload` deprecated** — use **`encodeStructuredCpiPatch`** (includes top-level variant tag). Go: `EncodeStructuredCpiPatch` / updated `EncodeStructuredCpiStep`.
 
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### Breaking
 
+- **`immortalCloseAuthority` / `isImmortalCloseAuthority` removed** — use **`publicFrameAuthority` / `isPublicFrameAuthority`** from `@ifx-run/sdk` (`frame-authority` module). Same semantics: Frame PDA as public Frame `authority`.
+- **`IFX_ERROR.InvalidCloseAuthority` removed** — use **`InvalidAuthority`** (6003).
 - **Frame `authority`:** `close_authority` → **`authority`** (same account offset). `planNewFrame({ authority })`; `ixReset` / `ixLet` include authority meta (signer when on-curve). New errors `ResetNotTopLevel`, `CloseNotTopLevel`, `CreateNotTopLevel`, `UnauthorizedFrameWrite`; `InvalidCloseAuthority` → `InvalidAuthority` (6003).
 - **Frame account layout:** new **`generation: u64`** field (+8 B rent at create); **`payload_at`** vec offset shifts. Requires program redeploy; decode with pre-generation layout will fail.
 - **IDL / wire naming:** on-chain `CpiPatch` → **`RawCpiPatch`**; `Cpi::GenericPatched` → **`Cpi::RawPatched`**; structured mint pubkey slots **`PubkeySlot` → `PubkeyValue`**. SDK: **`rawCpiPatch`**, deprecated aliases `cpi` / `cpiPatch` / `CpiGenericPatched` retained.

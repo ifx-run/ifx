@@ -40,5 +40,5 @@ export declare function structuredCpi(template: TransactionInstruction, input: S
 export { inferStructuredCpiPatchTag, isStructuredCpiPatch, resolveStructuredCpiPatch, } from "./structured-cpi-infer";
 export type { StructuredCpiPatchTagName } from "./structured-cpi-infer";
 export declare function encodeStructuredCpiWire(step: CpiStructured): Buffer;
-export { structuredCpiPatch, asValue, encodeStructuredCpiPatchPayload, structuredCpiPatchWireTag, STRUCTURED_CPI_PATCH_WIRE, } from "./structured-cpi-patch";
+export { structuredCpiPatch, asValue, encodeStructuredCpiPatch, encodeStructuredCpiPatchPayload, structuredCpiPatchWireTag, STRUCTURED_CPI_PATCH_WIRE, } from "./structured-cpi-patch";
 export type { StructuredCpiPatch } from "./structured-cpi-patch";

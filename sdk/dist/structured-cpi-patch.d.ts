@@ -328,7 +328,12 @@ export type StructuredCpiPatch =
     setTransferFee: SetTransferFeePatch;
 };
 export declare function structuredCpiPatchWireTag(patch: StructuredCpiPatch): number;
-/** Encode patch payload bytes (wire tag is separate in `Cpi::Structured`). */
+/** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
+export declare function encodeStructuredCpiPatch(patch: StructuredCpiPatch): Buffer;
+/**
+ * @deprecated Use {@link encodeStructuredCpiPatch}. Legacy layout omitted the top-level
+ * variant tag (it lived in `Cpi::Structured` before `accounts_start`).
+ */
 export declare function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buffer;
 /** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–28). */
 export declare const structuredCpiPatch: {

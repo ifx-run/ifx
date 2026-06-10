@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.structuredCpiPatch = exports.STRUCTURED_CPI_PATCH_WIRE = void 0;
 exports.asValue = asValue;
 exports.structuredCpiPatchWireTag = structuredCpiPatchWireTag;
+exports.encodeStructuredCpiPatch = encodeStructuredCpiPatch;
 exports.encodeStructuredCpiPatchPayload = encodeStructuredCpiPatchPayload;
 const expr_1 = require("./expr");
 const amountDecimalsTag = {
@@ -126,9 +127,6 @@ function writeU16(n) {
 }
 function writeValueIndex(source) {
     return Buffer.from([source.index]);
-}
-function writeSingleFrameValue(source) {
-    return Buffer.concat([Buffer.from([0]), writeValueIndex(source)]);
 }
 function assertPubkey32(buf, label) {
     if (buf.length !== 32) {
@@ -296,15 +294,15 @@ function encodeInitializeMintPatch(patch) {
         encodeFreezeAuthPatch(patch.freeze),
     ]);
 }
-/** Encode patch payload bytes (wire tag is separate in `Cpi::Structured`). */
-function encodeStructuredCpiPatchPayload(patch) {
+/** Encode nested patch body (Borsh enum payload only — no top-level variant tag). */
+function encodeStructuredCpiPatchBody(patch) {
     switch (patch.tag) {
         case "systemTransfer":
-            return writeSingleFrameValue(patch.lamports);
+            return writeValueIndex(patch.lamports);
         case "systemCreateAccount":
             return encodeLamportsSpacePatch(patch.lamportsSpace);
         case "systemAllocate":
-            return writeSingleFrameValue(patch.space);
+            return writeValueIndex(patch.space);
         case "tokenTransfer":
         case "tokenApprove":
         case "tokenMintTo":
@@ -315,7 +313,7 @@ function encodeStructuredCpiPatchPayload(patch) {
         case "token2022MintTo":
         case "token2022Burn":
         case "token2022AmountToUiAmount":
-            return writeSingleFrameValue(patch.amount);
+            return writeValueIndex(patch.amount);
         case "tokenTransferChecked":
         case "tokenApproveChecked":
         case "tokenMintToChecked":
@@ -327,7 +325,7 @@ function encodeStructuredCpiPatchPayload(patch) {
             return encodeAmountDecimalsPatch(patch.amountDecimals);
         case "tokenInitializeMultisig":
         case "token2022InitializeMultisig":
-            return writeSingleFrameValue(patch.m);
+            return writeValueIndex(patch.m);
         case "token2022TransferCheckedWithFee":
             return encodeAmountDecimalsFeePatch(patch.amountDecimalsFee);
         case "token2022SetTransferFee":
@@ -338,6 +336,20 @@ function encodeStructuredCpiPatchPayload(patch) {
         case "token2022InitializeMint2":
             return encodeInitializeMintPatch(patch.initializeMint);
     }
+}
+/** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
+function encodeStructuredCpiPatch(patch) {
+    return Buffer.concat([
+        Buffer.from([structuredCpiPatchWireTag(patch)]),
+        encodeStructuredCpiPatchBody(patch),
+    ]);
+}
+/**
+ * @deprecated Use {@link encodeStructuredCpiPatch}. Legacy layout omitted the top-level
+ * variant tag (it lived in `Cpi::Structured` before `accounts_start`).
+ */
+function encodeStructuredCpiPatchPayload(patch) {
+    return encodeStructuredCpiPatchBody(patch);
 }
 function buildInitializeMintPatch(args) {
     const mintAuthority = Buffer.isBuffer(args.mintAuthority)

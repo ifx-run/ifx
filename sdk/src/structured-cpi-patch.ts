@@ -252,10 +252,6 @@ function writeValueIndex(source: Value): Buffer {
   return Buffer.from([source.index]);
 }
 
-function writeSingleFrameValue(source: Value): Buffer {
-  return Buffer.concat([Buffer.from([0]), writeValueIndex(source)]);
-}
-
 function assertPubkey32(buf: Buffer, label: string): void {
   if (buf.length !== 32) {
     throw new Error(`${label} must be 32 bytes, got ${buf.length}`);
@@ -431,15 +427,15 @@ function encodeInitializeMintPatch(patch: InitializeMintPatch): Buffer {
   ]);
 }
 
-/** Encode patch payload bytes (wire tag is separate in `Cpi::Structured`). */
-export function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buffer {
+/** Encode nested patch body (Borsh enum payload only — no top-level variant tag). */
+function encodeStructuredCpiPatchBody(patch: StructuredCpiPatch): Buffer {
   switch (patch.tag) {
     case "systemTransfer":
-      return writeSingleFrameValue(patch.lamports);
+      return writeValueIndex(patch.lamports);
     case "systemCreateAccount":
       return encodeLamportsSpacePatch(patch.lamportsSpace);
     case "systemAllocate":
-      return writeSingleFrameValue(patch.space);
+      return writeValueIndex(patch.space);
     case "tokenTransfer":
     case "tokenApprove":
     case "tokenMintTo":
@@ -450,7 +446,7 @@ export function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buff
     case "token2022MintTo":
     case "token2022Burn":
     case "token2022AmountToUiAmount":
-      return writeSingleFrameValue(patch.amount);
+      return writeValueIndex(patch.amount);
     case "tokenTransferChecked":
     case "tokenApproveChecked":
     case "tokenMintToChecked":
@@ -462,7 +458,7 @@ export function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buff
       return encodeAmountDecimalsPatch(patch.amountDecimals);
     case "tokenInitializeMultisig":
     case "token2022InitializeMultisig":
-      return writeSingleFrameValue(patch.m);
+      return writeValueIndex(patch.m);
     case "token2022TransferCheckedWithFee":
       return encodeAmountDecimalsFeePatch(patch.amountDecimalsFee);
     case "token2022SetTransferFee":
@@ -473,6 +469,22 @@ export function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buff
     case "token2022InitializeMint2":
       return encodeInitializeMintPatch(patch.initializeMint);
   }
+}
+
+/** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
+export function encodeStructuredCpiPatch(patch: StructuredCpiPatch): Buffer {
+  return Buffer.concat([
+    Buffer.from([structuredCpiPatchWireTag(patch)]),
+    encodeStructuredCpiPatchBody(patch),
+  ]);
+}
+
+/**
+ * @deprecated Use {@link encodeStructuredCpiPatch}. Legacy layout omitted the top-level
+ * variant tag (it lived in `Cpi::Structured` before `accounts_start`).
+ */
+export function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buffer {
+  return encodeStructuredCpiPatchBody(patch);
 }
 
 function buildInitializeMintPatch(args: {

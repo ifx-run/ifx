@@ -7,7 +7,7 @@ import {
 import { resolveCpiRemaining, type CpiWireBuildResult } from "./cpi";
 import type { StructuredCpiPatch } from "./structured-cpi-patch";
 import {
-  encodeStructuredCpiPatchPayload,
+  encodeStructuredCpiPatch,
   structuredCpiPatchWireTag,
 } from "./structured-cpi-patch";
 import {
@@ -131,19 +131,15 @@ export type { StructuredCpiPatchTagName } from "./structured-cpi-infer";
 
 export function encodeStructuredCpiWire(step: CpiStructured): Buffer {
   return Buffer.concat([
-    Buffer.from([
-      2,
-      structuredCpiPatchWireTag(step.patch),
-      step.accountsStart,
-      step.accountsLen,
-    ]),
-    encodeStructuredCpiPatchPayload(step.patch),
+    Buffer.from([2, step.accountsStart, step.accountsLen]),
+    encodeStructuredCpiPatch(step.patch),
   ]);
 }
 
 export {
   structuredCpiPatch,
   asValue,
+  encodeStructuredCpiPatch,
   encodeStructuredCpiPatchPayload,
   structuredCpiPatchWireTag,
   STRUCTURED_CPI_PATCH_WIRE,

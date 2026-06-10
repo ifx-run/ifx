@@ -4,19 +4,23 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** 当前 devnet npm 版本为 **`0.3.0-devnet.0`** — 仅 devnet 预览（尚无主网 program）。**与 `0.2.0-devnet.0` 不兼容**（Frame layout、authority、Structured CPI）；须同步升级 SDK 与 devnet 程序。
+**状态：** 当前 devnet npm 版本为 **`0.4.0-devnet.0`** — 仅 devnet 预览（尚无主网 program）。**与 `0.3.0-devnet.0` 在 Structured CPI wire 上不兼容**（Borsh layout）；须同步升级 SDK 与 devnet 程序。
 
 ## [Unreleased]
 
-### Breaking
+## [0.4.0-devnet.0] - 2026-06-08
 
-- **删除 `immortalCloseAuthority` / `isImmortalCloseAuthority`** — 改用 **`publicFrameAuthority` / `isPublicFrameAuthority`**（`frame-authority` 模块）。语义不变：公共 Frame 的 `authority` = Frame PDA。
-- **删除 `IFX_ERROR.InvalidCloseAuthority`** — 改用 **`InvalidAuthority`**（6003）。
+### 破坏性变更
+
+- **`Cpi::Structured` wire（Borsh）：** `[2][accounts_start][accounts_len][StructuredCpiPatch…]` — patch variant tag 移到 account slice **之后**（旧：`[2][patch_tag][start][len][payload]`）。单槽 `Value` 字段为 **1 字节**（仅 binding index；移除旧 `[0][index]` 前缀）。须 redeploy program。
+- **`encodeStructuredCpiPatchPayload` 已 deprecated** — 改用 **`encodeStructuredCpiPatch`**（含顶层 variant tag）。Go：`EncodeStructuredCpiPatch` / 更新后的 `EncodeStructuredCpiStep`。
 
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### 破坏性变更
 
+- **删除 `immortalCloseAuthority` / `isImmortalCloseAuthority`** — 改用 **`publicFrameAuthority` / `isPublicFrameAuthority`**（`frame-authority` 模块）。语义不变：公共 Frame 的 `authority` = Frame PDA。
+- **删除 `IFX_ERROR.InvalidCloseAuthority`** — 改用 **`InvalidAuthority`**（6003）。
 - **Frame `authority`：** `close_authority` → **`authority`**（账户同偏移）。`planNewFrame({ authority })`；`ixReset` / `ixLet` 自动带 authority meta（on-curve 时为 signer）。新错误 `ResetNotTopLevel`、`CloseNotTopLevel`、`CreateNotTopLevel`、`UnauthorizedFrameWrite`；`InvalidCloseAuthority` → `InvalidAuthority`（6003）。
 - **Frame 账户布局：** 新增 **`generation: u64`**（create 租金 +8 B）；**`payload_at`** vec 偏移后移。须 redeploy program；用旧 layout 解码会失败。
 - **IDL / wire 命名：** 链上 `CpiPatch` → **`RawCpiPatch`**；`Cpi::GenericPatched` → **`Cpi::RawPatched`**；structured mint pubkey 槽 **`PubkeySlot` → `PubkeyValue`**。SDK：**`rawCpiPatch`**；保留 deprecated 别名 `cpi` / `cpiPatch` / `CpiGenericPatched`。

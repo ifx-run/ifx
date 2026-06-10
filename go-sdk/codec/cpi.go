@@ -20,7 +20,8 @@ type Cpi struct {
 	AccountsLen   uint8
 	Data          []byte
 	Patches       PatchList
-	// Structured-only (Kind == CpiWireStructured). Payload is patch body after wire tag.
+	// Structured-only (Kind == CpiWireStructured). Payload is Borsh StructuredCpiPatch
+	// (variant tag + nested body). Builder may store tag separately via StructuredTag.
 	StructuredTag     uint8
 	StructuredPayload []byte
 }
@@ -36,7 +37,7 @@ func CpiKind(c Cpi) uint8 {
 	return constants.CpiWireStatic
 }
 
-// EncodeCpi serializes one CPI step (matches on-chain Cpi::serialize_wire / TS encodeCpi).
+// EncodeCpi serializes one CPI step (Borsh layout for Structured).
 func EncodeCpi(c Cpi) ([]byte, error) {
 	kind := CpiKind(c)
 	switch kind {
@@ -56,16 +57,28 @@ func EncodeCpi(c Cpi) ([]byte, error) {
 		}
 		return append(buf, patchBody...), nil
 	case constants.CpiWireStructured:
-		if c.StructuredPayload == nil {
-			return nil, fmt.Errorf("structured CPI requires StructuredPayload")
+		patch, err := structuredPatchWire(c)
+		if err != nil {
+			return nil, err
 		}
-		return append(
-			[]byte{constants.CpiWireStructured, c.StructuredTag, c.AccountsStart, c.AccountsLen},
-			c.StructuredPayload...,
-		), nil
+		buf := []byte{constants.CpiWireStructured, c.AccountsStart, c.AccountsLen}
+		return append(buf, patch...), nil
 	default:
 		return nil, fmt.Errorf("invalid CPI kind %d", kind)
 	}
+}
+
+func structuredPatchWire(c Cpi) ([]byte, error) {
+	if c.StructuredPayload == nil {
+		return nil, fmt.Errorf("structured CPI requires StructuredPayload")
+	}
+	if len(c.StructuredPayload) > 0 && c.StructuredPayload[0] == c.StructuredTag && c.StructuredTag != 0 {
+		return c.StructuredPayload, nil
+	}
+	if c.StructuredTag != 0 {
+		return append([]byte{c.StructuredTag}, c.StructuredPayload...), nil
+	}
+	return c.StructuredPayload, nil
 }
 
 // IfElseArmKind selects ifx_if_else branch behavior (logical; wire uses step count tag).

@@ -11,8 +11,6 @@
 use anchor_lang::prelude::*;
 use std::io::{Error as IoError, ErrorKind, Read, Result as IoResult, Write};
 
-use borsh::BorshDeserialize;
-
 use super::Cpi;
 use super::types::IfElseArm;
 
@@ -229,6 +227,49 @@ mod wire_tests {
         let mut slice = bytes.as_slice();
         IfElseArgs::deserialize(&mut slice).expect("generic patched IfElseArgs");
         assert!(slice.is_empty());
+    }
+
+    #[test]
+    fn deserializes_sdk_dust_burn_if_else_args() {
+        // token2022BurnChecked.both — Borsh Cpi::Structured (accounts before patch).
+        let bytes: Vec<u8> = vec![
+            0x23, 0x20, 0x00, 0x00, 0x05, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11,
+            0x00, 0x00, 0x01, 0x02, 0x00, 0x04, 0x16, 0x01, 0x00, 0x02, 0x00,
+        ];
+        let mut slice = bytes.as_slice();
+        IfElseArgs::deserialize(&mut slice).expect("dust burn if_else args");
+        assert!(slice.is_empty(), "trailing: {:?}", slice);
+    }
+
+    #[test]
+    fn deserializes_sdk_dust_burn_if_else_args_via_reader() {
+        use std::io::Cursor;
+
+        use anchor_lang::AnchorDeserialize;
+
+        let bytes: Vec<u8> = vec![
+            0x23, 0x20, 0x00, 0x00, 0x05, 0xe8, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x11,
+            0x00, 0x00, 0x01, 0x02, 0x00, 0x04, 0x16, 0x01, 0x00, 0x02, 0x00,
+        ];
+        let mut reader = Cursor::new(bytes.as_slice());
+        IfElseArgs::deserialize_reader(&mut reader).expect("dust via reader");
+        assert_eq!(reader.position() as usize, bytes.len());
+    }
+
+    #[test]
+    fn deserializes_sdk_wsol_structured_then_static_if_else_args() {
+        // SDK: encodeIfElseArgs(bool true, arm.cpis([structured systemTransfer, static syncNative]), skip)
+        // After mergeWsolWrapRemaining: transfer len=3, sync start=3 len=2.
+        let bytes: Vec<u8> = vec![
+            0x01, 0x01, // ConstBool(true)
+            0x02, // then: 2 steps
+            0x02, 0x00, 0x03, 0x00, 0x00, // structured SystemTransfer
+            0x00, 0x03, 0x02, 0x01, 0x00, 0x11, // static syncNative (merged account slice)
+            IF_ELSE_ARM_SKIP,
+        ];
+        let mut slice = bytes.as_slice();
+        IfElseArgs::deserialize(&mut slice).expect("wsol if_else args");
+        assert!(slice.is_empty(), "trailing: {:?}", slice);
     }
 
     #[test]

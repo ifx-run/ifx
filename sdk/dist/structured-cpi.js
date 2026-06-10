@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.STRUCTURED_CPI_PATCH_WIRE = exports.structuredCpiPatchWireTag = exports.encodeStructuredCpiPatchPayload = exports.asValue = exports.structuredCpiPatch = exports.resolveStructuredCpiPatch = exports.isStructuredCpiPatch = exports.inferStructuredCpiPatchTag = exports.StructuredCpiBuilder = void 0;
+exports.STRUCTURED_CPI_PATCH_WIRE = exports.structuredCpiPatchWireTag = exports.encodeStructuredCpiPatchPayload = exports.encodeStructuredCpiPatch = exports.asValue = exports.structuredCpiPatch = exports.resolveStructuredCpiPatch = exports.isStructuredCpiPatch = exports.inferStructuredCpiPatchTag = exports.StructuredCpiBuilder = void 0;
 exports.structuredCpiStep = structuredCpiStep;
 exports.structuredCpi = structuredCpi;
 exports.encodeStructuredCpiWire = encodeStructuredCpiWire;
@@ -74,18 +74,14 @@ Object.defineProperty(exports, "isStructuredCpiPatch", { enumerable: true, get: 
 Object.defineProperty(exports, "resolveStructuredCpiPatch", { enumerable: true, get: function () { return structured_cpi_infer_2.resolveStructuredCpiPatch; } });
 function encodeStructuredCpiWire(step) {
     return Buffer.concat([
-        Buffer.from([
-            2,
-            (0, structured_cpi_patch_1.structuredCpiPatchWireTag)(step.patch),
-            step.accountsStart,
-            step.accountsLen,
-        ]),
-        (0, structured_cpi_patch_1.encodeStructuredCpiPatchPayload)(step.patch),
+        Buffer.from([2, step.accountsStart, step.accountsLen]),
+        (0, structured_cpi_patch_1.encodeStructuredCpiPatch)(step.patch),
     ]);
 }
 var structured_cpi_patch_2 = require("./structured-cpi-patch");
 Object.defineProperty(exports, "structuredCpiPatch", { enumerable: true, get: function () { return structured_cpi_patch_2.structuredCpiPatch; } });
 Object.defineProperty(exports, "asValue", { enumerable: true, get: function () { return structured_cpi_patch_2.asValue; } });
+Object.defineProperty(exports, "encodeStructuredCpiPatch", { enumerable: true, get: function () { return structured_cpi_patch_2.encodeStructuredCpiPatch; } });
 Object.defineProperty(exports, "encodeStructuredCpiPatchPayload", { enumerable: true, get: function () { return structured_cpi_patch_2.encodeStructuredCpiPatchPayload; } });
 Object.defineProperty(exports, "structuredCpiPatchWireTag", { enumerable: true, get: function () { return structured_cpi_patch_2.structuredCpiPatchWireTag; } });
 Object.defineProperty(exports, "STRUCTURED_CPI_PATCH_WIRE", { enumerable: true, get: function () { return structured_cpi_patch_2.STRUCTURED_CPI_PATCH_WIRE; } });

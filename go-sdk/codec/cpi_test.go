@@ -51,18 +51,17 @@ func TestEncodeCpiStaticKindByte(t *testing.T) {
 }
 
 func TestEncodeCpiStructured(t *testing.T) {
-	payload := []byte{0, 3, 9}
+	payload := []byte{7, 0, 3, 9}
 	c := Cpi{
 		AccountsStart:     1,
 		AccountsLen:       4,
-		StructuredTag:     7,
 		StructuredPayload: payload,
 	}
 	got, err := EncodeCpi(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []byte{constants.CpiWireStructured, 7, 1, 4, 0, 3, 9}
+	want := []byte{constants.CpiWireStructured, 1, 4, 7, 0, 3, 9}
 	if hex.EncodeToString(got) != hex.EncodeToString(want) {
 		t.Fatalf("got %x want %x", got, want)
 	}

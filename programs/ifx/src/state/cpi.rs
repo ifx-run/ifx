@@ -1,7 +1,12 @@
 //! CPI step wire: [`Cpi`] = Static | RawPatched | Structured([`StructuredCpiPatch`]).
+//!
+//! Borsh layout (variant tag = `CPI_WIRE_*`):
+//! - **Static:** `[0][accounts_start][accounts_len][U16LenVec data]`
+//! - **RawPatched:** `[1][accounts_start][accounts_len][data][PatchList]`
+//! - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch…]`
 
 use anchor_lang::prelude::*;
-use std::io::{Error as IoError, ErrorKind, Read, Result as IoResult, Write};
+use borsh::{BorshDeserialize, BorshSerialize};
 
 use super::patch_list::PatchList;
 use super::structured_cpi_patch::StructuredCpiPatch;
@@ -12,7 +17,7 @@ pub const CPI_WIRE_RAW_PATCHED: u8 = 1;
 pub const CPI_WIRE_STRUCTURED: u8 = 2;
 
 /// One CPI step for [`super::IfElseArm::Cpi`] or [`crate::ifx_patched_cpi`].
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub enum Cpi {
     /// Template `data` invoked as-is.
     Static {
@@ -61,186 +66,31 @@ impl Cpi {
     }
 }
 
-fn invalid_cpi_tag() -> IoError {
-    IoError::new(ErrorKind::InvalidData, "invalid Cpi wire tag")
-}
-
-impl Cpi {
-    pub fn serialize_wire<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        match self {
-            Self::Static {
-                accounts_start,
-                accounts_len,
-                data,
-            } => {
-                writer.write_all(&[CPI_WIRE_STATIC, *accounts_start, *accounts_len])?;
-                data.serialize(writer)
-            }
-            Self::RawPatched {
-                accounts_start,
-                accounts_len,
-                data,
-                patches,
-            } => {
-                writer.write_all(&[CPI_WIRE_RAW_PATCHED, *accounts_start, *accounts_len])?;
-                data.serialize(writer)?;
-                patches.serialize(writer)
-            }
-            Self::Structured {
-                accounts_start,
-                accounts_len,
-                patch,
-            } => {
-                writer.write_all(&[
-                    CPI_WIRE_STRUCTURED,
-                    patch.wire_tag(),
-                    *accounts_start,
-                    *accounts_len,
-                ])?;
-                patch.serialize_payload(writer)
-            }
-        }
-    }
-
-    pub fn deserialize_wire(buf: &mut &[u8]) -> IoResult<Self> {
-        if buf.is_empty() {
-            return Err(invalid_cpi_tag());
-        }
-        let tag = buf[0];
-        *buf = &buf[1..];
-        match tag {
-            CPI_WIRE_STATIC => {
-                if buf.len() < 2 {
-                    return Err(invalid_cpi_tag());
-                }
-                let accounts_start = buf[0];
-                let accounts_len = buf[1];
-                *buf = &buf[2..];
-                let data = U16LenVec::deserialize(buf)?;
-                Ok(Self::Static {
-                    accounts_start,
-                    accounts_len,
-                    data,
-                })
-            }
-            CPI_WIRE_RAW_PATCHED => {
-                if buf.len() < 2 {
-                    return Err(invalid_cpi_tag());
-                }
-                let accounts_start = buf[0];
-                let accounts_len = buf[1];
-                *buf = &buf[2..];
-                let data = U16LenVec::deserialize(buf)?;
-                let patches = PatchList::deserialize(buf)?;
-                Ok(Self::RawPatched {
-                    accounts_start,
-                    accounts_len,
-                    data,
-                    patches,
-                })
-            }
-            CPI_WIRE_STRUCTURED => {
-                if buf.len() < 3 {
-                    return Err(invalid_cpi_tag());
-                }
-                let patch_tag = buf[0];
-                let accounts_start = buf[1];
-                let accounts_len = buf[2];
-                *buf = &buf[3..];
-                let patch = StructuredCpiPatch::deserialize_payload(patch_tag, buf)
-                    .map_err(|_| invalid_cpi_tag())?;
-                Ok(Self::Structured {
-                    accounts_start,
-                    accounts_len,
-                    patch,
-                })
-            }
-            _ => Err(invalid_cpi_tag()),
-        }
-    }
-}
-
-fn deserialize_cpi_reader<R: Read>(reader: &mut R) -> IoResult<Cpi> {
-    let mut tag = [0u8; 1];
-    reader.read_exact(&mut tag)?;
-    match tag[0] {
-        CPI_WIRE_STATIC => {
-            let accounts_start = u8::deserialize_reader(reader)?;
-            let accounts_len = u8::deserialize_reader(reader)?;
-            let data = U16LenVec::<u8>::deserialize_reader(reader)?;
-            Ok(Cpi::Static {
-                accounts_start,
-                accounts_len,
-                data,
-            })
-        }
-        CPI_WIRE_RAW_PATCHED => {
-            let accounts_start = u8::deserialize_reader(reader)?;
-            let accounts_len = u8::deserialize_reader(reader)?;
-            let data = U16LenVec::<u8>::deserialize_reader(reader)?;
-            let patches = PatchList::deserialize_reader(reader)?;
-            Ok(Cpi::RawPatched {
-                accounts_start,
-                accounts_len,
-                data,
-                patches,
-            })
-        }
-        CPI_WIRE_STRUCTURED => {
-            let patch_tag = u8::deserialize_reader(reader)?;
-            let accounts_start = u8::deserialize_reader(reader)?;
-            let accounts_len = u8::deserialize_reader(reader)?;
-            let mut rest = Vec::new();
-            reader.read_to_end(&mut rest)?;
-            let mut slice = rest.as_slice();
-            let patch = StructuredCpiPatch::deserialize_payload(patch_tag, &mut slice)
-                .map_err(|_| invalid_cpi_tag())?;
-            if !slice.is_empty() {
-                return Err(invalid_cpi_tag());
-            }
-            Ok(Cpi::Structured {
-                accounts_start,
-                accounts_len,
-                patch,
-            })
-        }
-        _ => Err(invalid_cpi_tag()),
-    }
-}
-
-impl AnchorSerialize for Cpi {
-    fn serialize<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        self.serialize_wire(writer)
-    }
-}
-
-impl AnchorDeserialize for Cpi {
-    fn deserialize(buf: &mut &[u8]) -> IoResult<Self> {
-        Self::deserialize_wire(buf)
-    }
-
-    fn deserialize_reader<R: Read>(reader: &mut R) -> IoResult<Self> {
-        deserialize_cpi_reader(reader)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anchor_lang::AnchorDeserialize;
     use crate::state::structured_cpi_payload::AmountDecimalsPatch;
     use crate::state::Value;
 
+    fn encode_cpi(cpi: &Cpi) -> Vec<u8> {
+        borsh::to_vec(cpi).unwrap()
+    }
+
     #[test]
-    fn static_cpi_wire_matches_legacy_prefix_plus_empty_patches_replaced_by_tag() {
+    fn static_cpi_borsh_roundtrip() {
         let cpi = Cpi::Static {
             accounts_start: 0,
             accounts_len: 3,
             data: U16LenVec(vec![0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
         };
-        let wire = borsh::to_vec(&cpi).unwrap();
+        let wire = encode_cpi(&cpi);
         assert_eq!(wire[0], CPI_WIRE_STATIC);
         assert_eq!(wire[1], 0);
         assert_eq!(wire[2], 3);
+        let mut slice = wire.as_slice();
+        let back: Cpi = Cpi::deserialize(&mut slice).unwrap();
+        assert_eq!(back, cpi);
     }
 
     #[test]
@@ -255,8 +105,125 @@ mod tests {
                 },
             ),
         };
-        let back = borsh::from_slice::<Cpi>(&borsh::to_vec(&cpi).unwrap()).unwrap();
+        let wire = encode_cpi(&cpi);
+        let mut slice = wire.as_slice();
+        let back: Cpi = Cpi::deserialize(&mut slice).unwrap();
         assert_eq!(back, cpi);
+    }
+
+    #[test]
+    fn structured_system_transfer_deserialize_reader_leaves_trailing_bytes() {
+        use std::io::Cursor;
+
+        let step = Cpi::Structured {
+            accounts_start: 0,
+            accounts_len: 3,
+            patch: StructuredCpiPatch::SystemTransfer {
+                lamports: Value { index: 0 },
+            },
+        };
+        let mut wire = encode_cpi(&step);
+        wire.push(0x42);
+
+        let mut reader = Cursor::new(wire.as_slice());
+        let back = Cpi::deserialize_reader(&mut reader).unwrap();
+        assert_eq!(back, step);
+        assert_eq!(reader.position() as usize, wire.len() - 1);
+        assert_eq!(wire[reader.position() as usize], 0x42);
+    }
+
+    #[test]
+    fn sdk_token_transfer_structured_deserializes() {
+        use anchor_lang::AnchorDeserialize;
+
+        // SDK: encodeCpi(structured tokenTransfer($0))
+        let wire: &[u8] = &[2, 0, 4, 3, 0];
+        let mut slice = wire;
+        let back = Cpi::deserialize(&mut slice).expect("Cpi::deserialize");
+        assert!(slice.is_empty());
+        assert!(matches!(
+            back,
+            Cpi::Structured {
+                accounts_start: 0,
+                accounts_len: 4,
+                patch: StructuredCpiPatch::TokenTransfer { amount: Value { index: 0 } },
+            }
+        ));
+    }
+
+    #[test]
+    fn sdk_token2022_burn_checked_both_deserializes() {
+        use anchor_lang::AnchorDeserialize;
+
+        // SDK: encodeCpi(structured token2022BurnChecked.both($0, $2))
+        let wire: &[u8] = &[2, 0, 4, 22, 1, 0, 2];
+        let mut slice = wire;
+        let back = Cpi::deserialize(&mut slice).expect("Cpi::deserialize");
+        assert!(slice.is_empty());
+        assert!(matches!(
+            back,
+            Cpi::Structured {
+                accounts_start: 0,
+                accounts_len: 4,
+                patch: StructuredCpiPatch::Token2022BurnChecked(
+                    AmountDecimalsPatch::Both {
+                        amount: Value { index: 0 },
+                        decimals: Value { index: 2 },
+                    }
+                ),
+            }
+        ));
+    }
+
+    #[test]
+    fn structured_wire_places_accounts_before_patch() {
+        let cpi = Cpi::Structured {
+            accounts_start: 0,
+            accounts_len: 3,
+            patch: StructuredCpiPatch::SystemTransfer {
+                lamports: Value { index: 0 },
+            },
+        };
+        let wire = encode_cpi(&cpi);
+        assert_eq!(wire[0], CPI_WIRE_STRUCTURED);
+        assert_eq!(wire[1], 0);
+        assert_eq!(wire[2], 3);
+        assert_eq!(wire[3], 0, "SystemTransfer variant");
+        assert_eq!(wire[4], 0, "lamports binding index");
+    }
+
+    #[test]
+    fn if_else_structured_then_static_via_deserialize_reader() {
+        use std::io::Cursor;
+
+        use crate::state::{Expr, IfElseArm, IfElseArgs};
+
+        let structured = Cpi::Structured {
+            accounts_start: 0,
+            accounts_len: 3,
+            patch: StructuredCpiPatch::SystemTransfer {
+                lamports: Value { index: 0 },
+            },
+        };
+        let sync = Cpi::Static {
+            accounts_start: 3,
+            accounts_len: 2,
+            data: U16LenVec(vec![17]),
+        };
+
+        let mut args_bytes = Vec::new();
+        Expr::ConstBool(true)
+            .serialize(&mut args_bytes)
+            .unwrap();
+        IfElseArm::Cpi(vec![structured, sync])
+            .serialize_wire(&mut args_bytes)
+            .unwrap();
+        IfElseArm::Skip.serialize_wire(&mut args_bytes).unwrap();
+
+        let mut reader = Cursor::new(args_bytes.as_slice());
+        let back = IfElseArgs::deserialize_reader(&mut reader).unwrap();
+        assert!(matches!(back.cond, Expr::ConstBool(true)));
+        assert_eq!(reader.position() as usize, args_bytes.len());
     }
 }
 

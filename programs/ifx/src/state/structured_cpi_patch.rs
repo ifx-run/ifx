@@ -1,21 +1,19 @@
-//! Unified structured CPI patch — one enum per official ix layout.
+//! Unified structured CPI patch — one Borsh enum per official ix layout.
 //!
-//! Wire (after `Cpi` tag 2): `[patch_tag u8][accounts_start][accounts_len][payload…]`
-//! `patch_tag` values 0–28 — see SDK `STRUCTURED_CPI_PATCH_WIRE`.
-
-use std::io::{Error as IoError, ErrorKind, Result as IoResult, Write};
+//! Nested inside [`super::Cpi::Structured`] after `accounts_start` / `accounts_len`.
+//! Variant order is the wire discriminant (`0`–`28`) — see SDK `STRUCTURED_CPI_PATCH_WIRE`.
 
 use anchor_lang::prelude::*;
+use borsh::{BorshDeserialize, BorshSerialize};
 
 use super::structured_cpi_payload::{
-    read_initialize_mint_patch, write_initialize_mint_patch, AmountDecimalsFeePatch,
-    AmountDecimalsPatch, InitializeMintPatch, LamportsSpacePatch, PatchLogSink,
-    SetTransferFeePatch, deserialize_single_value, serialize_single_value,
+    AmountDecimalsFeePatch, AmountDecimalsPatch, InitializeMintPatch, LamportsSpacePatch,
+    PatchLogSink, SetTransferFeePatch,
 };
 use super::types::Value;
 
 /// Official-program CPI patch: ix variant + typed payload (cannot mismatch at compile time).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, PartialEq, Eq)]
 pub enum StructuredCpiPatch {
     // ── System Program ────────────────────────────────────────────────────
     /// System `Transfer` (discriminator 2): dynamic **lamports** (`u64` @ offset 4).
@@ -84,40 +82,6 @@ pub enum StructuredCpiPatch {
 
 impl StructuredCpiPatch {
     pub const COUNT: u8 = 29;
-
-    pub fn wire_tag(&self) -> u8 {
-        match self {
-            Self::SystemTransfer { .. } => 0,
-            Self::SystemCreateAccount(_) => 1,
-            Self::SystemAllocate { .. } => 2,
-            Self::TokenTransfer { .. } => 3,
-            Self::TokenApprove { .. } => 4,
-            Self::TokenMintTo { .. } => 5,
-            Self::TokenBurn { .. } => 6,
-            Self::TokenTransferChecked(_) => 7,
-            Self::TokenApproveChecked(_) => 8,
-            Self::TokenMintToChecked(_) => 9,
-            Self::TokenBurnChecked(_) => 10,
-            Self::TokenAmountToUiAmount { .. } => 11,
-            Self::TokenInitializeMint(_) => 12,
-            Self::TokenInitializeMint2(_) => 13,
-            Self::TokenInitializeMultisig { .. } => 14,
-            Self::Token2022Transfer { .. } => 15,
-            Self::Token2022Approve { .. } => 16,
-            Self::Token2022MintTo { .. } => 17,
-            Self::Token2022Burn { .. } => 18,
-            Self::Token2022TransferChecked(_) => 19,
-            Self::Token2022ApproveChecked(_) => 20,
-            Self::Token2022MintToChecked(_) => 21,
-            Self::Token2022BurnChecked(_) => 22,
-            Self::Token2022AmountToUiAmount { .. } => 23,
-            Self::Token2022InitializeMint(_) => 24,
-            Self::Token2022InitializeMint2(_) => 25,
-            Self::Token2022InitializeMultisig { .. } => 26,
-            Self::Token2022TransferCheckedWithFee(_) => 27,
-            Self::Token2022SetTransferFee(_) => 28,
-        }
-    }
 
     pub fn log_label(&self) -> &'static str {
         match self {
@@ -188,134 +152,6 @@ impl StructuredCpiPatch {
             | Self::Token2022InitializeMint2(shape) => shape.append_log_bindings(sink),
         }
     }
-
-    pub fn serialize_payload<W: Write>(&self, writer: &mut W) -> IoResult<()> {
-        match self {
-            Self::SystemTransfer { lamports } => serialize_single_value(writer, *lamports),
-            Self::SystemCreateAccount(shape) => shape.serialize_wire(writer),
-            Self::SystemAllocate { space } => serialize_single_value(writer, *space),
-            Self::TokenTransfer { amount }
-            | Self::TokenApprove { amount }
-            | Self::TokenMintTo { amount }
-            | Self::TokenBurn { amount }
-            | Self::TokenAmountToUiAmount { amount }
-            | Self::Token2022Transfer { amount }
-            | Self::Token2022Approve { amount }
-            | Self::Token2022MintTo { amount }
-            | Self::Token2022Burn { amount }
-            | Self::Token2022AmountToUiAmount { amount } => {
-                serialize_single_value(writer, *amount)
-            }
-            Self::TokenTransferChecked(shape)
-            | Self::TokenApproveChecked(shape)
-            | Self::TokenMintToChecked(shape)
-            | Self::TokenBurnChecked(shape)
-            | Self::Token2022TransferChecked(shape)
-            | Self::Token2022ApproveChecked(shape)
-            | Self::Token2022MintToChecked(shape)
-            | Self::Token2022BurnChecked(shape) => shape.serialize_wire(writer),
-            Self::TokenInitializeMultisig { m } | Self::Token2022InitializeMultisig { m } => {
-                serialize_single_value(writer, *m)
-            }
-            Self::Token2022TransferCheckedWithFee(shape) => shape.serialize_wire(writer),
-            Self::Token2022SetTransferFee(shape) => shape.serialize_wire(writer),
-            Self::TokenInitializeMint(shape)
-            | Self::TokenInitializeMint2(shape)
-            | Self::Token2022InitializeMint(shape)
-            | Self::Token2022InitializeMint2(shape) => write_initialize_mint_patch(writer, shape),
-        }
-    }
-
-    pub fn deserialize_payload(tag: u8, buf: &mut &[u8]) -> IoResult<Self> {
-        match tag {
-            0 => {
-                let lamports = deserialize_single_value(buf)?;
-                Ok(Self::SystemTransfer { lamports })
-            }
-            1 => Ok(Self::SystemCreateAccount(LamportsSpacePatch::deserialize_wire(
-                buf,
-            )?)),
-            2 => {
-                let space = deserialize_single_value(buf)?;
-                Ok(Self::SystemAllocate { space })
-            }
-            3 => Ok(Self::TokenTransfer {
-                amount: deserialize_single_value(buf)?,
-            }),
-            4 => Ok(Self::TokenApprove {
-                amount: deserialize_single_value(buf)?,
-            }),
-            5 => Ok(Self::TokenMintTo {
-                amount: deserialize_single_value(buf)?,
-            }),
-            6 => Ok(Self::TokenBurn {
-                amount: deserialize_single_value(buf)?,
-            }),
-            7 => Ok(Self::TokenTransferChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            8 => Ok(Self::TokenApproveChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            9 => Ok(Self::TokenMintToChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            10 => Ok(Self::TokenBurnChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            11 => Ok(Self::TokenAmountToUiAmount {
-                amount: deserialize_single_value(buf)?,
-            }),
-            12 => Ok(Self::TokenInitializeMint(read_initialize_mint_patch(buf)?)),
-            13 => Ok(Self::TokenInitializeMint2(read_initialize_mint_patch(buf)?)),
-            14 => Ok(Self::TokenInitializeMultisig {
-                m: deserialize_single_value(buf)?,
-            }),
-            15 => Ok(Self::Token2022Transfer {
-                amount: deserialize_single_value(buf)?,
-            }),
-            16 => Ok(Self::Token2022Approve {
-                amount: deserialize_single_value(buf)?,
-            }),
-            17 => Ok(Self::Token2022MintTo {
-                amount: deserialize_single_value(buf)?,
-            }),
-            18 => Ok(Self::Token2022Burn {
-                amount: deserialize_single_value(buf)?,
-            }),
-            19 => Ok(Self::Token2022TransferChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            20 => Ok(Self::Token2022ApproveChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            21 => Ok(Self::Token2022MintToChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            22 => Ok(Self::Token2022BurnChecked(
-                AmountDecimalsPatch::deserialize_wire(buf)?,
-            )),
-            23 => Ok(Self::Token2022AmountToUiAmount {
-                amount: deserialize_single_value(buf)?,
-            }),
-            24 => Ok(Self::Token2022InitializeMint(read_initialize_mint_patch(buf)?)),
-            25 => Ok(Self::Token2022InitializeMint2(read_initialize_mint_patch(buf)?)),
-            26 => Ok(Self::Token2022InitializeMultisig {
-                m: deserialize_single_value(buf)?,
-            }),
-            27 => Ok(Self::Token2022TransferCheckedWithFee(
-                AmountDecimalsFeePatch::deserialize_wire(buf)?,
-            )),
-            28 => Ok(Self::Token2022SetTransferFee(
-                SetTransferFeePatch::deserialize_wire(buf)?,
-            )),
-            _ => Err(invalid_patch()),
-        }
-    }
-}
-
-fn invalid_patch() -> IoError {
-    IoError::new(ErrorKind::InvalidData, "invalid structured CPI patch")
 }
 
 #[cfg(test)]
@@ -328,20 +164,23 @@ mod tests {
         assert_eq!(StructuredCpiPatch::COUNT, 29);
     }
 
+    use borsh::BorshSerialize;
+
+    fn encode_patch<T: BorshSerialize>(patch: &T) -> Vec<u8> {
+        borsh::to_vec(patch).unwrap()
+    }
+
     #[test]
-    fn transfer_checked_roundtrip() {
+    fn transfer_checked_borsh_roundtrip() {
         let patch = StructuredCpiPatch::TokenTransferChecked(
             AmountDecimalsPatch::AmountOnly {
                 amount: Value { index: 3 },
                 decimals: 9,
             },
         );
-        let mut wire = Vec::new();
-        patch.serialize_payload(&mut wire).unwrap();
-        let mut slice = wire.as_slice();
-        let back = StructuredCpiPatch::deserialize_payload(7, &mut slice).unwrap();
+        let wire = encode_patch(&patch);
+        let back: StructuredCpiPatch = borsh::from_slice(&wire).unwrap();
         assert_eq!(back, patch);
-        assert!(slice.is_empty());
     }
 
     struct TestLogSink {

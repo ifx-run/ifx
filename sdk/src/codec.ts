@@ -13,8 +13,7 @@ import {
 } from "./patch-list";
 import { CPI_WIRE } from "./types";
 import {
-  encodeStructuredCpiPatchPayload,
-  structuredCpiPatchWireTag,
+  encodeStructuredCpiPatch,
 } from "./structured-cpi-patch";
 import type { Cpi } from "./types";
 
@@ -494,11 +493,10 @@ export function encodeCpi(step: Cpi): Buffer {
       return Buffer.concat([
         Buffer.from([
           CPI_WIRE.structured,
-          structuredCpiPatchWireTag(step.patch),
           step.accountsStart,
           step.accountsLen,
         ]),
-        encodeStructuredCpiPatchPayload(step.patch),
+        encodeStructuredCpiPatch(step.patch),
       ]);
   }
 }

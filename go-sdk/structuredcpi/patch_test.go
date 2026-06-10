@@ -32,8 +32,11 @@ func TestInitializeMint2PatchWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if wire[0] != constants.CpiWireStructured || wire[1] != constants.StructuredPatchTokenInitializeMint2 {
+	if wire[0] != constants.CpiWireStructured || wire[1] != 0 || wire[2] != 2 {
 		t.Fatalf("bad header %v", wire[:4])
+	}
+	if wire[3] != constants.StructuredPatchTokenInitializeMint2 {
+		t.Fatalf("bad patch tag %d", wire[3])
 	}
 }
 

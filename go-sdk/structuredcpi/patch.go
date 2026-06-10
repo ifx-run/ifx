@@ -224,9 +224,9 @@ func EncodeAmountDecimalsPatch(p AmountDecimalsPatch) ([]byte, error) {
 	return encodeAmountDecimals(p)
 }
 
-// EncodeSingleValuePayload is the common `[0][index]` slot layout.
+// EncodeSingleValuePayload is a Frame binding index (Borsh `Value`).
 func EncodeSingleValuePayload(v FrameValue) []byte {
-	return writeSingleValue(v)
+	return writeValueIndex(nil, v)
 }
 
 // EncodePatchPayload encodes nested payload for a structured patch wire tag.
@@ -296,14 +296,23 @@ func EncodePatchPayload(wireTag uint8, payload interface{}) ([]byte, error) {
 	}
 }
 
-// EncodeStructuredCpiStep writes `[2][patch_tag][accounts_start][accounts_len][payload…]`.
-func EncodeStructuredCpiStep(wireTag uint8, accountsStart, accountsLen uint8, payload interface{}) ([]byte, error) {
+// EncodeStructuredCpiPatch is full Borsh `StructuredCpiPatch` bytes (variant + payload).
+func EncodeStructuredCpiPatch(wireTag uint8, payload interface{}) ([]byte, error) {
 	body, err := EncodePatchPayload(wireTag, payload)
 	if err != nil {
 		return nil, err
 	}
-	out := []byte{constants.CpiWireStructured, wireTag, accountsStart, accountsLen}
-	return append(out, body...), nil
+	return append([]byte{wireTag}, body...), nil
+}
+
+// EncodeStructuredCpiStep writes `[2][accounts_start][accounts_len][StructuredCpiPatch…]`.
+func EncodeStructuredCpiStep(wireTag uint8, accountsStart, accountsLen uint8, payload interface{}) ([]byte, error) {
+	patch, err := EncodeStructuredCpiPatch(wireTag, payload)
+	if err != nil {
+		return nil, err
+	}
+	out := []byte{constants.CpiWireStructured, accountsStart, accountsLen}
+	return append(out, patch...), nil
 }
 
 // LamportsSpacePatch for system create_account (subset used in tests).
