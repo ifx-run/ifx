@@ -56,7 +56,7 @@ ifx = { path = "../ifx/programs/ifx", features = ["cpi"] }
 | `Expr` | **Borsh**，tag **0–43** | [implementation.zh-CN.md](./implementation.zh-CN.md) §5 |
 | `LetBinding` | enum tag **0–28** | [typed-let-bindings.zh-CN.md](./typed-let-bindings.zh-CN.md) |
 | `LetArgs.bindings` | `U8LenVec<LetBinding>` | u8 长度前缀 + 元素（最多 255） |
-| `Cpi` 步 | wire kind **`0/1/2`** + payload | **Static** / **RawPatched**（`U16LenVec` data + patches）/ **Structured**（patch tag + payload，无模板）— [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md) |
+| `Cpi` 步 | wire kind **`0/1/2`** + payload | **Static** / **RawPatched**（`U16LenVec` data + patches）/ **Structured**（`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`，无模板）— [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md) |
 | `ifx_patched_cpi` ix data | **`Cpi`**（Anchor 参数） | wire kind **`0/1/2`** + payload — 见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md) |
 | `ifx_if_else` ix data | **`IfElseArgs`**（Anchor 参数） | `Expr` cond + 两侧 custom-wire [`IfElseArm`] |
 | `Value` | `index: u8` | binding index（0 起 append 顺序） |

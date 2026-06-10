@@ -8,6 +8,18 @@ Dynamic fields use [`Value`](../../programs/ifx/src/state/types.rs) (Frame bindi
 
 **One flat enum per official ix** — `StructuredCpiPatch` only; nested payloads (`AmountDecimalsPatch`, …) cannot mismatch the ix variant.
 
+## Wire layout (`Cpi::Structured`)
+
+```text
+[2][accounts_start: u8][accounts_len: u8][StructuredCpiPatch Borsh…]
+```
+
+- **`accounts_start` / `accounts_len`:** slice into `remaining_accounts` (same as Static / RawPatched).
+- **`StructuredCpiPatch`:** full Borsh enum — first byte is variant tag **0–28** (see registry below); nested sub-enums and `Value` fields follow.
+- **`Value` on wire:** single byte = Frame binding index (no legacy `[0][index]` prefix).
+
+TS codec: **`encodeStructuredCpiPatch`** (includes variant tag). **`encodeStructuredCpiPatchPayload`** is deprecated (body only, pre-0.4 layout).
+
 ## Naming (read this once)
 
 | Term | Meaning |
@@ -26,7 +38,7 @@ Full glossary: [glossary.md](./glossary.md) §4–5.
 | `1` | RawPatched | DEX / variable layouts / escape hatch |
 | `2` | Structured | `StructuredCpiPatch` (this doc) |
 
-Patch wire tags `0–28` are `STRUCTURED_CPI_PATCH_WIRE` in the SDK.
+Patch variant tags **0–28** match Borsh enum indices in `STRUCTURED_CPI_PATCH_WIRE` (SDK) — they are **not** a separate byte before the account slice.
 
 ## Variant registry (wire tags 0–28)
 

@@ -11,7 +11,7 @@ English | [中文](./PUBLISHING.zh-CN.md)
 
 ## Prerelease tags
 
-Use semver prerelease suffixes when the on-chain program is not on mainnet yet, e.g. **`0.2.0-devnet.0`**. Document in README that the package targets devnet only until a stable mainnet release.
+Use semver prerelease suffixes when the on-chain program is not on mainnet yet, e.g. **`0.4.0-devnet.0`**. Document in README that the package targets devnet only until a stable mainnet release.
 
 npm **requires `--tag`** for prerelease versions (they must not become `latest`). This repo publishes with:
 
@@ -25,7 +25,7 @@ npm publish --tag devnet
 
 ```bash
 npm install @ifx-run/sdk@devnet
-# or pin exact: npm install @ifx-run/sdk@0.2.0-devnet.0
+# or pin exact: npm install @ifx-run/sdk@0.4.0-devnet.0
 ```
 
 Plain `npm install @ifx-run/sdk` resolves the `latest` tag only — no prerelease until a stable `1.x` ships.

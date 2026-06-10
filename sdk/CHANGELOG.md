@@ -15,6 +15,10 @@ All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep 
 - **`Cpi::Structured` wire layout (Borsh):** `[2][accounts_start][accounts_len][StructuredCpiPatch…]` — patch variant tag moved **after** account slice (was `[2][patch_tag][start][len][payload]`). Single-slot `Value` fields are **one byte** (binding index only; removed legacy `[0][index]` prefix). Requires program redeploy.
 - **`encodeStructuredCpiPatchPayload` deprecated** — use **`encodeStructuredCpiPatch`** (includes top-level variant tag). Go: `EncodeStructuredCpiPatch` / updated `EncodeStructuredCpiStep`.
 
+### Changed
+
+- Documentation: Structured CPI Borsh wire layout aligned across implementation guides, glossary, and READMEs.
+
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### Breaking

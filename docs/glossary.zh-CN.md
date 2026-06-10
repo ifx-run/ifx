@@ -82,9 +82,9 @@
 
 | 术语 | 字段 | 含义 | 为何这样命名 |
 |------|------|------|--------------|
-| **`Cpi`** | wire tag + payload | **`ifx_if_else`** 或 patched invoke 中的一步 CPI | **CPI** = 跨程序调用。三种 wire：**Static**、**RawPatched**、**Structured**。 |
-| **`RawCpiPatch`** | `data_offset`, `source: Value` | **RawPatched** 模板 `data` 上的字节覆盖 | 仅用于 **RawPatched**（DEX / 自定义 layout）。 |
-| **`StructuredCpiPatch`** | flat enum（29 variant） | 官方 System / SPL / Token-2022 ix + typed payload | 每个 registry ix 一种类型 — 无 kind + payload 双层；编译期不可错配。 |
+| **`Cpi`** | wire kind + payload | **`ifx_if_else`** 或 patched invoke 中的一步 CPI | **CPI** = 跨程序调用。三种 wire：**Static**、**RawPatched**、**Structured**。Structured：`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`。 |
+| **`RawCpiPatch`** | `data_offset`, `source: Value` | **RawPatched** 模板 `data` 上的字节覆盖 | 仅用于 **RawPatched**（DEX / 自定义 layout）。**`source.index`** 在 wire 上为单字节 binding index。 |
+| **`StructuredCpiPatch`** | flat Borsh enum（29 variant） | 官方 System / SPL / Token-2022 ix + typed payload | 每个 registry ix 一种类型 — variant tag **0–28** 为 account slice 之后 Borsh blob 的首字节；嵌套 payload 在 enum 内。 |
 | **嵌套 patch payload** | 如 `AmountDecimalsPatch` | ix `data` 中哪些字段来自 Frame、哪些为 wire 字面量 | **`StructuredCpiPatch`** 内的子 enum；Rust 模块 **`structured_cpi_payload`**。 |
 | **`structuredCpi()`** | SDK builder | 官方 `TransactionInstruction` → structured wire 步 | 账户推导与 **`rawCpi()`** 相同；patch 用 **`structuredCpiPatch.*`**。 |
 | **`rawCpi()` / `rawCpiPatch()`** | SDK 辅助 | **RawPatched** 模板 + 字节 patch | 非 registry program 的逃生口。 |

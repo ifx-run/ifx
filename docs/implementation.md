@@ -133,7 +133,7 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 - **`Cpi` wire kind** (first byte per step): **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md))
   - **Static:** `[0][accounts_start][accounts_len][U16LenVec data]` — invoke template as-is
   - **RawPatched:** `[1][accounts_start][accounts_len][data][PatchList]` — byte overlay via [`RawCpiPatch`]; DEX / non-registry layouts
-  - **Structured:** `[2][patch_wire_tag][accounts_start][accounts_len][payload]` — **no ix data template**; official System / SPL / Token-2022 registry
+  - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **no ix data template**; flat enum (variant tag **0–28** inside Borsh blob); official System / SPL / Token-2022 registry
 - **`U8LenVec<T>`:** **u8** element count + Borsh elements (max 255); `LetArgs::bindings`
 - **`U16LenVec<T>`:** **u16 LE** element count + elements; RawPatched `Cpi::data` and `PatchList`
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**; copies typed bytes from `payload_at[source.index]`

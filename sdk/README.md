@@ -10,7 +10,7 @@ English | [中文](./README.zh-CN.md)
 
 TypeScript SDK for Ifx in two layers — **does not wrap RPC / wallet**:
 
-> **Preview:** npm `0.3.0-devnet.0` targets **devnet only** (no mainnet program yet). Omitted `programId` uses `DEFAULT_IFX_PROGRAM_ID` (= devnet). Local Surfpool / repo tests pass `IFX_LOCALNET_PROGRAM_ID` explicitly. **Not compatible with `@ifx-run/sdk@0.2.0-devnet.0`** — upgrade SDK and redeployed devnet program together.
+> **Preview:** npm `0.4.0-devnet.0` targets **devnet only** (no mainnet program yet). Omitted `programId` uses `DEFAULT_IFX_PROGRAM_ID` (= devnet). Local Surfpool / repo tests pass `IFX_LOCALNET_PROGRAM_ID` explicitly. **Not compatible with `@ifx-run/sdk@0.3.0-devnet.0` or earlier** (Structured CPI Borsh wire) — upgrade SDK and redeployed devnet program together.
 
 1. **`FrameScratch`** — plan bindings (`let*`) and build frame instructions (`ix*`, `letBuilder().buildIx()`); append with `tx.add(…)`
 2. **`expr` / `Expr` / `ScratchValue`** — builders, wire type, and typed Frame bindings

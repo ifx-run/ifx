@@ -103,7 +103,7 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 - `ifx_if_else` 分支：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（wire u8 tag = 步数）。
 - 每个 **`Cpi`** 步以 wire kind 开头：**`0` Static** · **`1` RawPatched** · **`2` Structured**（[structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）。
   - **RawPatched：** 模板 `data` + **`patches`** 字节覆盖 — DEX / 逃生口。
-  - **Structured：** 官方 registry ix；从 typed patch 组装 `data`，无模板 blob。
+  - **Structured：** 官方 registry ix；从 typed Borsh patch 组装 `data` — `[2][accounts_start][accounts_len][StructuredCpiPatch…]`，无模板 blob。
   - **Static：** 模板 `data` 原样 invoke。
 - 无条件 patched CPI：**`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** 或 **Structured**（须 apply patch）。
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**。

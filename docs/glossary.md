@@ -82,9 +82,9 @@ Prefix **`ifx_`** matches the program module and keeps instruction names grep-fr
 
 | Term | Field | Meaning | Why this name |
 |------|-------|---------|---------------|
-| **`Cpi`** | wire tag + payload | One CPI step in **`ifx_if_else`** or patched invoke | **CPI** = cross-program invocation. Three wire forms: **Static**, **RawPatched**, **Structured**. |
-| **`RawCpiPatch`** | `data_offset`, `source: Value` | Byte overlay on **raw** patched CPI template `data` | Only for **RawPatched** (DEX / custom layouts). **`data_offset`** = byte into template **`data`**; **`source.index`** = tape binding. |
-| **`StructuredCpiPatch`** | flat enum (29 variants) | Official System / SPL / Token-2022 ix with typed payload | One type per registry ix — no separate kind + payload layer; mismatch is impossible at compile time. |
+| **`Cpi`** | wire kind + payload | One CPI step in **`ifx_if_else`** or patched invoke | **CPI** = cross-program invocation. Three wire forms: **Static**, **RawPatched**, **Structured**. Structured: `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`. |
+| **`RawCpiPatch`** | `data_offset`, `source: Value` | Byte overlay on **raw** patched CPI template `data` | Only for **RawPatched** (DEX / custom layouts). **`data_offset`** = byte into template **`data`**; **`source.index`** = tape binding (one byte on wire). |
+| **`StructuredCpiPatch`** | flat Borsh enum (29 variants) | Official System / SPL / Token-2022 ix with typed payload | One type per registry ix — variant tag **0–28** is the first byte of the Borsh blob after account slice; nested payloads (`AmountDecimalsPatch`, …) follow inside the enum. |
 | **Nested patch payload** | e.g. `AmountDecimalsPatch` | Which fields in ix `data` come from Frame vs wire literals | Sub-enum inside **`StructuredCpiPatch`**; Rust module **`structured_cpi_payload`**. |
 | **`structuredCpi()`** | SDK builder | Official `TransactionInstruction` → structured wire step | Same account ergonomics as **`rawCpi()`**; pass **`structuredCpiPatch.*`** for the patch. |
 | **`rawCpi()` / `rawCpiPatch()`** | SDK helpers | **RawPatched** template + byte patches | Escape hatch for non-registry programs. |

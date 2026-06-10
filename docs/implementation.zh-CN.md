@@ -125,7 +125,7 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 - **`Cpi` wire kind**（每步首字节）：**`0` Static** · **`1` RawPatched** · **`2` Structured**（见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）
   - **Static：** `[0][accounts_start][accounts_len][U16LenVec data]`
   - **RawPatched：** `[1][…][data][PatchList]` — 字节覆盖；DEX / 非 registry
-  - **Structured：** `[2][patch_wire_tag][…][payload]` — **无 ix data 模板**
+  - **Structured：** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **无 ix data 模板**；flat enum（variant tag **0–28** 在 Borsh blob 内）
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**
 
 ---

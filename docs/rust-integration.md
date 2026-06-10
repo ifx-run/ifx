@@ -73,7 +73,7 @@ Instruction-level docs live in [`programs/ifx/src/lib.rs`](../programs/ifx/src/l
 | `Expr` | **Borsh**, flat enum tags **0–43** | See [implementation.md](./implementation.md) §5 |
 | `LetBinding` | Anchor / Borsh enum tags **0–28** | See [typed-let-bindings.md](./typed-let-bindings.md) |
 | `LetArgs.bindings` | `U8LenVec<LetBinding>` | u8 length prefix + elements (max 255) |
-| `Cpi` step | Wire kind **`0/1/2`** + payload | **Static** / **RawPatched** (`U16LenVec` data + patches) / **Structured** (patch tag + payload, no template) — [structured-cpi-patches.md](./structured-cpi-patches.md) |
+| `Cpi` step | Wire kind **`0/1/2`** + payload | **Static** / **RawPatched** (`U16LenVec` data + patches) / **Structured** (`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`, no template) — [structured-cpi-patches.md](./structured-cpi-patches.md) |
 | `ifx_patched_cpi` ix data | **`Cpi`** (Anchor arg) | Wire kind **`0/1/2`** + payload — see [structured-cpi-patches.md](./structured-cpi-patches.md) |
 | `ifx_if_else` ix data | **`IfElseArgs`** (Anchor arg) | `Expr` cond + two custom-wire [`IfElseArm`] sides |
 | `Value` | `index: u8` | Binding index (0-based append order) |

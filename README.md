@@ -67,7 +67,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 | Key | Value |
 | --- | --- |
 | **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) (2026-06-09, commit `11be96e`); **not on mainnet** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.3.0-devnet.0` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
 | **Program (localnet / repo default)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |

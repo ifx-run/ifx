@@ -103,7 +103,7 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
 - `ifx_if_else` arms: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (wire u8 tag = step count).
 - Each **`Cpi`** step starts with wire kind **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md)).
   - **RawPatched:** template `data` + optional **`patches`** (`PatchList`); byte overlay before invoke — DEX / escape hatch.
-  - **Structured:** official registry ix; ix `data` assembled from typed patch (no template blob).
+  - **Structured:** official registry ix; ix `data` assembled from typed Borsh patch — `[2][accounts_start][accounts_len][StructuredCpiPatch…]` (no template blob).
   - **Static:** template `data` invoked as-is (empty `PatchList`).
 - Unconditional patched CPI: **`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** or **Structured** (requires patch apply).
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**.

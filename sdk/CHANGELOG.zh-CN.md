@@ -15,6 +15,10 @@
 - **`Cpi::Structured` wire（Borsh）：** `[2][accounts_start][accounts_len][StructuredCpiPatch…]` — patch variant tag 移到 account slice **之后**（旧：`[2][patch_tag][start][len][payload]`）。单槽 `Value` 字段为 **1 字节**（仅 binding index；移除旧 `[0][index]` 前缀）。须 redeploy program。
 - **`encodeStructuredCpiPatchPayload` 已 deprecated** — 改用 **`encodeStructuredCpiPatch`**（含顶层 variant tag）。Go：`EncodeStructuredCpiPatch` / 更新后的 `EncodeStructuredCpiStep`。
 
+### 变更
+
+- 文档：Structured CPI Borsh wire layout 已在 implementation、glossary、README 等处对齐。
+
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### 破坏性变更

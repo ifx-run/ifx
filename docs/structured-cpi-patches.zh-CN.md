@@ -6,6 +6,18 @@ Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 
 链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（29 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
 
+## Wire layout（`Cpi::Structured`）
+
+```text
+[2][accounts_start: u8][accounts_len: u8][StructuredCpiPatch Borsh…]
+```
+
+- **`accounts_start` / `accounts_len`：** `remaining_accounts` 切片（与 Static / RawPatched 相同）。
+- **`StructuredCpiPatch`：** 完整 Borsh enum — 首字节为 variant tag **0–28**（见下表）；嵌套 sub-enum 与 `Value` 字段紧随其后。
+- **`Value` wire：** 单字节 = Frame binding index（无旧版 `[0][index]` 前缀）。
+
+TS codec：**`encodeStructuredCpiPatch`**（含 variant tag）。**`encodeStructuredCpiPatchPayload`** 已 deprecated（仅 body，0.4 前 layout）。
+
 ## 命名（建议读一遍）
 
 | 术语 | 含义 |
@@ -32,6 +44,8 @@ structuredCpi(transferCheckedIx, {
 ```
 
 RawPatched 仍用于 DEX / 非 registry layout。
+
+Variant tag **0–28** 为 Borsh enum 索引（SDK 中 `STRUCTURED_CPI_PATCH_WIRE`）— **不是** account slice 之前的独立字节。
 
 ## Variant 注册表（wire tag 0–28）
 

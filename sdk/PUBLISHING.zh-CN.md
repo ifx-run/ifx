@@ -11,7 +11,7 @@
 
 ## 预发布标签
 
-主网 program 未部署时，使用 semver 预发布后缀，例如 **`0.2.0-devnet.0`**。在 README 中说明包仅面向 devnet，直至稳定主网版本。
+主网 program 未部署时，使用 semver 预发布后缀，例如 **`0.4.0-devnet.0`**。在 README 中说明包仅面向 devnet，直至稳定主网版本。
 
 预发布版本**必须**带 `--tag`（不能自动成为 `latest`）。本仓库使用：
 
@@ -25,7 +25,7 @@ npm publish --tag devnet
 
 ```bash
 npm install @ifx-run/sdk@devnet
-# 或精确版本：npm install @ifx-run/sdk@0.2.0-devnet.0
+# 或精确版本：npm install @ifx-run/sdk@0.4.0-devnet.0
 ```
 
 仅 `npm install @ifx-run/sdk` 会解析 `latest` 标签 — 在发布稳定版 `1.x` 之前不会装到预发布版。

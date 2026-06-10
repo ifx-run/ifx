@@ -10,7 +10,7 @@
 
 Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
-> **预览版：** npm `0.3.0-devnet.0` 仅面向 **devnet**（尚无主网 program）。省略 `programId` 时使用 `DEFAULT_IFX_PROGRAM_ID`（= devnet）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。**与 `@ifx-run/sdk@0.2.0-devnet.0` 不兼容** — SDK 与 devnet 程序须同步升级。
+> **预览版：** npm `0.4.0-devnet.0` 仅面向 **devnet**（尚无主网 program）。省略 `programId` 时使用 `DEFAULT_IFX_PROGRAM_ID`（= devnet）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。**与 `@ifx-run/sdk@0.3.0-devnet.0` 及更早版本不兼容**（Structured CPI Borsh wire）— SDK 与 devnet 程序须同步升级。
 
 1. **`FrameScratch`** — `let*` 规划 binding，`ix*` / `letBuilder().buildIx()` 产出指令；用 `tx.add(…)` 组装交易
 2. **`expr` / `Expr` / `ScratchValue`** — 构造器、链上 wire 类型、类型化 Frame binding

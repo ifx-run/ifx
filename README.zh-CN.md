@@ -67,7 +67,7 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 | 项 | 说明 |
 | --- | --- |
 | **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)（2026-06-09，commit `11be96e`）；**未上 mainnet** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.3.0-devnet.0` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
 | **Program（localnet / 仓库默认）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
