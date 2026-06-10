@@ -19,7 +19,10 @@ Design and implementation docs live here. The repo root [README.md](../README.md
 | [frame-cu-optimization.md](./frame-cu-optimization.md) | Maintainers | Frame CU optimization rounds, benchmark data, summary |
 | [personal-amm.md](./personal-amm.md) | Integrators / demo | **Planned** wallet-based swap showcase — no pool/DEX program; devnet without third-party AMM |
 | [development.md](./development.md) | **Maintainers** | Build, test, IDL sync, repo layout |
-| [roadmap.md](./roadmap.md) | Everyone | Shipped vs planned |
+| [roadmap.md](./roadmap.md) | Everyone | Shipped vs **milestone A/B** |
+| [lighthouse-coverage.md](./lighthouse-coverage.md) | Maintainers / grants | Lighthouse benchmark matrix |
+| [ir-completeness.md](./ir-completeness.md) | Maintainers | **Expr Cast / Binding / Patch** audit |
+| [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | Maintainers | Stake domain survey |
 | [client-sdks.md](./client-sdks.md) | Integrators / maintainers | **Go SDK (P0)**, Rust SDK (P1) phased plan |
 | [program-security.md](./program-security.md) | Maintainers / integrators | Official Solana security checklist + Ifx preflight |
 | [mainnet-verification.md](./mainnet-verification.md) | Release / ops | Solscan Verified, security.txt deploy |

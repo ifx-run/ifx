@@ -19,7 +19,10 @@
 | [frame-cu-optimization.zh-CN.md](./frame-cu-optimization.zh-CN.md) | 维护者 | Frame CU 优化轮次、benchmark 数据、成果总结 |
 | [personal-amm.zh-CN.md](./personal-amm.zh-CN.md) | 集成者 / 演示 | **规划中** 钱包池 swap 展示 — 无 pool/DEX 程序；devnet 不依赖第三方 AMM |
 | [development.zh-CN.md](./development.zh-CN.md) | **维护者** | 构建、测试、IDL 同步 |
-| [roadmap.zh-CN.md](./roadmap.zh-CN.md) | 全员 | 已交付 vs 规划 |
+| [roadmap.zh-CN.md](./roadmap.zh-CN.md) | 全员 | 已交付 vs **里程碑终点 A/B** |
+| [lighthouse-coverage.zh-CN.md](./lighthouse-coverage.zh-CN.md) | 维护者 / grant | Lighthouse 对照、覆盖矩阵 |
+| [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | 维护者 | **Expr Cast / Binding / Patch** 完备性审计 |
+| [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | 维护者 | Stake 域调研 |
 | [client-sdks.zh-CN.md](./client-sdks.zh-CN.md) | 集成者 / 维护者 | **Go SDK（P0）**、Rust SDK（P1）分阶段计划 |
 | [program-security.zh-CN.md](./program-security.zh-CN.md) | 维护者 / 集成者 | Solana 官方安全清单 + Ifx 预检 |
 | [mainnet-verification.zh-CN.md](./mainnet-verification.zh-CN.md) | 发布 / 运维 | Solscan Verified、security.txt 部署 |

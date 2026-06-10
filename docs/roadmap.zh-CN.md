@@ -2,6 +2,50 @@
 
 # Ifx 路线图
 
+## 里程碑终点（1.0 定义）
+
+下一阶段的 **两个任务终点**（mainnet 前）。细节见链接文档；已交付能力见下文表格。
+
+### 终点 A — 域覆盖 + IR 完备（Lighthouse 对照并超越）
+
+**目标：** [Lighthouse](https://github.com/Jac0xb/lighthouse) 断言域作为 **对照表**；Ifx 在 **可表达 guard 场景** 上对齐并保留 **Skip / CPI / patch** 增量。同时在 **devnet 窗口** 内闭合 `LetBinding`、`Expr`、`StructuredCpiPatch` wire（允许 breaking change）。
+
+| 文档 | 内容 |
+|------|------|
+| [lighthouse-coverage.zh-CN.md](./lighthouse-coverage.zh-CN.md) | 调研、覆盖矩阵、R0–R4 域路线、非目标（Memory PDA） |
+| [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | **Cast / Binding / Patch 审计**；显式 **AsU8…AsI128**（tag 19–28） |
+| [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | Stake 域（当前最大 Binding 缺口） |
+
+**终点 A 验收（全部满足）：**
+
+- [ ] 覆盖矩阵：[lighthouse-coverage.zh-CN.md §4](./lighthouse-coverage.zh-CN.md) 无 ⏳（或 ⏳ 仅 R4 按需项）
+- [ ] IR-1：显式 **AsU8…AsI128**（10 变体，tag 连续块）；TS/Go golden 更新
+- [ ] IR-2：Account meta + Stake typed lets；guardrail / delta **示例**（composable，非 SDK 糖）
+- [ ] 每域至少 1 个 **超越** 示例（assert + Skip 或 patch）
+- [ ] 第三方审计 + mainnet 部署（grant / 发布主线，与终点 A 并行）
+
+### 终点 B — Rust SDK
+
+**目标：** 链下 Rust 与 `@ifx-run/sdk` / Go **同等表达能力**；wire 由 `ifx-core` 单点维护。
+
+| 文档 | 内容 |
+|------|------|
+| [client-sdks.zh-CN.md](./client-sdks.zh-CN.md) § P1 | `ifx-core` + `ifx-sdk`；R1–R3 阶段 |
+
+**依赖：** **IR-1 完成后** 再冻结 Rust golden（避免 cast wire 二次迁移）。
+
+**终点 B 验收：**
+
+- [ ] `ifx-core` 与 TS parity tests 字节一致
+- [ ] `ifx-sdk`：`FrameScratch`、`LetBuilder`、Structured/Raw CPI、`if_else`
+- [ ] 至少 L1 级 Rust 集成测试（Surfpool / anchor test 场景移植）
+
+**建议顺序：** 终点 A 的 **IR-1 → IR-2** 与审计并行 → **终点 B** → 终点 A 剩余 IR-3 / 域示例扫尾 → mainnet。
+
+---
+
+## 已交付（摘要）
+
 | 能力 | 状态 | 说明 |
 |------|------|------|
 | Frame PDA + flat `tape` + `payload_at` | ✅ | |
@@ -23,9 +67,57 @@
 | Personal AMM 展示（无专用 pool/DEX 程序的钱包池 swap） | ✅ | [personal-amm.zh-CN.md](./personal-amm.zh-CN.md)；示例 + 测试；可选报价服务待定 |
 | scratch PDA | ⏳ | v1 |
 
+## 进行中 — 终点 A 分解
+
+### 域覆盖（Lighthouse 对照）
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| **R0** | 矩阵文档、guardrail / delta 示例 | 文档 ✅；示例 ⏳ |
+| **R1** | Account signer/writable `LetBinding` | ⏳ |
+| **R2** | Stake typed lets + 示例 + 测试 | ⏳ |
+| **R3** | Upgradeable loader、Merkle CPI 示例 | ⏳ |
+| **R4** | `ifx_assert_multi`（按需） | ⏳ |
+
+### IR 完备（wire 定稿）
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| **IR-0** | [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | ✅ |
+| **IR-1** | 显式 AsU8…AsI128（tag 19–28）；golden 迁移 | ⏳ |
+| **IR-2** | LB-1/LB-2 + patch 与 Cast 组合 | ⏳ |
+| **IR-3** | Mint/loader 补全、Raw patch 文档 | ⏳ |
+
+**非目标：** Lighthouse Memory PDA、`lighthouse-compat` SDK 糖层。
+
 ---
 
-## 合并 `main` 前 — `feat/typed-cpi-masked-patches`（Structured CPI）
+## 进行中 — 终点 B 分解
+
+详见 [client-sdks.zh-CN.md](./client-sdks.zh-CN.md) § P1。
+
+| 阶段 | 内容 | 状态 |
+|------|------|------|
+| **Rust R1** | `ifx-core` 抽取 + golden vs TS | ⏳ |
+| **Rust R2** | planner + `ix_let` / reset / assert | ⏳ |
+| **Rust R3** | patched / structured CPI、if_else、L1 e2e | ⏳ |
+
+---
+
+## 历史 — 客户端 SDK（Go 已交付）
+
+| 优先级 | 能力 | 状态 | 说明 |
+|--------|------|------|------|
+| **P0** | **Go SDK** | ✅ | `go-sdk/` |
+| **P1** | **Rust SDK** | ⏳ | **里程碑终点 B** |
+
+---
+
+## 附录 — 已合并分支 / 权限（归档）
+
+以下章节保留历史记录；新工作以 **§ 里程碑终点** 为准。
+
+### 合并 `main` 前 — Structured CPI
 
 本分支成熟前不合并。细则见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)。
 
@@ -49,14 +141,3 @@
 | on-curve `authority` 在 `reset` / `let` / `close` 上要 signer | ✅ | off-curve = 公共 scratch |
 | `ResetNotTopLevel` / `CloseNotTopLevel` / `CreateNotTopLevel` | ✅ | `let` 已有 `LetNotTopLevel` |
 | TS / Go SDK：on-curve 时 prepend `remaining[0]`；public 零账户 | ✅ | `planPublicFrame` 不变 |
-
----
-
-## 规划中 — 客户端 SDK
-
-详细方案：[client-sdks.zh-CN.md](./client-sdks.zh-CN.md)
-
-| 优先级 | 能力 | 状态 | 说明 |
-|--------|------|------|------|
-| **P0 — 高** | **Go SDK** | ✅ | `go-sdk/` — wire、FrameScratch、Structured/Raw CPI、if_else、L1 e2e |
-| **P1 — 中** | **Rust SDK** | ⏳ | `ifx-core` + `ifx-sdk`（`FrameScratch` / `LetBuilder`）；R1–R3 |
