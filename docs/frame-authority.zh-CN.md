@@ -33,7 +33,7 @@ Frame `tape` 是 **草稿纸**，但 **PDA 常驻**。集成方可能：
 
 create 时 `Pubkey::default()` 仍非法。
 
-SDK：`planPublicFrame` / `immortalCloseAuthority` → **`authority`** 设为 **Frame PDA**（off-curve、不可关闭、公共可写）。
+SDK：`planPublicFrame` / `publicFrameAuthority` → **`authority`** 设为 **Frame PDA**（off-curve、不可关闭、公共可写）。
 
 ---
 

@@ -1,10 +1,12 @@
-English | [中文](./SECURITY.zh-CN.md)
+English | [中文](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.md)
 
 # Security Policy
 
 > Keep this file consistent with `security_txt!` in `programs/ifx/src/lib.rs`.
 
-Ifx is a **non-profit open-source** project. We do not operate a paid bug bounty. We follow Solana ecosystem disclosure practices — see [program-security.md](./program-security.md) for the full checklist.
+> **中文全文：** [安全政策（中文）](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.md)
+
+Ifx is a **non-profit open-source** project. We do not operate a paid bug bounty. We follow Solana ecosystem disclosure practices — see [program-security.md](https://github.com/ifx-run/ifx/blob/main/docs/program-security.md) for the full checklist.
 
 ## Reporting vulnerabilities
 

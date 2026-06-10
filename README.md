@@ -14,21 +14,41 @@ English | [中文](./README.zh-CN.md)
 
 **Ifx is one reusable on-chain orchestration program for Solana** — so you do not deploy a new custom program every time a tiny feature needs reads and branching in the middle of one transaction.
 
-Solana runs instructions in order; there is no built-in if/else. The product ask is often tiny (for example: after a swap, read an ATA balance, close it if zero, otherwise skip), but **reads and branches mid-transaction must run on-chain**, so teams still ship a **dedicated wrapper program** for that glue logic. **Ifx** is the reusable alternative: plan the flow with the [TypeScript SDK](./sdk/) or [Go SDK](./go-sdk/); the deployed program performs reads, math, asserts, and **`ifx_if_else` conditional CPI** (or **Skip**) while the transaction executes.
-
 Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; layout and IR off-chain.
 
 ## What Ifx is (and is not)
 
-Solana transactions are **ordered instruction lists** with no native if/else. That glue lives **on-chain** — either a **dedicated wrapper program per flow**, or **one reusable orchestration program** (Ifx) you compose over programs you already use (System, SPL, DEX).
+A Solana transaction is an **ordered instruction list**. The runtime has no if/else and **no way to hand one instruction’s result to the next** — intermediate state lives in accounts you read later, not inline values between steps.
+
+When you need state checks, conditional branches, or arithmetic mid-flow, the usual options are:
+
+1. **A wrapper program per flow** — small glue, repeated deploy / audit / upgrade cost.
+2. **Client-only tx assembly** — snapshot chain state via RPC before sign, build instructions from assumptions that held *at query time*. Assumptions can break before landing; worse, **later instructions in the same tx still cannot branch on what earlier ones actually did** — only hard-coded unconditional paths. Classic failure: after a swap you want to close an ATA for rent; you assumed balance 0 off-chain and emitted unconditional `closeAccount`; on-chain balance ≠ 0 → **the whole tx reverts**, swap included.
+
+**Ifx is a third path:** one **reusable on-chain orchestration program**. Plan the dataflow off-chain with the [TypeScript SDK](./sdk/) or [Go SDK](./go-sdk/) (what to read, what to compute, when to CPI vs **Skip**). While the transaction executes, Ifx runs a fixed, enumerable instruction set in the same tx — **`ifx_let` reads on-chain state → math / `ifx_assert` → `ifx_if_else` conditional CPI or Skip** — over System, SPL, DEX, and other programs you already use. **No new wrapper per glue pattern**; **no betting on RPC snapshots** that mid-tx state will match.
 
 | | **Ifx** | Client-only tx assembly |
 |---|---------|-------------------------|
+| Pass values / branch between ix | **On-chain** `ifx_let` + `ifx_if_else` on mid-tx state | No; off-chain assumptions + unconditional ix only |
 | Where `if / else` runs | **On-chain** during tx execution | Off-chain when you build/sign |
-| Read balance **after** an earlier ix in the same tx | `ifx_let` sees post-ix state | Not available at sign time |
+| Read balance **after** an earlier ix in the same tx | `ifx_let` sees post-ix state | Not at sign time; cannot Skip later ix from actual result |
 | Optional `closeAccount` when balance may be ≠ 0 | **`ifx_if_else` → Skip** arm; tx continues | Unconditional close **reverts the whole tx** |
 
 **Ifx is not** a TypeScript “instruction pipeline,” middleware, or tx composer that only runs off-chain. **TypeScript / Go SDKs** encode the dataflow; the **Ifx program** executes branches and CPIs on-chain.
+
+### Typical flows
+
+These are **real shapes** of Solana backend work: read → compute → branch → CPI **inside one tx**. The left column is what teams **often resort to without mid-tx orchestration** — a dedicated wrapper program, or client-built unconditional instructions from RPC snapshots:
+
+| Typical need | Without Ifx, teams often… | Ifx |
+|--------------|----------------------------|-----|
+| **Empty ATA** — close and reclaim rent when balance is 0, skip otherwise (same tx as swap) | Ship a conditional-close **wrapper program** | `ifx_let` + `ifx_if_else` (CloseAccount or **Skip**) — see [example below](#example-close-an-empty-ata-without-failing-the-tx) |
+| Compare lamports **before vs after** a swap in the same tx | A dedicated **orchestration wrapper**, or split across txs | `ifx_let` snapshot → your ix → `ifx_let` again → `expr` |
+| “Only transfer if delta covers fees” | New **wrapper** with conditional logic | `ifx_assert` + structured / patched CPI |
+| Transfer amount **unknown until mid-tx** | **Wrapper program** reads on-chain then CPIs; or split across txs | Patch CPI `data` from Frame tape (structured or raw) |
+| **Dust Token-2022 ATA** — burn, harvest withheld, close | Dedicated **wrapper**, or client-only unconditional assembly | `ifx_let` + `ifx_if_else` + structured / static CPI ([example](./sdk/examples/dust-destroy-token2022.ts)) |
+
+Ifx does **not** replace your DEX or token programs. It is the glue: read → compute → assert → CPI existing programs when the outcome depends on **chain state inside this tx**.
 
 ### Example: close an empty ATA without failing the tx
 
@@ -67,27 +87,6 @@ Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` (Go in
 
 ---
 
-## Sound familiar?
-
-If you build Solana backends, many flows need **orchestration inside one transaction**—snapshots, arithmetic, branches, then CPI to programs you already use. Common approaches:
-
-- **New program** — new on-chain state or protocol rules  
-- **Client-only tx assembly** — fast to iterate; harder for wallets and risk tools to verify  
-- **Ifx** — generic on-chain layer; structured instruction IR; one deployed program reused across flows
-
-| You need… | Common approaches | With Ifx |
-|-----------|-------------------|----------|
-| **Empty ATA** — close and reclaim rent when balance is 0, skip otherwise (same tx as swap) | Custom conditional-close wrapper program | `ifx_let` + `ifx_if_else` (CloseAccount or **Skip**) — see [example above](#example-close-an-empty-ata-without-failing-the-tx) |
-| Compare lamports **before vs after** a swap in the same tx | Dedicated orchestration program, or split across txs | `ifx_let` snapshot → your ix → `ifx_let` again → `expr` |
-| “Only transfer if delta covers fees” | New program with conditional logic | `ifx_assert` + `ifx_patched_cpi` |
-| Transfer amount **unknown until mid-tx** | Client-side CPI patching, or a new program | Patch CPI `data` from Frame tape |
-| **Dust Token-2022 ATA** — burn, harvest withheld, close | Dedicated program, or client-only assembly | `ifx_let` + `ifx_if_else` + patched / static CPI ([example](./sdk/examples/dust-destroy-token2022.ts)) |
-| Wallet / risk asks “what is this tx computing?” | Logic spread across client assembly | Instruction args = inspectable dataflow IR |
-
-Ifx does **not** replace your DEX or token programs. It is the glue: read → compute → assert → CPI existing programs when the outcome depends on **chain state inside this tx**.
-
----
-
 ## Try it in 5 minutes
 
 **Two transactions:** provision a Frame PDA once, then run business logic in a later tx. Each business tx starts with `reset` (clears scratch tape).
@@ -95,36 +94,25 @@ Ifx does **not** replace your DEX or token programs. It is the glue: read → co
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
+import { expr, FrameScratch } from "@ifx-run/sdk";
 
 // Tx 1 — once per frame_id (standalone provisioning tx)
 const tapeLen = 256;
 const frameId = randomBytes(32); // persist for later jobs
-const { ixCreate } = FrameScratch.planPublicFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
-// Tx 2 — business tx (rebuild planner from stored frameId)
-// Public Frame: authority = Frame PDA — no extra signer on reset/let (default).
-const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(
-  frame,
-  tapeLen,
-  0,
-  0,
-  undefined,
-  immortalCloseAuthority(payer, frameId)
-);
+// Tx 2 — business tx (reuse scratch in the same process; another job rebuilds
+// from persisted frameId — see sdk/examples/minimal-frame.ts)
 const tx = new Transaction();
-
 tx.add(scratch.ixReset());
 const one = scratch.letConstU64(1);
 tx.add(scratch.ixLet(one));
 tx.add(scratch.ixAssert(expr.nonZero(one)));
-
 await provider.sendAndConfirm(tx);
 ```
 
@@ -196,7 +184,7 @@ flowchart LR
   branch -->|else| skip[skip]
 ```
 
-- **Frame** — PDA whose `tape` is **scratch paper for this tx** (`reset` clears session). Not trusted cross-tx app state.
+- **Frame** — PDA whose `tape` is **session scratch** (default: `reset` each business tx). Not durable app state; in-bundle binding carry-over is documented in [bundles.md](./docs/bundles.md).
 - **`ifx_if_else`** — each arm: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (static, **Structured**, and/or RawPatched). Multi-step with the same condition: `arm.cpis([...])`.
 - **CPI choice** — official System / SPL / Token-2022 ix with tape-bound fields → **`structuredCpi()`** + **`structuredCpiPatch.*`** ([structured-cpi-patches.md](./docs/structured-cpi-patches.md)); DEX / custom layouts → **`rawCpi()`** + **`rawCpiPatch`** (unconditional: **`scratch.ixCpi`** → **`ifx_patched_cpi`**); fixed `data` at build time → **`staticCpi`** or **`tx.add(ix)`**.
 
@@ -211,33 +199,33 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 | Level | Example | You learn |
 |-------|---------|-----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame, `reset`, `let`, `assert` |
-| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`, patched + static CPI (`rawCpi` / `staticCpi`), chained `if_else` |
+| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`, structured + static CPI, chained `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | Two-hop A→USDC→B, read intermediate token balance, patch hop 2 |
-| **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, multiple patches |
+| **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, structured CPI patches |
 
 ### L1 — Destroy dust Token-2022 accounts
 
 **Rule:** raw balance `< DUST_THRESHOLD_RAW` → burn → harvest withheld (if any) → close; **`≥` threshold** → all steps skip.
 
-**One `ifx_let`**, **three `ifx_if_else`** (one CPI per arm). Burn uses **patched CPI** (`rawCpi` + `rawCpiPatch` for `amount` + mint `decimals`); harvest and close use **`staticCpi`**.
+**One `ifx_let`**, **three `ifx_if_else`** (one CPI per arm). Burn uses **structured CPI** (`structuredCpiPatch.token2022BurnChecked`); harvest and close use **`staticCpi`**.
 
 ```text
 let(amount, withheld, decimals)
-  → if_else: dust ∧ amount > 0     → BurnChecked (patched CPI)
+  → if_else: dust ∧ amount > 0     → BurnChecked (structured CPI)
   → if_else: dust ∧ withheld > 0   → harvest (staticCpi)
   → if_else: dust                  → closeAccount (staticCpi)
 ```
 
-Full code, SPL byte offsets, and `DUST_THRESHOLD_RAW` notes: **[`sdk/examples/dust-destroy-token2022.ts`](./sdk/examples/dust-destroy-token2022.ts)**
+Full code and `DUST_THRESHOLD_RAW` notes: **[`sdk/examples/dust-destroy-token2022.ts`](./sdk/examples/dust-destroy-token2022.ts)**
 
 ### L2 — Two-hop token swap (A → USDC → B)
 
-**Same-tx orchestration:** hop 1 CPI credits intermediate USDC; Ifx reads **`splTokenAmount`** on that ATA; hop 2 **patched CPI** (`rawCpi` + `rawCpiPatch`) uses the on-chain amount as exact-in.
+**Same-tx orchestration:** hop 1 CPI credits intermediate USDC; Ifx reads **`splTokenAmount`** on that ATA; hop 2 **structured CPI** (`structuredCpiPatch.tokenTransfer`) uses the on-chain amount as exact-in.
 
 **Out of scope in the example:** Token-2022, SOL / tx fees / WSOL — intermediate USDC ATA must exist before the business tx (balance 0 recommended).
 
 ```text
-reset → CPI hop1 (A→USDC) → let(usdcOut) → patched CPI hop2 (USDC→B, amount_in ← usdcOut)
+reset → CPI hop1 (A→USDC) → let(usdcOut) → structured CPI hop2 (USDC→B, amount_in ← usdcOut)
 ```
 
 Full planner: **[`sdk/examples/two-hop-token-swap.ts`](./sdk/examples/two-hop-token-swap.ts)** · localnet test: [`tests/two_hop_swap.ts`](./tests/two_hop_swap.ts)
@@ -246,44 +234,60 @@ Full planner: **[`sdk/examples/two-hop-token-swap.ts`](./sdk/examples/two-hop-to
 
 Read SOL **on-chain**, **abort if profit is too low**, repay sponsor, **buy only if SOL remains** — orchestration over existing programs, without a new dedicated orchestration program for this flow.
 
+**ATA rent:** read the token account’s lamports **before** idempotent create (0 if missing), create the ATA, then `ataCost = lamports_after − lamports_before` on-chain. Do **not** hardcode rent — Token-2022 (extensions) and future layouts can change account size.
+
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";
-import { arm, ifElseArgs, rawCpi, rawCpiPatch, expr } from "@ifx-run/sdk";
+import { createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
+import { structuredCpi, structuredCpiPatch, expr } from "@ifx-run/sdk";
 
-// … frame already created; scratch rebuilt from stored frameId …
+// userNAta = getAssociatedTokenAddressSync(mintN, user, …)
 const tx = new Transaction();
 const userMeta = { pubkey: user, isSigner: true, isWritable: true };
 
 tx.add(scratch.ixReset());
-const solBefore = scratch.letLamports(userMeta);
-tx.add(scratch.ixLet(solBefore));
+
+const letBaseline = scratch.letBuilder();
+const solBefore = letBaseline.lamports(userMeta);
+const ataLamportsBaseline = letBaseline.lamports(userNAta); // 0 when ATA does not exist yet
+tx.add(letBaseline.buildIx());
+
+tx.add(
+  createAssociatedTokenAccountIdempotentInstruction(
+    sponsor, userNAta, user, mintN
+  )
+);
+
+const letAta = scratch.letBuilder();
+const ataLamportsAfterCreate = letAta.lamports(userNAta);
+const ataCost = letAta.letEval(
+  expr.sub(ataLamportsAfterCreate, ataLamportsBaseline)
+);
+tx.add(letAta.buildIx());
 
 tx.add(swapIx); // ← your DEX / swap
 
 const letAfter = scratch.letBuilder();
 const solAfter = letAfter.lamports(userMeta);
-const settle = letAfter.letConstU64(TX_FEE + ATA_RENT);
-const buyLamports = letAfter.letEval(expr.sub(expr.sub(solAfter, solBefore), settle));
+const settle = letAfter.letEval(expr.add(ataCost, expr.u64(TX_FEE)));
+const buyLamports = letAfter.letEval(
+  expr.sub(expr.sub(solAfter, solBefore), settle)
+);
 tx.add(letAfter.buildIx());
 
 tx.add(scratch.ixAssert(expr.ge(expr.sub(solAfter, solBefore), settle)));
 
-// System Transfer `data`: u32 discriminant @ 0, u64 lamports @ 4 (little-endian)
-const sponsorXfer = 
-rawCpi(
+const sponsorXfer = structuredCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: sponsor, lamports: 0 }),
-  { patches: [rawCpiPatch(4, settle)] }
+  structuredCpiPatch.systemTransfer(settle)
 ).build();
 tx.add(scratch.ixCpi(sponsorXfer));
 
-const poolXfer = 
-rawCpi(
-  SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
-  { patches: [rawCpiPatch(4, buyLamports)] }
-).build();
-tx.add(scratch.ixIfElse(
-  ifElseArgs(expr.gt(buyLamports, expr.u64(0)), arm.cpi(poolXfer.cpi)),
-  poolXfer.remaining
+tx.add(scratch.ixCpi(
+  structuredCpi(
+    SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
+    structuredCpiPatch.systemTransfer(buyLamports)
+  ).build()
 ));
 
 await provider.sendAndConfirm(tx);
@@ -304,7 +308,11 @@ Full test: [`tests/sponsored_buy.ts`](./tests/sponsored_buy.ts) · `if_else`: [`
 **Skip Ifx**
 
 - Every field is known when you build the tx → call System / SPL / DEX directly
-- You need durable cross-tx state on the Frame PDA → Ifx has **no access control**; anyone who passes the account can `reset` or append
+- Durable application state on-chain → use your own accounts or programs; **do not** treat Frame `tape` as a state DB (default: `reset` each business tx — scratch only)
+
+**Multi-tx splits (supported, with constraints)**
+
+- tx2 depends on bindings tx1 wrote to Frame, and tx2 does **not** `reset` → requires a **landed Jito bundle** for in-bundle ordering and atomicity; pick the Frame model: **public** (`planPublicFrame`, off-curve `authority`, writes unchecked) vs **private** (`planNewFrame` + on-curve `authority` signs `reset`/`let`). Bundles do not guarantee landing or post-landing Frame isolation — see [docs/bundles.md](./docs/bundles.md) · [docs/frame-authority.md](./docs/frame-authority.md)
 
 ---
 

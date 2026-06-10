@@ -1,10 +1,12 @@
-[English](./SECURITY.md) | 中文
+[English](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md) | 中文
 
 # 安全政策
 
 > 须与 `programs/ifx/src/lib.rs` 中 `security_txt!` 字段保持一致。
 
-Ifx 为**非盈利开源**项目，不设付费漏洞赏金。披露流程对齐 Solana 生态实践 — 完整清单见 [program-security.zh-CN.md](./program-security.zh-CN.md)。
+> **English:** [Security Policy](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md)
+
+Ifx 为**非盈利开源**项目，不设付费漏洞赏金。披露流程对齐 Solana 生态实践 — 完整清单见 [program-security.zh-CN.md](https://github.com/ifx-run/ifx/blob/main/docs/program-security.zh-CN.md)。
 
 ## 报告漏洞
 

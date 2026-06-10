@@ -19,10 +19,7 @@ import { Keypair, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 
 import { FrameScratch } from "../sdk/src";
-import {
-  SPL_TRANSFER_AMOUNT_OFFSET,
-  planTwoHopTokenSwapTx,
-} from "../sdk/examples/two-hop-token-swap";
+import { planTwoHopTokenSwapTx } from "../sdk/examples/two-hop-token-swap";
 import { confirmSignature, sendAndConfirmSignersOnly, LABEL_SETUP_CREATE_FRAME, planLocalFrame } from "./helpers";
 
 const MOCK_HOP1_USDC_OUT = 2_000_000; // 2 USDC @ 6 decimals
@@ -185,7 +182,6 @@ describe("two-hop token swap (ifx orchestration)", () => {
       {
         hop1,
         hop2Template,
-        amountInOffset: SPL_TRANSFER_AMOUNT_OFFSET,
         hop2Deliver,
       }
     );

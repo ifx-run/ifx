@@ -8,6 +8,11 @@
 
 ## [Unreleased]
 
+### Breaking
+
+- **删除 `immortalCloseAuthority` / `isImmortalCloseAuthority`** — 改用 **`publicFrameAuthority` / `isPublicFrameAuthority`**（`frame-authority` 模块）。语义不变：公共 Frame 的 `authority` = Frame PDA。
+- **删除 `IFX_ERROR.InvalidCloseAuthority`** — 改用 **`InvalidAuthority`**（6003）。
+
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### 破坏性变更

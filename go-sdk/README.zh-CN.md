@@ -173,7 +173,7 @@ letIx, err := b.BuildIx()
 | `PlanPublicFrame` | `authority` = Frame PDA（不可关闭；公共 scratch） |
 | `NewFrameScratch(frame, &tapeLen, programID, authority)` | 已有 Frame 上开新 session（生产路径） |
 
-公共 Frame 校验：`immortal.IsImmortalCloseAuthority(decoded.Authority, frame)`（helper 名保留；参数为 `Frame.authority`）。
+公共 Frame 校验：`frameauthority.IsPublicFrameAuthority(decoded.Authority, frame)`。
 
 ## SPL Token / Token-2022
 
@@ -271,7 +271,7 @@ closeIfElse, err := s.IxIfElse(args, remainingMetas)
 | `patchedcpi` / `structuredcpi` / `patch` / `ifelse` | CPI（RawPatched + Structured）与条件分支 |
 | `spltoken` | Token-2022 常用 CPI 模板 |
 | `errors` | 链上错误码常量、`MessageIncludes` |
-| `immortal` | 不可关闭 Frame 的 `authority` helper（`IsImmortalCloseAuthority`） |
+| `frameauthority` | 公共 / 私有 Frame 的 `authority` helper（`PublicFrameAuthority`、`IsPublicFrameAuthority` 等） |
 | `constants` | Program ID、discriminator、tape 限制 |
 | `examples` | 可复用的业务 planner（见下） |
 

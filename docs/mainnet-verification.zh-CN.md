@@ -32,7 +32,7 @@ Solscan 在 Program 页 **More Info** 展示两项指标（[说明](https://info
 | `project_url` | https://github.com/ifx-run/ifx |
 | `source_code` | https://github.com/ifx-run/ifx |
 | `contacts` | https://github.com/ifx-run/ifx/security/advisories |
-| `policy` | https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md |
+| `policy` | https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md（中文：[SECURITY.zh-CN.md](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.md)） |
 
 可选：在 `security_txt!` 中增加 `source_revision` / `source_release`（对应 git SHA 或 tag），便于验证索引关联版本。
 

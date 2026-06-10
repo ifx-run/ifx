@@ -18,10 +18,11 @@ import {
 
 import {
   arm,
-  rawCpiPatch,
   expr,
   ifElseArgs,
-  rawCpi,   staticCpi,
+  staticCpi,
+  structuredCpi,
+  structuredCpiPatch,
   type FrameScratch,
 } from "../src/index";
 
@@ -66,27 +67,17 @@ export function planDustDestroyTx(
 
   const dust = expr.lt(amount, expr.u64(DUST_THRESHOLD_RAW));
 
-  // spl-token BurnChecked `data` (10 bytes):
-  //   byte 0       u8  instruction tag (15 = BurnChecked)
-  //   bytes 1..8   u64 amount (LE)  ← rawCpiPatch(1, amount)
-  //   byte 9       u8  decimals      ← rawCpiPatch(9, decimals)
-  // Template zeros are overwritten by Ifx before invoke.
-  const burn = rawCpi(
+  const burn = structuredCpi(
     createBurnCheckedInstruction(
       tokenAccount,
       mint,
       owner,
-      0, // amount placeholder → byte 1
-      0, // decimals placeholder → byte 9
+      0,
+      0,
       [],
       TOKEN_2022_PROGRAM_ID
     ),
-    {
-      patches: [
-        rawCpiPatch(1, amount),
-        rawCpiPatch(9, decimals),
-      ],
-    }
+    structuredCpiPatch.token2022BurnChecked.both(amount, decimals)
   ).build();
   tx.add(
     scratch.ixIfElse(

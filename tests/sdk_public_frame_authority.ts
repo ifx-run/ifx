@@ -6,37 +6,35 @@ import {
   IFX_DEVNET_PROGRAM_ID,
   FrameScratch,
   framePda,
-  immortalCloseAuthority,
-  isImmortalCloseAuthority,
+  isPublicFrameAuthority,
+  publicFrameAuthority,
 } from "../sdk/src";
 
-describe("immortal close authority", () => {
-  it("immortalCloseAuthority returns the Frame PDA", () => {
+describe("public frame authority", () => {
+  it("publicFrameAuthority returns the Frame PDA", () => {
     const payer = PublicKey.unique();
     const frameId = Buffer.alloc(32, 3);
     const [frame] = framePda(payer, frameId, IFX_DEVNET_PROGRAM_ID);
     expect(
-      immortalCloseAuthority(payer, frameId, IFX_DEVNET_PROGRAM_ID).equals(frame)
+      publicFrameAuthority(payer, frameId, IFX_DEVNET_PROGRAM_ID).equals(frame)
     ).to.be.true;
   });
 
-  it("isImmortalCloseAuthority matches self-referential close_authority only", () => {
+  it("isPublicFrameAuthority matches self-referential authority only", () => {
     const frame = PublicKey.unique();
-    expect(isImmortalCloseAuthority(frame, frame)).to.be.true;
-    expect(isImmortalCloseAuthority(PublicKey.unique(), frame)).to.be.false;
-    expect(
-      isImmortalCloseAuthority(DEFAULT_IFX_PROGRAM_ID, frame)
-    ).to.be.false;
+    expect(isPublicFrameAuthority(frame, frame)).to.be.true;
+    expect(isPublicFrameAuthority(PublicKey.unique(), frame)).to.be.false;
+    expect(isPublicFrameAuthority(DEFAULT_IFX_PROGRAM_ID, frame)).to.be.false;
   });
 
-  it("program id is not treated as immortal close authority", () => {
+  it("program id is not treated as public frame authority", () => {
     const payer = PublicKey.unique();
     const frameId = Buffer.alloc(32, 5);
     const [frame] = framePda(payer, frameId);
-    expect(isImmortalCloseAuthority(DEFAULT_IFX_PROGRAM_ID, frame)).to.be.false;
+    expect(isPublicFrameAuthority(DEFAULT_IFX_PROGRAM_ID, frame)).to.be.false;
   });
 
-  it("planPublicFrame sets close_authority to frame PDA", () => {
+  it("planPublicFrame sets authority to frame PDA", () => {
     const payer = PublicKey.unique();
     const frameId = Buffer.alloc(32, 11);
     const { ixCreate, frame } = FrameScratch.planPublicFrame({
@@ -48,6 +46,6 @@ describe("immortal close authority", () => {
       ixCreate.data.subarray(1 + 32, 1 + 32 + 32)
     );
     expect(authority.equals(frame)).to.be.true;
-    expect(isImmortalCloseAuthority(authority, frame)).to.be.true;
+    expect(isPublicFrameAuthority(authority, frame)).to.be.true;
   });
 });

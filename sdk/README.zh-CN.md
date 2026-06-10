@@ -45,24 +45,13 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）。`reset` / `let` **无需额外 signer**；无人能 `ifx_close_frame` 回收 rent — swap / ATA glue 的零成本默认路径。链上读取后可用 `isImmortalCloseAuthority(decoded.authority, frame)` 校验。
+**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）。`reset` / `let` **无需额外 signer**；无人能 `ifx_close_frame` 回收 rent — swap / ATA glue 的零成本默认路径。链上读取后可用 `isPublicFrameAuthority(decoded.authority, frame)` 校验。
 
-**Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）：
+**Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）。同进程复用 Tx 1 的 `scratch`；跨任务重建见 [`examples/minimal-frame.ts`](./examples/minimal-frame.ts)：
 
 ```ts
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
-
-// 从 Tx 1 落库处加载 frameId + tapeLen
-const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(
-  frame,
-  tapeLen,
-  0,
-  0,
-  undefined,
-  immortalCloseAuthority(payer, frameId)
-);
+import { expr, FrameScratch } from "@ifx-run/sdk";
 
 const tx = new Transaction();
 tx.add(scratch.ixReset());
@@ -135,9 +124,9 @@ tx.add(letBuilder.buildIx());
 - **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
-- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`immortalCloseAuthority`）；公共 scratch，写操作无额外 signer。
+- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`publicFrameAuthority`）；公共 scratch，写操作无额外 signer。
 - **`FrameScratch.planNewFrame(...)`**：私有 / 可关闭 Frame；on-curve `authority`（如 bot 热钱包）签 `reset`/`let`。
-- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；公共 Frame 传 `immortalCloseAuthority(payer, frameId)`。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
+- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；公共 Frame 传 `publicFrameAuthority(payer, frameId)`。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
 ### SPL Token 与 Token-2022（应用层）
@@ -166,47 +155,51 @@ tx.add(batch.buildIx());
 
 常量：`sdk/src/spl/layout.ts`（仅 legacy 固定布局）。
 
-## Patched CPI（`ifx_patched_cpi` / `ifx_if_else`）
+## Structured CPI（官方 System / SPL / Token-2022）— 默认
 
-**RawPatched** — 模板指令 + tape 字节 patch（DEX / 非 registry layout）：
-
-```ts
-import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";
-import { SystemProgram } from "@solana/web3.js";
-
-const settle = scratch.letConstU64(1_000_000);
-
-const built = 
-rawCpi(
-  SystemProgram.transfer({
-    fromPubkey: payer,
-    toPubkey: recipient,
-    lamports: 0,
-  }),
-  { patches: [rawCpiPatch(4, settle)] }
-).build();
-
-tx.add(scratch.ixCpi(built));
-```
-
-## Structured CPI（官方 System / SPL / Token-2022）
-
-官方 registry ix 优先 **`structuredCpi`**，无需手编 `data` 模板或 `rawCpiPatch` 偏移。见 [structured-cpi-patches.zh-CN.md](../docs/structured-cpi-patches.zh-CN.md)。
+目标指令在 on-chain registry 内时用 **`structuredCpi()`**，无需手编 `data` 偏移。见 [structured-cpi-patches.zh-CN.md](../docs/structured-cpi-patches.zh-CN.md)。L0–L3 示例与 `sdk/examples/` 对 System transfer、SPL `Transfer`、Token-2022 `BurnChecked` 等均采用此路径。
 
 ```ts
 import { structuredCpi, structuredCpiPatch } from "@ifx-run/sdk";
+import { SystemProgram } from "@solana/web3.js";
+import { createTransferInstruction } from "@solana/spl-token";
 
-const built = structuredCpi(splTransferCheckedIx,
-  structuredCpiPatch.tokenTransferChecked.amountOnly(amount, 9)
+const settle = scratch.letConstU64(1_000_000);
+const sponsorXfer = structuredCpi(
+  SystemProgram.transfer({ fromPubkey: payer, toPubkey: recipient, lamports: 0 }),
+  structuredCpiPatch.systemTransfer(settle)
 ).build();
-tx.add(scratch.ixCpi(built));
+tx.add(scratch.ixCpi(sponsorXfer));
+
+const usdcOut = scratch.letSplTokenAmount(userUsdcAta);
+const hop2 = structuredCpi(
+  createTransferInstruction(userUsdcAta, poolUsdcAta, user, 0),
+  structuredCpiPatch.tokenTransfer(usdcOut)
+).build();
+tx.add(scratch.ixCpi(hop2));
 ```
 
 InitializeMint2 + Frame `Pubkey`：`tests/ifx_structured_cpi_initialize_mint.ts`。
 
 **默认**不传 `remaining` — 账户来自模板指令（`[programId, …keys]`）。仅在合并进更长列表时传入（例如 `ifx_if_else` 与 `ifx_let` 共用 remaining）；只传 `PublicKey[]` 会丢失 signer/writable。
 
-`rawCpiPatch(dataOffset, value)` 接受任意 `ScratchValue<T>`；链上按 `T` 的宽度从 Frame 拷贝到 `data[dataOffset..]`，须与内层指令字段布局一致（例如 System transfer 的 lamports → `u64` @ 4）。
+## RawPatched CPI（`rawCpi` / `ifx_patched_cpi`）— 逃生口
+
+**DEX 或自定义 program**，`data` layout 不在 structured registry 中 — 模板 ix + 字节覆盖：
+
+```ts
+import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";
+
+const amountIn = scratch.letSplTokenAmount(userUsdcAta);
+
+const built = rawCpi(dexHop2Template, {
+  patches: [rawCpiPatch(amountInOffset, amountIn)],
+}).build();
+
+tx.add(scratch.ixCpi(built));
+```
+
+`rawCpiPatch(dataOffset, value)` 从 Frame tape 拷贝到 `data[dataOffset..]`。**链上测试覆盖：** `tests/ifx.ts`、`tests/ifx_cpi_edges.ts`、`tests/ifx_negative.ts`；wire codec：`tests/sdk_patch_codec.ts`、`tests/sdk_if_else_generic_codec.ts`。
 
 **无 patch：** 用 `staticCpi(template)` → `ifx_if_else` 里 `arm.cpi(step.staticStep)`；无条件时也可直接把目标指令放进交易。
 

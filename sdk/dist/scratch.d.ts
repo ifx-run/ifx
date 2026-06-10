@@ -8,7 +8,7 @@ import { type CreateIxCreateFrameParams, type IxOpts } from "./ix";
 import { LetAccountInput } from "./let-account";
 import { LetIxBuilder } from "./let-builder";
 export type { CreateIxCreateFrameParams } from "./ix";
-/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link immortalCloseAuthority}. */
+/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link publicFrameAuthority}. */
 export type PlanPublicFrameParams = Omit<CreateIxCreateFrameParams, "authority">;
 /** Options for {@link FrameScratch.fetchDecodedFrame}. */
 export type FrameScratchReadOpts = {
@@ -49,7 +49,7 @@ export declare class FrameScratch {
     static planNewFrame(params: CreateIxCreateFrameParams): PlanNewFrameResult;
     /**
      * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
-     * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
+     * ({@link publicFrameAuthority}) — shared / config-pinned Frames with no close Signer.
      * Reset and let remain open to anyone (scratch semantics).
      */
     static planPublicFrame(params: PlanPublicFrameParams): PlanNewFrameResult;

@@ -535,7 +535,7 @@ describe("ifx", () => {
         expect(decoded.readU64(seven)).to.equal(7n);
     });
 
-    it("close_frame reclaims rent for close_authority", async () => {
+    it("close_frame reclaims rent for authority", async () => {
         const frameId = randomFrameId();
         const { scratch, ixCreate } = planLocalFrame({
             payer: payer.publicKey,

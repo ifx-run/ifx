@@ -8,6 +8,11 @@ All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep 
 
 ## [Unreleased]
 
+### Breaking
+
+- **`immortalCloseAuthority` / `isImmortalCloseAuthority` removed** — use **`publicFrameAuthority` / `isPublicFrameAuthority`** from `@ifx-run/sdk` (`frame-authority` module). Same semantics: Frame PDA as public Frame `authority`.
+- **`IFX_ERROR.InvalidCloseAuthority` removed** — use **`InvalidAuthority`** (6003).
+
 ## [0.3.0-devnet.0] - 2026-06-08
 
 ### Breaking

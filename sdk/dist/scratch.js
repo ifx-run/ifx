@@ -24,7 +24,7 @@ exports.letSplToken2022MintWithheldAmount = letSplToken2022MintWithheldAmount;
 exports.letSplToken2022MintDefaultAccountState = letSplToken2022MintDefaultAccountState;
 const web3_js_1 = require("@solana/web3.js");
 const constants_1 = require("./constants");
-const immortal_close_1 = require("./immortal-close");
+const frame_authority_1 = require("./frame-authority");
 const tape_layout_1 = require("./tape-layout");
 const layout_1 = require("./layout");
 const binding_1 = require("./binding");
@@ -69,7 +69,7 @@ class FrameScratch {
     }
     /**
      * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
-     * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
+     * ({@link publicFrameAuthority}) — shared / config-pinned Frames with no close Signer.
      * Reset and let remain open to anyone (scratch semantics).
      */
     static planPublicFrame(params) {
@@ -77,7 +77,7 @@ class FrameScratch {
         return FrameScratch.planNewFrame({
             ...params,
             programId,
-            authority: (0, immortal_close_1.immortalCloseAuthority)(params.payer, params.frameId, programId),
+            authority: (0, frame_authority_1.publicFrameAuthority)(params.payer, params.frameId, programId),
         });
     }
     /** `ifx_create_frame` when you already have a {@link FrameScratch} planner. */

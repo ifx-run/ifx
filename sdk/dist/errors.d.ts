@@ -10,8 +10,6 @@ export declare const IFX_ERROR: {
     readonly TapeOutOfBounds: 6001;
     readonly UnauthorizedClose: 6002;
     readonly InvalidAuthority: 6003;
-    /** @deprecated Use {@link IFX_ERROR.InvalidAuthority} */
-    readonly InvalidCloseAuthority: 6003;
     readonly InvalidTapeLen: 6004;
     readonly AssertFailed: 6005;
     readonly IfElseRevert: 6006;

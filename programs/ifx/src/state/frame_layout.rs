@@ -6,7 +6,6 @@ use super::frame_error::{FrameError, FrameLayoutResult, FrameSite};
 
 /// Byte offset of `Frame.authority` (after 1-byte discriminator).
 pub const OFF_AUTHORITY: usize = 1;
-pub const OFF_CLOSE_AUTHORITY: usize = OFF_AUTHORITY;
 pub const OFF_CURSOR: usize = 33;
 pub const OFF_INDEX_COUNT: usize = 37;
 pub const OFF_INDEX_CAP: usize = 39;
@@ -132,10 +131,6 @@ impl FrameLayout {
     }
 
     pub fn read_authority(&self, data: &[u8]) -> FrameLayoutResult<Pubkey> {
-        read_authority(data)
-    }
-
-    pub fn read_close_authority(&self, data: &[u8]) -> FrameLayoutResult<Pubkey> {
         read_authority(data)
     }
 
@@ -302,10 +297,6 @@ pub fn read_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
     })
 }
 
-pub fn read_close_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
-    read_authority(data)
-}
-
 pub fn read_u16_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u16> {
     bytes
         .get(0..2)
@@ -401,7 +392,7 @@ mod tests {
             assert_eq!(layout.index_cap, index_cap_for_tape_len(tape_len));
             assert_eq!(layout.tape_len, tape_len);
             assert_eq!(layout.total_data_len() as usize, data.len());
-            assert_eq!(layout.read_close_authority(&data).unwrap(), auth);
+            assert_eq!(layout.read_authority(&data).unwrap(), auth);
             assert_eq!(layout.read_cursor(&data).unwrap(), 0);
             assert_eq!(layout.read_index_count(&data).unwrap(), 0);
             assert_eq!(layout.read_generation(&data).unwrap(), 0);

@@ -28,9 +28,10 @@ import {
 import { randomBytes } from "crypto";
 
 import {
-  rawCpiPatch,
-  rawCpi,   expr,
+  expr,
   FrameScratch,
+  structuredCpi,
+  structuredCpiPatch,
 } from "../sdk/src";
 import {
   createLookupTableForInstructions,
@@ -153,7 +154,7 @@ describe("sponsored buy (ifx orchestration)", () => {
       })
     );
 
-    // 5) swap 后用户 lamports + 还给赞助方的 settle + 买入 pool 的 buyLamports（CPI patch）
+    // 5) swap 后用户 lamports + 还给赞助方的 settle + 买入 pool 的 buyLamports（structured CPI）
     const letPostSwap = scratch.letBuilder();
     const userLamportsAfterSwap = letPostSwap.lamports(user.publicKey);
     const settle = letPostSwap.letEval(expr.add(ataCost, expr.u64(TOTAL_FEE)));
@@ -175,13 +176,13 @@ describe("sponsored buy (ifx orchestration)", () => {
     // 7) B → A：ATA rent + fee 预算
     orchestrationIxs.push(
       scratch.ixCpi(
-        rawCpi(
+        structuredCpi(
           SystemProgram.transfer({
             fromPubkey: user.publicKey,
             toPubkey: sponsor.publicKey,
             lamports: 0,
           }),
-          { patches: [rawCpiPatch(4, settle)] }
+          structuredCpiPatch.systemTransfer(settle)
         ).build()
       )
     );
@@ -189,13 +190,13 @@ describe("sponsored buy (ifx orchestration)", () => {
     // 8) mock SOL→N：用剩余 swap SOL
     orchestrationIxs.push(
       scratch.ixCpi(
-        rawCpi(
+        structuredCpi(
           SystemProgram.transfer({
             fromPubkey: user.publicKey,
             toPubkey: pool.publicKey,
             lamports: 0,
           }),
-          { patches: [rawCpiPatch(4, buyLamports)] }
+          structuredCpiPatch.systemTransfer(buyLamports)
         ).build()
       )
     );

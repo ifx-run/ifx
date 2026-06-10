@@ -164,7 +164,7 @@ dy       = floor(dy_gross × (10_000 − fee_bps) / 10_000)
 
 ### 4.4 SPL `Transfer` patch（仅 credit 腿）
 
-SPL Token `Transfer`：`u8` tag @ 0，**`u64` amount @ 1**（LE）。**仅** pool → 用户腿用 `rawCpiPatch(1, dy_ref)` patch — `dy` 来自 Frame 上的 `mulDivFloor` / `bpsMulFloor`。
+**仅** pool → 用户腿用 **`structuredCpiPatch.tokenTransfer(dy)`** — `dy` 来自 Frame 上的 `mulDivFloor` / `bpsMulFloor`。（DEX / 非 registry layout 用 `rawCpi()` + `rawCpiPatch`。）
 
 用户 → pool 腿在 quote 时 `amount_in` 已定时，直接用 `createTransferInstruction(..., amount_in)`。
 

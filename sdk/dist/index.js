@@ -16,7 +16,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./typed"), exports);
 __exportStar(require("./constants"), exports);
-__exportStar(require("./immortal-close"), exports);
 __exportStar(require("./frame-authority"), exports);
 __exportStar(require("./errors"), exports);
 __exportStar(require("./layout"), exports);

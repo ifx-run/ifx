@@ -13,10 +13,10 @@ Need on-chain read in same tx?
     ├─ SPL token balance on ATA (after swap / transfer)
     │     ├─ Official SPL ix (TransferChecked, etc.) from tape
     │     │     → structuredCpi + structuredCpiPatch (see tests/ifx_structured_cpi_initialize_mint.ts)
-    │     ├─ Single hop, patch one CPI (DEX / custom layout)
-    │     │     → rawCpi + rawCpiPatch (see two-hop hop2 pattern)
-    │     └─ Two hops with intermediate mint
-    │           → sdk/examples/two-hop-token-swap.ts
+    │     ├─ Two hops with intermediate mint (standard SPL hop2)
+    │     │     → sdk/examples/two-hop-token-swap.ts (structuredCpi / tokenTransfer)
+    │     └─ DEX / custom `data` layout
+    │           → rawCpi + rawCpiPatch (tests/ifx.ts, ifx_cpi_edges.ts)
     ├─ Token-2022 + extensions (withheld fees, decimals for burn)
     │     → sdk/examples/dust-destroy-token2022.ts
     ├─ Conditional steps (if dust then burn else skip)
@@ -53,14 +53,14 @@ Must split across txs or use Jito bundle?
 
 ```text
 let(amount, withheld, decimals)
-→ if_else: dust ∧ amount > 0     → BurnChecked (patched CPI via rawCpi + rawCpiPatch)
+→ if_else: dust ∧ amount > 0     → BurnChecked (structuredCpi / token2022BurnChecked)
 → if_else: dust ∧ withheld > 0   → harvest (staticCpi / arm.cpi)
 → if_else: dust                  → closeAccount (staticCpi)
 ```
 
 **Notes:**
 
-- Template + byte offsets in example; DUST_THRESHOLD is off-chain constant in planner.
+- DUST_THRESHOLD is off-chain constant in planner.
 - Three separate `if_else` — not one arm with three CPIs.
 
 ---
@@ -75,18 +75,17 @@ let(amount, withheld, decimals)
 
 ```text
 reset → tx.add(hop1 static) → let(usdcAta balance) → 
-rawCpi(hop2) [→ optional deliver]
+structuredCpi(hop2, tokenTransfer) [→ optional deliver]
 ```
 
 **User must provide:**
 
 - `hop1`: DEX swap ix (static)
-- `hop2Template`: exact-in ix with placeholder amount
-- `amountInOffset`: byte offset of u64 amount in hop2 `data`
+- `hop2Template`: exact-in ix with placeholder amount (standard SPL `Transfer` in the example)
 
 **Setup outside Ifx:** intermediate USDC ATA must exist; balance 0 at start recommended.
 
-**Wire DEX:** replace mock transfers in `tests/two_hop_swap.ts` with real Raydium/Orca ix from their SDK — keep Ifx planner unchanged.
+**Wire DEX:** replace mock transfers in `tests/two_hop_swap.ts` with real Raydium/Orca ix — if hop2 `data` is not registry SPL, use `rawCpi()` + `rawCpiPatch` (covered in `tests/ifx.ts`, `tests/ifx_cpi_edges.ts`).
 
 ---
 
@@ -99,16 +98,19 @@ rawCpi(hop2) [→ optional deliver]
 **Flow:**
 
 ```text
-reset → let(sol before) → swap ix → let(sol after, settle, buyLamports)
-→ assert delta ≥ settle
-→ rawCpi() repay sponsor (ifx_patched_cpi)
-→ if_else buyLamports > 0 → 
-rawCpi() pay pool
+reset → let(user sol + ATA lamports baseline)
+→ idempotent create ATA
+→ let(ataCost = ATA lamports delta)
+→ swap ix
+→ let(sol after, settle = ataCost + tx fee, buyLamports)
+→ assert swap delta ≥ settle
+→ structuredCpi(systemTransfer) repay sponsor
+→ if_else buyLamports > 0 → structuredCpi(systemTransfer) pay pool
 ```
 
-**Key formula:** `buyLamports = solAfter - solBefore - settle` (settle includes tx fee + ATA rent).
+**Key formula:** `ataCost = lamports(ATA after create) − lamports(ATA baseline)`; `settle = ataCost + txFee`; `buyLamports = solAfter − solBefore − settle`. Never hardcode ATA rent — Token-2022 extensions change account size.
 
-**Notes:** ATA create often **before** swap in same tx; baseline lamports read before idempotent create.
+**Notes:** Idempotent ATA create usually **before** swap in the same tx; baseline read must happen before create (missing ATA → 0).
 
 ---
 

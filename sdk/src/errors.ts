@@ -11,8 +11,6 @@ export const IFX_ERROR = {
   TapeOutOfBounds: 6001,
   UnauthorizedClose: 6002,
   InvalidAuthority: 6003,
-  /** @deprecated Use {@link IFX_ERROR.InvalidAuthority} */
-  InvalidCloseAuthority: 6003,
   InvalidTapeLen: 6004,
   AssertFailed: 6005,
   IfElseRevert: 6006,

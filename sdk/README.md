@@ -45,24 +45,13 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve). `reset` / `let` need **no extra signer**; no one can `ifx_close_frame` for rent — the usual zero-cost path for swap / ATA glue. Verify after fetch: `isImmortalCloseAuthority(decoded.authority, frame)`.
+**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve). `reset` / `let` need **no extra signer**; no one can `ifx_close_frame` for rent — the usual zero-cost path for swap / ATA glue. Verify after fetch: `isPublicFrameAuthority(decoded.authority, frame)`.
 
-**Tx 2 — business** (separate request / job; reset + let / assert / CPI):
+**Tx 2 — business** (separate request / job; reset + let / assert / CPI). Reuse `scratch` from Tx 1 in the same process, or see [`examples/minimal-frame.ts`](./examples/minimal-frame.ts) for cross-job rebuild:
 
 ```ts
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
-
-// Load frameId + tapeLen from wherever Tx 1 stored them
-const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(
-  frame,
-  tapeLen,
-  0,
-  0,
-  undefined,
-  immortalCloseAuthority(payer, frameId)
-);
+import { expr, FrameScratch } from "@ifx-run/sdk";
 
 const tx = new Transaction();
 tx.add(scratch.ixReset());
@@ -135,9 +124,9 @@ At create: `tapeLen` up to **65_535**; `indexCap = min(256, floor(tapeLen / 2))`
 - **Persist:** Values later read by `ifx_assert`, `ifx_patched_cpi` `RawCpiPatch`, or later `ifx_let` (`ScratchValue` / `expr.*`).
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
-- **`FrameScratch.planPublicFrame({ payer, frameId, … })`:** **default** — `authority` = Frame PDA ({@link immortalCloseAuthority}); public scratch, no extra signer on writes. Localnet: `programId: IFX_LOCALNET_PROGRAM_ID`.
+- **`FrameScratch.planPublicFrame({ payer, frameId, … })`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); public scratch, no extra signer on writes. Localnet: `programId: IFX_LOCALNET_PROGRAM_ID`.
 - **`FrameScratch.planNewFrame({ payer, frameId, authority, … })`:** private / closeable Frame; on-curve `authority` (e.g. bot hot wallet) signs `reset`/`let`.
-- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2; pass `immortalCloseAuthority(payer, frameId)` for public Frames.
+- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2 when scratch is not in memory; public Frames: `authority` = Frame PDA (`publicFrameAuthority(payer, frameId)`). `programId` defaults to devnet; localnet: `IFX_LOCALNET_PROGRAM_ID`.
 - **`FrameScratch.fromFrame` / `refreshFromChain`:** **tests and local debug only** — not production paths.
 
 ### SPL Token & Token-2022 (application layer)
@@ -166,49 +155,51 @@ Missing Token-2022 extension on-chain → `Token2022ExtensionNotPresent`. For fi
 
 Constants: `sdk/src/spl/layout.ts` (legacy fixed layouts only).
 
-## Patched CPI (`ifx_patched_cpi` / `ifx_if_else`)
+## Structured CPI (official System / SPL / Token-2022) — default
 
-**RawPatched** — template instruction + tape byte patches (DEX / non-registry layouts):
-
-```ts
-import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";
-import { SystemProgram } from "@solana/web3.js";
-
-const settle = scratch.letConstU64(1_000_000);
-
-const built = rawCpi(
-  SystemProgram.transfer({
-    fromPubkey: payer,
-    toPubkey: recipient,
-    lamports: 0, // patched at invoke
-  }),
-  { patches: [rawCpiPatch(4, settle)] }
-).build(); // remaining = [SystemProgram, from, to]
-
-tx.add(scratch.ixCpi(built)); // ifx_patched_cpi
-```
-
-## Structured CPI (official System / SPL / Token-2022)
-
-**Prefer `structuredCpi`** when the target instruction is in the on-chain registry — no manual `data` template or `rawCpiPatch` offsets. See [structured-cpi-patches.md](../docs/structured-cpi-patches.md).
+Use **`structuredCpi()`** when the target instruction is in the on-chain registry — no manual `data` offsets. See [structured-cpi-patches.md](../docs/structured-cpi-patches.md). L0–L3 examples and `sdk/examples/` use this for System transfer, SPL `Transfer`, Token-2022 `BurnChecked`, etc.
 
 ```ts
 import { structuredCpi, structuredCpiPatch } from "@ifx-run/sdk";
-import { createTransferCheckedInstruction } from "@solana/spl-token";
+import { SystemProgram } from "@solana/web3.js";
+import { createTransferInstruction } from "@solana/spl-token";
 
-const amount = scratch.letSplTokenAmount(userAta);
-const built = structuredCpi(
-  createTransferCheckedInstruction(source, mint, dest, owner, 0n, 9),
-  structuredCpiPatch.tokenTransferChecked.amountOnly(amount, 9)
+const settle = scratch.letConstU64(1_000_000);
+const sponsorXfer = structuredCpi(
+  SystemProgram.transfer({ fromPubkey: payer, toPubkey: recipient, lamports: 0 }),
+  structuredCpiPatch.systemTransfer(settle)
 ).build();
-tx.add(scratch.ixCpi(built));
+tx.add(scratch.ixCpi(sponsorXfer));
+
+const usdcOut = scratch.letSplTokenAmount(userUsdcAta);
+const hop2 = structuredCpi(
+  createTransferInstruction(userUsdcAta, poolUsdcAta, user, 0),
+  structuredCpiPatch.tokenTransfer(usdcOut)
+).build();
+tx.add(scratch.ixCpi(hop2));
 ```
 
-InitializeMint2 with Frame-bound `Pubkey` / decimals: `tests/ifx_structured_cpi_initialize_mint.ts`. Tag inference: omit top-level `patch.tag` when the template ix is official — `structuredCpi(ix, { amountDecimals: … })`.
+InitializeMint2 with Frame-bound `Pubkey` / decimals: `tests/ifx_structured_cpi_initialize_mint.ts`. Tag inference: omit top-level `patch.tag` when the template ix is official — `structuredCpi(ix, { lamports: settle })`.
 
 **Default:** omit `remaining` — accounts come from the template instruction (`[programId, …keys]`). Pass `remaining` only when merging into a longer list (e.g. `ifx_if_else` sharing accounts with `ifx_let` loads); pubkey-only arrays lose signer/writable flags.
 
-`rawCpiPatch(dataOffset, value)` accepts any `ScratchValue<T>`; the program copies `T`'s byte width from Frame tape into `data[dataOffset..]`. You must match the inner instruction layout (e.g. lamports → `u64` @ 4 for System transfer).
+## RawPatched CPI (`rawCpi` / `ifx_patched_cpi`) — escape hatch
+
+For **DEX or custom programs** whose `data` layout is not in the structured registry — template ix + byte overlays:
+
+```ts
+import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";
+
+const amountIn = scratch.letSplTokenAmount(userUsdcAta);
+
+const built = rawCpi(dexHop2Template, {
+  patches: [rawCpiPatch(amountInOffset, amountIn)], // match your DEX layout
+}).build();
+
+tx.add(scratch.ixCpi(built));
+```
+
+`rawCpiPatch(dataOffset, value)` copies `ScratchValue<T>` bytes from Frame tape into `data[dataOffset..]`. **On-chain coverage:** `tests/ifx.ts`, `tests/ifx_cpi_edges.ts`, `tests/ifx_negative.ts`; wire codec: `tests/sdk_patch_codec.ts`, `tests/sdk_if_else_generic_codec.ts`.
 
 **No patches:** use `staticCpi(template)` → `arm.cpi(step.staticStep)` in `ifx_if_else`, or add the instruction to the transaction directly when it is unconditional.
 

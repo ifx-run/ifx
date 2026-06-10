@@ -12,9 +12,7 @@ describe("sdk Ifx error codes", () => {
   it("IFX_ERROR matches IDL errors array (6000 + index)", () => {
     expect(IFX_ERROR_CODE_BASE).to.equal(6000);
     const idlErrors = idl.errors as { code: number; name: string; msg: string }[];
-    const sdkErrorNames = Object.keys(IFX_ERROR).filter(
-      (name) => name !== "InvalidCloseAuthority"
-    );
+    const sdkErrorNames = Object.keys(IFX_ERROR);
     expect(idlErrors.length).to.equal(sdkErrorNames.length);
 
     for (let i = 0; i < idlErrors.length; i++) {

@@ -14,17 +14,19 @@ import { PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 import {
   arm,
-  rawCpiPatch,
   ifElseArgs,
-  rawCpi,   staticCpi,
+  staticCpi,
+  structuredCpi,
+  structuredCpiPatch,
   type FrameScratch,
+  type ScratchValue,
 } from "../src";
 
 export type WsolConditionalWrapAccounts = {
   owner: PublicKey;
   /** When true, transfer + syncNative run in one if_else arm. */
   cond: import("../src/typed").Cond;
-  wrapLamports: import("../src/typed").Cond;
+  wrapLamports: ScratchValue<"u64">;
 };
 
 /** Merge remaining metas for transfer (System) + syncNative (Token) CPI steps. */
@@ -53,14 +55,15 @@ export function planWsolConditionalWrapTx(
   const wsolAta = getAssociatedTokenAddressSync(NATIVE_MINT, accounts.owner);
   const tx = new Transaction();
   tx.add(scratch.ixReset());
+  tx.add(scratch.ixLet(accounts.wrapLamports));
 
-  const transfer = rawCpi(
+  const transfer = structuredCpi(
     SystemProgram.transfer({
       fromPubkey: accounts.owner,
       toPubkey: wsolAta,
       lamports: 0,
     }),
-    { patches: [rawCpiPatch(4, accounts.wrapLamports)] }
+    structuredCpiPatch.systemTransfer(accounts.wrapLamports)
   ).build();
   const sync = staticCpi(createSyncNativeInstruction(wsolAta));
   const remaining = mergeWsolWrapRemaining(

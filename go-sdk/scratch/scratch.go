@@ -10,7 +10,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/constants"
 	"github.com/ifx-run/ifx/go-sdk/expr"
 	"github.com/ifx-run/ifx/go-sdk/frame"
-	"github.com/ifx-run/ifx/go-sdk/immortal"
+	"github.com/ifx-run/ifx/go-sdk/frameauthority"
 	"github.com/ifx-run/ifx/go-sdk/ix"
 	"github.com/ifx-run/ifx/go-sdk/typed"
 )
@@ -103,13 +103,13 @@ func PlanNewFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 	}, nil
 }
 
-// PlanPublicFrame uses immortal close authority (Frame PDA).
+// PlanPublicFrame sets authority to the Frame PDA (public Frame).
 func PlanPublicFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 	programID := p.ProgramID
 	if programID.IsZero() {
 		programID = constants.DefaultProgramID
 	}
-	p.Authority = immortal.CloseAuthority(p.Payer, p.FrameID, programID)
+	p.Authority = frameauthority.PublicFrameAuthority(p.Payer, p.FrameID, programID)
 	return PlanNewFrame(p)
 }
 

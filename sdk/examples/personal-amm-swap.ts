@@ -14,15 +14,13 @@ import {
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 
 import {
-  rawCpiPatch,
   expr,
-  rawCpi,   type FrameScratch,
+  structuredCpi,
+  structuredCpiPatch,
+  type FrameScratch,
   type IxOpts,
   type ScratchValue,
 } from "../src/index";
-
-/** SPL Token `Transfer`: u8 tag @ 0, u64 amount @ 1 (LE). */
-export const SPL_TRANSFER_AMOUNT_OFFSET = 1;
 
 export type PersonalAmmAccounts = {
   user: PublicKey;
@@ -142,7 +140,7 @@ export function planPersonalAmmSwapInstructions(
     )
   );
 
-  const transferOut = rawCpi(
+  const transferOut = structuredCpi(
     createTransferInstruction(
       accounts.poolTokenBAta,
       accounts.userTokenBAta,
@@ -151,7 +149,7 @@ export function planPersonalAmmSwapInstructions(
       [],
       tokenProgram
     ),
-    { patches: [rawCpiPatch(SPL_TRANSFER_AMOUNT_OFFSET, amountOut)] }
+    structuredCpiPatch.tokenTransfer(amountOut)
   ).build();
   instructions.push(scratch.ixCpi(transferOut, opts));
 

@@ -1,6 +1,5 @@
 export * from "./typed";
 export * from "./constants";
-export * from "./immortal-close";
 export * from "./frame-authority";
 export * from "./errors";
 export * from "./layout";

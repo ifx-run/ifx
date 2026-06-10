@@ -11,15 +11,12 @@
  * - SOL / tx fees / priority fee / WSOL wrap are **out of scope** — handle off-chain.
  *
  * Wire `hop1` / `hop2Template` from your DEX SDK (Whirlpool, Raydium CLMM, …).
- * `hop2AmountInOffset` is the byte offset of exact-in `amount` in hop-2 instruction `data`
- * (SPL `Transfer` uses {@link SPL_TRANSFER_AMOUNT_OFFSET} = 1).
+ * Hop 2 uses {@link structuredCpiPatch.tokenTransfer} when the template is standard SPL
+ * `Transfer`. Non-registry / custom DEX layouts → `rawCpi()` + `rawCpiPatch` (see `tests/ifx.ts`).
  */
 import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 
-import { rawCpiPatch, rawCpi, type FrameScratch } from "../src/index";
-
-/** SPL Token `Transfer` ix: u8 tag @ 0, u64 amount @ 1 (LE). */
-export const SPL_TRANSFER_AMOUNT_OFFSET = 1;
+import { structuredCpi, structuredCpiPatch, type FrameScratch } from "../src/index";
 
 export type TwoHopTokenSwapAccounts = {
   /** Intermediate mint ATA (e.g. USDC); must exist before this tx. */
@@ -29,9 +26,8 @@ export type TwoHopTokenSwapAccounts = {
 export type TwoHopTokenSwapInstructions = {
   /** Hop 1: A → USDC (DEX swap ix — fixed at build time). */
   hop1: TransactionInstruction;
-  /** Hop 2 template: USDC → B exact-in; amount bytes patched at `amountInOffset`. */
+  /** Hop 2 template: USDC → B exact-in; standard SPL `Transfer` amount patched from Frame. */
   hop2Template: TransactionInstruction;
-  amountInOffset: number;
   /** Optional hop 2 deliver leg (e.g. pool → user token B); static CPI after patched hop 2. */
   hop2Deliver?: TransactionInstruction;
 };
@@ -55,9 +51,10 @@ export function planTwoHopTokenSwapTx(
   const usdcOut = letBatch.splTokenAmount(accounts.userUsdcAta);
   tx.add(letBatch.buildIx());
 
-  const hop2 = rawCpi(hops.hop2Template, {
-    patches: [rawCpiPatch(hops.amountInOffset, usdcOut)],
-  }).build();
+  const hop2 = structuredCpi(
+    hops.hop2Template,
+    structuredCpiPatch.tokenTransfer(usdcOut)
+  ).build();
   tx.add(scratch.ixCpi(hop2));
 
   if (hops.hop2Deliver !== undefined) {

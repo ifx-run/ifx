@@ -10,15 +10,19 @@ Two txs: (1) `planPublicFrame` + create, (2) reset → let → assert; then `fet
 
 ## `dust-destroy-token2022.ts`
 
-Token-2022 dust cleanup in **one business tx**: `let` → burn (patched CPI via `cpi`) → harvest → close (`staticCpi`). Exports `planDustDestroyTx(scratch, accounts)` and `buildHarvestWithheldToMintIx` (wraps `@solana/spl-token`). Integration test: [`tests/dust_destroy_token2022.ts`](../../tests/dust_destroy_token2022.ts).
+Token-2022 dust cleanup in **one business tx**: `let` → burn (`structuredCpi` / `token2022BurnChecked`) → harvest → close (`staticCpi`). Exports `planDustDestroyTx(scratch, accounts)` and `buildHarvestWithheldToMintIx` (wraps `@solana/spl-token`). Integration test: [`tests/dust_destroy_token2022.ts`](../../tests/dust_destroy_token2022.ts).
 
 ## `two-hop-token-swap.ts`
 
-**A → USDC → B** in one business tx via same-tx orchestration: static hop-1 CPI → `splTokenAmount` on intermediate USDC ATA → patched hop-2 exact-in. Standard SPL only; SOL/fees out of scope. Exports `planTwoHopTokenSwapTx` and `SPL_TRANSFER_AMOUNT_OFFSET`. Integration test: [`tests/two_hop_swap.ts`](../../tests/two_hop_swap.ts).
+**A → USDC → B** in one business tx via same-tx orchestration: static hop-1 CPI → `splTokenAmount` on intermediate USDC ATA → structured hop-2 (`tokenTransfer`). Standard SPL only; SOL/fees out of scope. Exports `planTwoHopTokenSwapTx`. Integration test: [`tests/two_hop_swap.ts`](../../tests/two_hop_swap.ts).
 
 ## `personal-amm-swap.ts`
 
-**Personal AMM** — constant-product swap through a **wallet pool** (two arbitrary mints); user sells TOKEN_A, receives TOKEN_B; output-side **fee bps** (default 0.3%). Static SPL debit (`amount_in` at quote time) + patched pool payout (`amount_out` on-chain). Exports `planPersonalAmmSwapTx`, `computeSwapOutput`, `PERSONAL_AMM_DEFAULT_FEE_BPS`. Integration test: [`tests/personal_amm_swap.ts`](../../tests/personal_amm_swap.ts). Blueprint: [docs/personal-amm.md](../../docs/personal-amm.md).
+**Personal AMM** — constant-product swap through a **wallet pool** (two arbitrary mints); user sells TOKEN_A, receives TOKEN_B; output-side **fee bps** (default 0.3%). Static SPL debit (`amount_in` at quote time) + structured pool payout (`structuredCpiPatch.tokenTransfer`). Exports `planPersonalAmmSwapTx`, `computeSwapOutput`, `PERSONAL_AMM_DEFAULT_FEE_BPS`. Integration test: [`tests/personal_amm_swap.ts`](../../tests/personal_amm_swap.ts). Blueprint: [docs/personal-amm.md](../../docs/personal-amm.md).
+
+## `wsol-conditional-wrap.ts`
+
+Conditional WSOL wrap in **one business tx**: `let` → idempotent ATA create → `if_else` arm with structured System transfer + `syncNative` (`staticCpi`). Exports `planWsolConditionalWrapTx`. Integration test: [`tests/ifx_wsol_if_else.ts`](../../tests/ifx_wsol_if_else.ts).
 
 ## `personal-dex-onboarding.ts`
 
@@ -27,6 +31,14 @@ Pool operator helpers: `personalDexAltAddresses`, `planPersonalDexFrame`. See [d
 ## `structured-cpi` (reference)
 
 Official System / SPL / Token-2022 ix with tape-bound fields — **not** a standalone example script. See `tests/ifx_structured_cpi_initialize_mint.ts` (InitializeMint2 + `Pubkey` let) and [structured-cpi-patches.md](../../docs/structured-cpi-patches.md).
+
+## Typecheck
+
+From repo root (also runs in `pretest` before `npm test`):
+
+```bash
+npm run examples:typecheck
+```
 
 ## Run locally
 

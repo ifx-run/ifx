@@ -32,7 +32,7 @@ Embedded fields (must match [SECURITY.md](./SECURITY.md)):
 | `project_url` | https://github.com/ifx-run/ifx |
 | `source_code` | https://github.com/ifx-run/ifx |
 | `contacts` | https://github.com/ifx-run/ifx/security/advisories |
-| `policy` | https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md |
+| `policy` | https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md (Chinese: [SECURITY.zh-CN.md](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.md)) |
 
 Optional: add `source_revision` / `source_release` in `security_txt!` (git SHA or tag) for version indexing.
 

@@ -44,7 +44,7 @@ describe("ifx anchor security (negative)", () => {
     }
   });
 
-  it("ifx_create_frame rejects default close_authority", async () => {
+  it("ifx_create_frame rejects default authority", async () => {
     const frameId = randomBytes(32);
 
     const tx = new Transaction().add(
@@ -62,14 +62,14 @@ describe("ifx anchor security (negative)", () => {
       await sendAndConfirmTransaction(
         provider,
         tx,
-        "ifx · create default close_authority (expect fail)"
+        "ifx · create default authority (expect fail)"
       );
-      expect.fail("expected InvalidCloseAuthority");
+      expect.fail("expected InvalidAuthority");
     } catch (e: unknown) {
       const msg = String(e);
       expect(msg).to.match(
         new RegExp(
-          `InvalidCloseAuthority|${IFX_ERROR.InvalidCloseAuthority}|6003|close authority`,
+          `InvalidAuthority|${IFX_ERROR.InvalidAuthority}|6003|authority`,
           "i"
         )
       );

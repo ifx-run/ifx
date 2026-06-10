@@ -74,7 +74,17 @@ Conditions for `IxAssert` / `if_else`: bool `expr.Node` or bool `ScratchValue`.
 
 Fixed `tapeLen` at create (no extend/shrink). See [errors.md](../docs/errors.md) for `IndexCapReached` / `TapeOutOfBounds`.
 
-Session helpers: `PlanNewFrame`, `PlanPublicFrame`, `NewFrameScratch`. (`FetchDecodedFrame` / `RefreshFromChain` — tests & debug only.)
+### Session helpers
+
+| Method | Use |
+|--------|-----|
+| `PlanNewFrame` | New Frame: `Scratch` + `IxCreate` + PDA |
+| `PlanPublicFrame` | `authority` = Frame PDA (non-closeable; public scratch) |
+| `NewFrameScratch(frame, &tapeLen, programID, authority)` | New session on an existing Frame (production path) |
+
+Public Frame check after decode (tests / debug only): `frameauthority.IsPublicFrameAuthority(decoded.Authority, frame)`.
+
+(`FetchDecodedFrame` / `RefreshFromChain` — tests & debug only.)
 
 ## SPL Token / Token-2022
 
@@ -118,7 +128,9 @@ Static CPI step: `patchedcpi.StaticCpi(ix, nil)`. Branches: `ifelse.Skip`, `ifel
 | `expr` / `binding` / `typed` / `codec` | IR + wire |
 | `ix` / `patchedcpi` / `structuredcpi` / `patch` / `ifelse` | Instructions + CPI (RawPatched + Structured) |
 | `spltoken` | Token-2022 CPI templates |
-| `errors` / `immortal` / `constants` | Errors, Frame `authority` helpers, IDs |
+| `errors` | On-chain error codes, `MessageIncludes` |
+| `frameauthority` | Public / private Frame `authority` helpers (`PublicFrameAuthority`, `IsPublicFrameAuthority`, …) |
+| `constants` | Program IDs, discriminators, tape limits |
 | `examples` | Reusable business planners |
 
 ## Examples

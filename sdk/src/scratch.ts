@@ -7,7 +7,7 @@ import {
 } from "@solana/web3.js";
 
 import { DEFAULT_IFX_PROGRAM_ID, indexCapForTapeLen } from "./constants";
-import { immortalCloseAuthority } from "./immortal-close";
+import { publicFrameAuthority } from "./frame-authority";
 import { planRecordOffsets, recordByteLength } from "./tape-layout";
 import { decodeFrameAccount, type DecodedFrame, framePda } from "./layout";
 import {
@@ -48,7 +48,7 @@ import { LetIxBuilder } from "./let-builder";
 
 export type { CreateIxCreateFrameParams } from "./ix";
 
-/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link immortalCloseAuthority}. */
+/** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link publicFrameAuthority}. */
 export type PlanPublicFrameParams = Omit<
   CreateIxCreateFrameParams,
   "authority"
@@ -151,7 +151,7 @@ export class FrameScratch {
 
   /**
    * Like {@link planNewFrame}, but sets `authority` to the Frame PDA itself
-   * ({@link immortalCloseAuthority}) — shared / config-pinned Frames with no close Signer.
+   * ({@link publicFrameAuthority}) — shared / config-pinned Frames with no close Signer.
    * Reset and let remain open to anyone (scratch semantics).
    */
   static planPublicFrame(params: PlanPublicFrameParams): PlanNewFrameResult {
@@ -159,7 +159,7 @@ export class FrameScratch {
     return FrameScratch.planNewFrame({
       ...params,
       programId,
-      authority: immortalCloseAuthority(
+      authority: publicFrameAuthority(
         params.payer,
         params.frameId,
         programId

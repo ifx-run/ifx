@@ -1,29 +1,20 @@
 /**
- * Conditional WSOL wrap: patched System transfer + static syncNative in one if_else arm.
+ * Conditional WSOL wrap — integration test for sdk/examples/wsol-conditional-wrap.ts.
  */
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
 import {
-  createAssociatedTokenAccountIdempotentInstruction,
-  createSyncNativeInstruction,
   getAssociatedTokenAddressSync,
   getAccount,
   NATIVE_MINT,
-  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { PublicKey, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 
-import {
-  arm,
-  rawCpiPatch,
-  expr,
-  ifElseArgs,
-  rawCpi,   staticCpi,
-} from "../sdk/src";
-import { confirmSignature, provisionLocalFrame, sendAndConfirm } from "./helpers";
+import { expr } from "../sdk/src";
+import { planWsolConditionalWrapTx } from "../sdk/examples/wsol-conditional-wrap";
+import { provisionLocalFrame, sendAndConfirmSignersOnly } from "./helpers";
 
-describe("ifx if_else · patched transfer + syncNative", () => {
+describe("ifx if_else · WSOL conditional wrap (example)", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const payer = (provider.wallet as anchor.Wallet).payer;
@@ -44,32 +35,6 @@ describe("ifx if_else · patched transfer + syncNative", () => {
     const wrapLamports = 50_000_000;
     const amount = scratch.letConstU64(wrapLamports);
 
-    const transfer = rawCpi(
-      SystemProgram.transfer({
-        fromPubkey: payer.publicKey,
-        toPubkey: wsolAta,
-        lamports: 0,
-      }),
-      { patches: [rawCpiPatch(4, amount)] }
-    ).build();
-
-    const sync = staticCpi(createSyncNativeInstruction(wsolAta));
-
-    const combinedRemaining = [
-      ...transfer.remaining,
-      ...sync.remaining.slice(sync.remaining.findIndex((m) =>
-        m.pubkey.equals(TOKEN_PROGRAM_ID)
-      )),
-    ];
-
-    const syncStart = combinedRemaining.findIndex((m) =>
-      m.pubkey.equals(TOKEN_PROGRAM_ID)
-    );
-    transfer.cpi.accountsStart = 0;
-    transfer.cpi.accountsLen = syncStart;
-    sync.staticStep.accountsStart = syncStart;
-    sync.staticStep.accountsLen = combinedRemaining.length - syncStart;
-
     let beforeAmount = 0n;
     try {
       beforeAmount = (await getAccount(provider.connection, wsolAta)).amount;
@@ -77,25 +42,17 @@ describe("ifx if_else · patched transfer + syncNative", () => {
       // ATA may not exist until createAssociatedTokenAccountIdempotent runs.
     }
 
-    await sendAndConfirm(
+    const tx = planWsolConditionalWrapTx(scratch, {
+      owner: payer.publicKey,
+      cond: expr.bool(true),
+      wrapLamports: amount,
+    });
+    tx.feePayer = payer.publicKey;
+    await sendAndConfirmSignersOnly(
       provider,
-      "ifx · if_else wrap (transfer + syncNative)",
-      scratch.ixReset(),
-      scratch.ixLet(amount),
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer.publicKey,
-        wsolAta,
-        payer.publicKey,
-        NATIVE_MINT
-      ),
-      scratch.ixIfElse(
-        ifElseArgs(
-          expr.bool(true),
-          arm.cpis([transfer.cpi, sync.staticStep]),
-          arm.skip()
-        ),
-        combinedRemaining
-      )
+      tx,
+      [payer],
+      "ifx · if_else wrap (transfer + syncNative)"
     );
 
     const acct = await getAccount(provider.connection, wsolAta);
@@ -117,50 +74,19 @@ describe("ifx if_else · patched transfer + syncNative", () => {
 
     const wrapLamports = 50_000_000;
     const amount = scratch.letConstU64(wrapLamports);
-    const transfer = rawCpi(
-      SystemProgram.transfer({
-        fromPubkey: payer.publicKey,
-        toPubkey: wsolAta,
-        lamports: 0,
-      }),
-      { patches: [rawCpiPatch(4, amount)] }
-    ).build();
-    const sync = staticCpi(createSyncNativeInstruction(wsolAta));
-    const combinedRemaining = [
-      ...transfer.remaining,
-      ...sync.remaining.slice(
-        sync.remaining.findIndex((m) => m.pubkey.equals(TOKEN_PROGRAM_ID))
-      ),
-    ];
-    const syncStart = combinedRemaining.findIndex((m) =>
-      m.pubkey.equals(TOKEN_PROGRAM_ID)
-    );
-    transfer.cpi.accountsStart = 0;
-    transfer.cpi.accountsLen = syncStart;
-    sync.staticStep.accountsStart = syncStart;
-    sync.staticStep.accountsLen = combinedRemaining.length - syncStart;
-
     const before = await getAccount(provider.connection, wsolAta);
 
-    await sendAndConfirm(
+    const tx = planWsolConditionalWrapTx(scratch, {
+      owner: payer.publicKey,
+      cond: expr.bool(false),
+      wrapLamports: amount,
+    });
+    tx.feePayer = payer.publicKey;
+    await sendAndConfirmSignersOnly(
       provider,
-      "ifx · if_else wrap skip",
-      scratch.ixReset(),
-      scratch.ixLet(amount),
-      createAssociatedTokenAccountIdempotentInstruction(
-        payer.publicKey,
-        wsolAta,
-        payer.publicKey,
-        NATIVE_MINT
-      ),
-      scratch.ixIfElse(
-        ifElseArgs(
-          expr.bool(false),
-          arm.cpis([transfer.cpi, sync.staticStep]),
-          arm.skip()
-        ),
-        combinedRemaining
-      )
+      tx,
+      [payer],
+      "ifx · if_else wrap skip"
     );
 
     const acct = await getAccount(provider.connection, wsolAta);

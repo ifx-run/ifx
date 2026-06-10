@@ -164,7 +164,7 @@ Transaction `feePayer` is typically user or server; both keypairs must sign befo
 
 ### 4.4 SPL `Transfer` patching (credit leg only)
 
-SPL Token `Transfer` layout: `u8` tag @ 0, **`u64` amount @ 1** (LE). Patch **only** the pool → user leg via `rawCpiPatch(1, dy_ref)` — `dy` comes from Frame after `mulDivFloor` / `bpsMulFloor`.
+Patch **only** the pool → user leg via **`structuredCpiPatch.tokenTransfer(dy)`** — `dy` comes from Frame after `mulDivFloor` / `bpsMulFloor`. (DEX / non-registry layouts: `rawCpi()` + `rawCpiPatch`.)
 
 The user → pool leg uses `createTransferInstruction(..., amount_in)` directly when `amount_in` is fixed at quote time.
 

@@ -33,7 +33,7 @@ If a read-only pre-signed tx leaks, an attacker can **poison** the Frame before 
 
 `Pubkey::default()` remains invalid at create.
 
-SDK: `planPublicFrame` / `immortalCloseAuthority` → set **`authority`** to the **Frame PDA** (off-curve, non-closeable, public writes).
+SDK: `planPublicFrame` / `publicFrameAuthority` → set **`authority`** to the **Frame PDA** (off-curve, non-closeable, public writes).
 
 ---
 

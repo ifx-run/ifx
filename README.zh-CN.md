@@ -14,21 +14,41 @@
 
 **Ifx 是一个可复用的链上编排合约** — 解决 Solana 上「功能不大，却因为交易机制不得不单独写一个合约」的问题。
 
-Solana 在一笔交易里按顺序执行 instruction，没有原生 if/else。业务需求往往很小（例如：swap 之后读 ATA 余额，为 0 就 close 回收租金，否则跳过），但 **交易执行到一半时的读取和分支必须在链上完成**，团队仍得为这种 glue 逻辑反复部署、维护**专用包装合约**。**Ifx** 是可复用的替代方案：链下用 [TypeScript SDK](./sdk/) 或 [Go SDK](./go-sdk/) 规划数据流；交易执行期间由合约完成读取、运算、断言和 **`ifx_if_else` 条件 CPI**（或 **Skip**）。
-
 不是 VM，也不是脚本引擎 — 链上指令固定、可枚举；布局与 IR 在链下生成。
 
 ## Ifx 是什么（不是什么）
 
-Solana 交易是 **按顺序执行的 instruction 列表**，没有原生 if/else。这类 glue 必须在**链上**完成 — 要么为每个流程 **单独写包装合约**，要么用 **一个可复用的编排合约**（Ifx）在已有合约（System、SPL、DEX）之上组合。
+Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没有 if/else，也 **没有机制把上一条 instruction 的执行结果交给下一条** — 中间态只能写在账户里、靠后面的 ix 再读，不能在指令之间行内传值。
 
-| | **Ifx** | 纯客户端组 tx |
-|---|---------|---------------|
-| `if / else` 在哪执行 | **链上**，tx 执行过程中 | 链下组 tx / 签名时 |
-| 同一 tx 里**靠前 ix 之后**再读余额 | `ifx_let` 读到 ix 后的状态 | 签名时拿不到 |
+要做状态检查、条件分支或数值运算，通常只有两条老路：
+
+1. **为每个流程写一个包装合约** — 胶水逻辑往往不大，却要反复部署、审计、升级。
+2. **完全在链下组 tx** — 签名前用 RPC 拉链上状态当依据，按「当时认为成立」的假设拼 instruction。问题在于：假设可能在签字与上链之间失效；更关键的是，**同一笔 tx 里靠前的 ix 执行完后，后面的 ix 仍无法根据实际结果分支**，只能写死无条件路径。典型失败：swap 之后想关 ATA 省 rent，链下假设余额为 0 却拼了无条件的 `closeAccount`，链上余额非 0 时 **整笔 tx revert**，swap 的成果一并作废。
+
+**Ifx 提供第三条路：** 一个 **可复用的链上编排合约**。链下用 [TypeScript SDK](./sdk/) 或 [Go SDK](./go-sdk/) 描述数据流（读哪些账户、算什么、满足条件时 CPI 谁、否则 **Skip**）；**交易执行过程中**，Ifx 在同一 tx 内用固定、可枚举的指令完成 **`ifx_let` 读链上状态 → 运算 / `ifx_assert` → `ifx_if_else` 条件 CPI 或 Skip**，直接调用 System、SPL、DEX 等已有 program — **不必为每种小胶水再部署包装合约**，也 **不必赌 RPC 快照与交易中途的实际状态一致**。
+
+|                              | **Ifx**                        | 纯客户端组 tx                   |
+|------------------------------|--------------------------------|----------------------------|
+| 指令间能否传值 / 分支              | **链上** `ifx_let` 读**交易中途**状态，`ifx_if_else` 分支 | 无；只能链下假设 + 无条件 instruction |
+| `if / else` 在哪执行             | **链上**，tx 执行过程中                | 链下组 tx / 签名时               |
+| 同一 tx 里**靠前 ix 之后**再读余额      | `ifx_let` 读到 ix 后的状态           | 签名时拿不到；上链后也无法据此 **Skip** |
 | 余额可能 ≠ 0 时的可选 `closeAccount` | **`ifx_if_else` → Skip**，tx 继续 | 无条件 close **整笔 tx revert** |
 
 **Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go SDK** 编码数据流；**Ifx 合约** 在链上执行分支与 CPI。
+
+### 典型需求
+
+下面这些是 Solana 后端里**真实会出现**的形态：tx 内读状态、算数、分支、再 CPI。左列是 **缺乏交易内编排能力时**，团队常被迫采用的权宜之计（单独写包装合约，或链下按 RPC 快照拼无条件 instruction）：
+
+| 典型需求 | 没有 Ifx 时往往… | Ifx |
+|---------|------------------|-----|
+| **空 ATA** — 余额为 0 则 close 回收租金，否则跳过（与 swap 同一笔 tx） | 单独写**条件 close** 包装合约 | `ifx_let` + `ifx_if_else`（CloseAccount 或 **Skip**）— 见下文示例 |
+| tx 内对比 swap **前后** lamports | 单独**编排包装合约**，或拆成多笔 tx | `ifx_let` 快照 → 你的 ix → 再 `ifx_let` → `expr` |
+| 「只有 delta 够才转账」 | 新写带条件分支的**包装合约** | `ifx_assert` + structured / patched CPI |
+| 转账金额要**跑完中间步骤才知道** | 写**包装合约**链上读状态再 CPI；或拆成多笔 tx | 从 Frame tape patch CPI `data`（structured 或 raw） |
+| **Token-2022 dust ATA** — burn、harvest、close | 单独**包装合约**，或纯客户端无条件拼装 | `ifx_let` + `ifx_if_else` + structured / static CPI（[示例](./sdk/examples/dust-destroy-token2022.ts)） |
+
+Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 内的链上状态**时，读 → 算 → 断言 → CPI 现有合约。
 
 ### 示例：余额为 0 才关 ATA，且不能让整笔 tx 失败
 
@@ -40,7 +60,7 @@ Solana 交易是 **按顺序执行的 instruction 列表**，没有原生 if/els
            → ifx_if_else(amount == 0, CloseAccount CPI, Skip)
 ```
 
-无需单独的「conditional-close 辅助合约」。分支在 **Ifx** 里执行；`CloseAccount` 是对 SPL Token 的 CPI。
+无需单独的「条件 close 辅助合约」。分支在 **Ifx** 里执行；`CloseAccount` 是对 SPL Token 的 CPI。
 
 更完整变体（dust：burn + harvest + close）：[L1 dust 清理](./sdk/examples/dust-destroy-token2022.ts) · 测试 [`tests/dust_destroy_token2022.ts`](./tests/dust_destroy_token2022.ts)。
 
@@ -67,27 +87,6 @@ go get github.com/ifx-run/ifx/go-sdk
 
 ---
 
-## 是不是你的日常？
-
-做 Solana 后端时，很多需求本质是**单笔 tx 内的链上编排**——读余额、算差额、分支、再 CPI 现有合约。常见做法有三类：
-
-- **新合约** — 新的链上状态或协议规则  
-- **纯客户端组 tx** — 迭代快；钱包/风控较难验证  
-- **Ifx** — 通用链上层；指令参数是可检查的数据流 IR；复用已部署合约
-
-| 你需要… | 常见做法 | 用 Ifx |
-|---------|----------|--------|
-| **空 ATA** — 余额为 0 则 close 回收租金，否则跳过（与 swap 同一笔交易） | 单独写 conditional-close 包装合约 | `ifx_let` + `ifx_if_else`（CloseAccount 或 **Skip**）— 见上文示例 |
-| 同一笔 tx 里对比 swap **前后** lamports | 单独编排合约，或拆成多笔 tx | `ifx_let` 快照 → 你的 ix → 再 `ifx_let` → `expr` |
-| 「只有 delta 够才转账」 | 新合约写条件分支 | `ifx_assert` + `ifx_patched_cpi` |
-| 转账金额要**跑完中间步骤才知道** | 客户端 patch CPI，或新合约 | 从 Frame tape patch CPI `data` |
-| **Token-2022 dust ATA** — burn、harvest、close | 单独合约，或纯客户端拼装 | `ifx_let` + `ifx_if_else` + patched / static CPI（[示例](./sdk/examples/dust-destroy-token2022.ts)） |
-| 钱包 / 风控问「这笔 tx 在算什么？」 | 逻辑散在客户端拼装里 | 指令参数 = 可检查的数据流 IR |
-
-Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 内的链上状态**时，读 → 算 → 断言 → CPI 现有合约。
-
----
-
 ## 5 分钟跑通
 
 **两笔交易：** 先单独开通 Frame PDA，再在后续 tx 里跑业务。每笔业务 tx 开头 `reset`（清空 tape 会话）。
@@ -95,36 +94,24 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, framePda, FrameScratch, immortalCloseAuthority } from "@ifx-run/sdk";
+import { expr, FrameScratch } from "@ifx-run/sdk";
 
 // Tx 1 — 每个 frame_id 一次（单独开通 tx）
 const tapeLen = 256;
 const frameId = randomBytes(32); // 持久化，供后续任务用
-const { ixCreate } = FrameScratch.planPublicFrame({
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
   tapeLen,
 });
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 
-// Tx 2 — 业务 tx（用已存的 frameId 重建 planner）
-// 公共 Frame：authority = Frame PDA，reset/let 无需额外 signer（默认路径）
-const [frame] = framePda(payer, frameId);
-const scratch = new FrameScratch(
-  frame,
-  tapeLen,
-  0,
-  0,
-  undefined,
-  immortalCloseAuthority(payer, frameId)
-);
+// Tx 2 — 业务 tx（同进程复用 scratch；跨进程从 frameId 重建见 sdk/examples/minimal-frame.ts）
 const tx = new Transaction();
-
 tx.add(scratch.ixReset());
 const one = scratch.letConstU64(1);
 tx.add(scratch.ixLet(one));
 tx.add(scratch.ixAssert(expr.nonZero(one)));
-
 await provider.sendAndConfirm(tx);
 ```
 
@@ -195,7 +182,7 @@ flowchart LR
   branch -->|否则| skip[skip]
 ```
 
-- **Frame** — PDA 的 `tape` 是**本 tx 草稿纸**（`reset` 清空会话），不是跨 tx 业务状态。
+- **Frame** — PDA 的 `tape` 是**会话草稿**（默认每笔业务 tx `reset`），不是持久业务状态；bundle 内可延续 binding（见 [bundles.zh-CN.md](./docs/bundles.zh-CN.md)）。
 - **`ifx_if_else`** — 每臂：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（可混静态、**Structured** 与 RawPatched）。同一条件多步：`arm.cpis([...])`。
 - **CPI 选型** — 官方 System / SPL / Token-2022 且字段来自 tape → **`structuredCpi()`** + **`structuredCpiPatch.*`**（[structured-cpi-patches.zh-CN.md](./docs/structured-cpi-patches.zh-CN.md)）；DEX / 自定义 layout → **`rawCpi()`** + **`rawCpiPatch`**（无条件 **`scratch.ixCpi`** → **`ifx_patched_cpi`**）；组 tx 时 `data` 已完整 → **`staticCpi`** 或 **`tx.add(ix)`**。
 
@@ -210,78 +197,95 @@ flowchart LR
 | 级别 | 示例 | 你会学到 |
 |------|------|----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame、`reset`、`let`、`assert` |
-| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`、patched + static CPI（`rawCpi` / `staticCpi`）、链式 `if_else` |
+| **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`、structured + static CPI、链式 `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | 两跳 A→USDC→B、读中间 token 余额、patch 第二跳 |
-| **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | tx 中途读、assert 硬失败、多处 patch |
+| **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | tx 中途读、assert 硬失败、structured CPI patch |
 
 ### L1 — 销毁 dust Token-2022 账户
 
 **规则：** 原始余额 `< DUST_THRESHOLD_RAW` → burn → harvest（如有）→ close；**≥ 阈值** → 全部 skip。
 
-**一次 `ifx_let`**，**三次 `ifx_if_else`**（每臂一条 CPI）。burn 用 **patched CPI**（`rawCpi` + `rawCpiPatch` 读 amount + decimals）；harvest / close 用 **`staticCpi`**。
+**一次 `ifx_let`**，**三次 `ifx_if_else`**（每臂一条 CPI）。burn 用 **structured CPI**（`structuredCpiPatch.token2022BurnChecked`）；harvest / close 用 **`staticCpi`**。
 
 ```text
 let(amount, withheld, decimals)
-  → if_else: dust ∧ amount > 0     → BurnChecked（patched CPI）
+  → if_else: dust ∧ amount > 0     → BurnChecked（structured CPI）
   → if_else: dust ∧ withheld > 0   → harvest（staticCpi）
   → if_else: dust                  → closeAccount（staticCpi）
 ```
 
-完整代码、SPL 字节偏移、`DUST_THRESHOLD_RAW` 说明：**[`sdk/examples/dust-destroy-token2022.ts`](./sdk/examples/dust-destroy-token2022.ts)**
+完整代码与 `DUST_THRESHOLD_RAW` 说明：**[`sdk/examples/dust-destroy-token2022.ts`](./sdk/examples/dust-destroy-token2022.ts)**
 
 ### L2 — 两跳 token swap（A → USDC → B）
 
-**同一 tx 内编排：** 第一跳 CPI 产出中间 USDC；Ifx **`splTokenAmount`** 读该 ATA；第二跳 **patched CPI**（`rawCpi` + `rawCpiPatch`）用链上读到的数量作 exact-in。
+**同一 tx 内编排：** 第一跳 CPI 产出中间 USDC；Ifx **`splTokenAmount`** 读该 ATA；第二跳 **structured CPI**（`structuredCpiPatch.tokenTransfer`）用链上读到的数量作 exact-in。
 
 **示例范围外：** Token-2022、SOL/手续费/WSOL — 中间 USDC ATA 须在业务 tx 前建好（建议余额从 0 开始）。
 
 ```text
-reset → CPI 第一跳（A→USDC）→ let(usdcOut) → patched CPI 第二跳（USDC→B，amount_in ← usdcOut）
+reset → CPI 第一跳（A→USDC）→ let(usdcOut) → structured CPI 第二跳（USDC→B，amount_in ← usdcOut）
 ```
 
 完整 planner：**[`sdk/examples/two-hop-token-swap.ts`](./sdk/examples/two-hop-token-swap.ts)** · localnet 测试：[`tests/two_hop_swap.ts`](./tests/two_hop_swap.ts)
 
 ### L3 — 赞助代付 + swap 结算
 
-链上读 SOL，**利润不够就 revert**，还款给赞助方，**有剩余才**买入——在已有合约之上编排，无需为本流程单独 deploy 新合约。
+链上读 SOL，**利润不够就 revert**，还款给赞助方，**有剩余才**买入——在已有合约之上编排，无需为本流程单独部署新合约。
+
+**ATA 租金：** 幂等创建前读 token 账户 lamports 基线（未创建则为 0），创建后再读，`ataCost = 创建后 − 基线`（链上算，勿写死常量）。Token-2022 带 extension 时账户更大，租金因 mint/布局而异。
 
 ```ts
 import { Transaction, SystemProgram } from "@solana/web3.js";
-import { arm, ifElseArgs, rawCpi, rawCpiPatch, expr } from "@ifx-run/sdk";
+import { createAssociatedTokenAccountIdempotentInstruction } from "@solana/spl-token";
+import { structuredCpi, structuredCpiPatch, expr } from "@ifx-run/sdk";
 
+// userNAta = getAssociatedTokenAddressSync(mintN, user, …)
 const tx = new Transaction();
 const userMeta = { pubkey: user, isSigner: true, isWritable: true };
 
 tx.add(scratch.ixReset());
-const solBefore = scratch.letLamports(userMeta);
-tx.add(scratch.ixLet(solBefore));
+
+const letBaseline = scratch.letBuilder();
+const solBefore = letBaseline.lamports(userMeta);
+const ataLamportsBaseline = letBaseline.lamports(userNAta); // ATA 未创建时为 0
+tx.add(letBaseline.buildIx());
+
+tx.add(
+  createAssociatedTokenAccountIdempotentInstruction(
+    sponsor, userNAta, user, mintN
+  )
+);
+
+const letAta = scratch.letBuilder();
+const ataLamportsAfterCreate = letAta.lamports(userNAta);
+const ataCost = letAta.letEval(
+  expr.sub(ataLamportsAfterCreate, ataLamportsBaseline)
+);
+tx.add(letAta.buildIx());
 
 tx.add(swapIx);
 
 const letAfter = scratch.letBuilder();
 const solAfter = letAfter.lamports(userMeta);
-const settle = letAfter.letConstU64(TX_FEE + ATA_RENT);
-const buyLamports = letAfter.letEval(expr.sub(expr.sub(solAfter, solBefore), settle));
+const settle = letAfter.letEval(expr.add(ataCost, expr.u64(TX_FEE)));
+const buyLamports = letAfter.letEval(
+  expr.sub(expr.sub(solAfter, solBefore), settle)
+);
 tx.add(letAfter.buildIx());
 
 tx.add(scratch.ixAssert(expr.ge(expr.sub(solAfter, solBefore), settle)));
 
-// System Transfer data：u32 discriminant @ 0，u64 lamports @ 4（小端）
-const sponsorXfer = 
-rawCpi(
+const sponsorXfer = structuredCpi(
   SystemProgram.transfer({ fromPubkey: user, toPubkey: sponsor, lamports: 0 }),
-  { patches: [rawCpiPatch(4, settle)] }
+  structuredCpiPatch.systemTransfer(settle)
 ).build();
 tx.add(scratch.ixCpi(sponsorXfer));
 
-const poolXfer = 
-rawCpi(
-  SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
-  { patches: [rawCpiPatch(4, buyLamports)] }
-).build();
-tx.add(scratch.ixIfElse(
-  ifElseArgs(expr.gt(buyLamports, expr.u64(0)), arm.cpi(poolXfer.cpi)),
-  poolXfer.remaining
+tx.add(scratch.ixCpi(
+  structuredCpi(
+    SystemProgram.transfer({ fromPubkey: user, toPubkey: pool, lamports: 0 }),
+    structuredCpiPatch.systemTransfer(buyLamports)
+  ).build()
 ));
 
 await provider.sendAndConfirm(tx);
@@ -302,7 +306,11 @@ await provider.sendAndConfirm(tx);
 **不必用**
 
 - 组 tx 时所有字段都已知 → 直接调 System / SPL / DEX
-- 需要把 Frame PDA 当**跨 tx 业务状态** → Ifx **无权限控制**
+- 长期业务状态要存在链上 → 用自有账户或合约；**不要**把 Frame `tape` 当状态库（默认每笔业务 tx `reset` 当草稿）
+
+**跨 tx 拆笔（可以，但有前提）**
+
+- tx2 依赖 tx1 写入 Frame 的 binding、且 tx2 **不** `reset` → 须 **已落地的 Jito bundle** 保证包内顺序与原子性；并选对 Frame 类型：**公共 Frame**（`planPublicFrame`，off-curve `authority`，写操作不验签）vs **私有 Frame**（`planNewFrame` + on-curve `authority` 签 `reset`/`let`）。bundle 不保证一定上链、也不保证落地后无人再改 Frame — 见 [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md) · [docs/frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)
 
 ---
 
@@ -343,8 +351,8 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 ## 上线前须知
 
 - **Program ID：** npm `@ifx-run/sdk` 默认 devnet（`ifxdR1…`）。仓库 `npm test` 显式使用 localnet。主网未部署 — [sdk/README.zh-CN.md](./sdk/README.zh-CN.md)。
-- **Rent：** 创建 Frame 需 rent；不用时 `ifx_close_frame` 回收
-- **顶层 `ifx_let`：** 同条 ix 内绑定不能前后依赖 — [docs/typed-let-bindings.zh-CN.md](./docs/typed-let-bindings.zh-CN.md)
+- **Rent：** 创建 Frame PDA 需 rent（随 `tape_len` 增长；默认上限 256 字节）。不用时 `ifx_close_frame` 回收。
+- **顶层 `ifx_let`：** 同条 ix 内绑定不能前后依赖 — 拆成多条 `ifx_let` 或用 `letBuilder()` 分批。见 [docs/typed-let-bindings.zh-CN.md](./docs/typed-let-bindings.zh-CN.md)。
 - **Simulation 失败：** [docs/debugging.zh-CN.md](./docs/debugging.zh-CN.md) · [docs/errors.zh-CN.md](./docs/errors.zh-CN.md)
 
 ---
@@ -353,9 +361,9 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **Ifx 只是 tx builder / instruction pipeline 吗？** **不是。** `@ifx-run/sdk` 在链下组 tx，但 **`ifx_if_else`、`ifx_assert`、`ifx_let` 在 tx 执行时于链上运行**。分支不是在 TypeScript 里「模拟」的，而是在已部署的 Ifx 合约里执行。可选 `closeAccount`、dust 清理、「差额够才转账」都靠这个机制在同一 tx 内完成。
 
-**conditional-close ATA 还要单独写辅助合约吗？** **在 SPL/System/DEX 之上的同一 tx 编排不需要。** `ifx_let` 读 token 余额，`ifx_if_else` 选 CloseAccount CPI 或 **Skip** 即可。只有当你要引入 Ifx 不覆盖的**新链上状态或协议规则**时才需要新合约。
+**条件 close ATA 还要单独写辅助合约吗？** **在 SPL/System/DEX 之上的同一 tx 编排不需要。** `ifx_let` 读 token 余额，`ifx_if_else` 选 CloseAccount CPI 或 **Skip** 即可。只有当你要引入 Ifx 不覆盖的**新链上状态或协议规则**时才需要新合约。
 
-**为什么要两笔 tx？** 创建 Frame 是一次性开通；业务 tx 开头 `reset`。多 tx 拆分见 [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)。
+**为什么要两笔 tx？** 创建 Frame 是一次性开通（rent + PDA）；业务 tx 开头 `reset`。也可把逻辑拆成 bundle 内多笔 tx — 见 [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)。
 
 **CPI 怎么选？** 官方 System / SPL / Token-2022 且字段来自 tape → **`structuredCpi()`** + **`structuredCpiPatch.*`**。DEX / 自定义 layout → **`rawCpi()`** + **`rawCpiPatch`**（无条件 **`scratch.ixCpi`** / **`ifx_patched_cpi`**）。组 tx 时 data 已完整 → **`staticCpi`** + **`arm.cpi(step.staticStep)`** 或直接 **`tx.add(ix)`**。
 
