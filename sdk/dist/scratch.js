@@ -156,6 +156,38 @@ class FrameScratch {
     letFrameIndexCount() {
         return this.plan(binding_1.binding.frameIndexCount());
     }
+    /** `remaining[i].is_signer` (runtime account meta). */
+    letAccountIsSigner(account) {
+        return this.plan(binding_1.binding.accountIsSigner(0), [(0, let_account_1.toLetAccountMeta)(account)]);
+    }
+    /** `remaining[i].is_writable` (runtime account meta). */
+    letAccountIsWritable(account) {
+        return this.plan(binding_1.binding.accountIsWritable(0), [(0, let_account_1.toLetAccountMeta)(account)]);
+    }
+    /** Stake `meta.authorized.staker` (`StakeStateV2`, stake program owner). */
+    letStakeAuthorizedStaker(account) {
+        return this.plan(binding_1.binding.stakeAuthorizedStaker(0), [(0, let_account_1.toLetAccountMeta)(account)]);
+    }
+    /** Stake `meta.authorized.withdrawer`. */
+    letStakeAuthorizedWithdrawer(account) {
+        return this.plan(binding_1.binding.stakeAuthorizedWithdrawer(0), [
+            (0, let_account_1.toLetAccountMeta)(account),
+        ]);
+    }
+    /** Stake `meta.lockup.unix_timestamp`. */
+    letStakeLockupUnixTimestamp(account) {
+        return this.plan(binding_1.binding.stakeLockupUnixTimestamp(0), [
+            (0, let_account_1.toLetAccountMeta)(account),
+        ]);
+    }
+    /** Stake `meta.lockup.epoch`. */
+    letStakeLockupEpoch(account) {
+        return this.plan(binding_1.binding.stakeLockupEpoch(0), [(0, let_account_1.toLetAccountMeta)(account)]);
+    }
+    /** Stake `delegation.stake` (`Stake` state only). */
+    letStakeDelegationStake(account) {
+        return this.plan(binding_1.binding.stakeDelegationStake(0), [(0, let_account_1.toLetAccountMeta)(account)]);
+    }
     letAccountDataSlice(account, expectedOwner, ty, dataOffset) {
         const dataMeta = (0, let_account_1.toLetAccountMeta)(account);
         const ownerMeta = (0, let_account_1.toLetAccountMeta)(expectedOwner);
@@ -254,6 +286,10 @@ class FrameScratch {
     }
     ixAssert(cond, opts) {
         return (0, ix_1.buildIxAssert)(this.frame, cond, this.mergeIxOpts(opts));
+    }
+    /** Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure. */
+    ixAssertMulti(conds, opts) {
+        return (0, ix_1.buildIxAssertMulti)(this.frame, conds, this.mergeIxOpts(opts));
     }
     /** Patched CPI (`ifx_patched_cpi`). */
     ixCpi(built, opts) {

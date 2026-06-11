@@ -8,6 +8,11 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **`StructuredCpiPatch` tag 29–32（SP-5）：** Stake `Withdraw` / `Split` / `Deactivate` / `DelegateStake` — `structuredCpiPatch.stakeWithdraw` 等；可从原生 stake ix 模板推断 tag。
+- **示例：** `stake-conditional-withdraw.ts`（`planStakeStructuredWithdrawTx`）、`upgradeable-program-guard.ts`、`guardrail-two-account-lamports-diff.ts`。
+
 ## [0.4.0-devnet.0] - 2026-06-08
 
 ### 破坏性变更

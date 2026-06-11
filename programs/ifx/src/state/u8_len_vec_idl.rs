@@ -11,7 +11,7 @@ use anchor_lang::idl::types::IdlTypeDef;
 #[cfg(feature = "idl-build")]
 use super::u8_len_vec::U8LenVec;
 #[cfg(feature = "idl-build")]
-use super::LetBinding;
+use super::Expr;
 
 #[cfg(feature = "idl-build")]
 const U8_LEN_VEC_IDL_NAME: &str = "U8LenVec";
@@ -27,9 +27,9 @@ fn register_u8_len_vec(types: &mut BTreeMap<String, IdlTypeDef>) {
 }
 
 #[cfg(feature = "idl-build")]
-impl IdlBuild for U8LenVec<LetBinding> {
+impl IdlBuild for U8LenVec<Expr> {
     fn insert_types(types: &mut BTreeMap<String, IdlTypeDef>) {
         register_u8_len_vec(types);
-        LetBinding::insert_types(types);
+        Expr::insert_types(types);
     }
 }

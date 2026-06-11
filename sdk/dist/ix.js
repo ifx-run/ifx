@@ -9,6 +9,7 @@ exports.createIxResetFrame = createIxResetFrame;
 exports.isIxOpts = isIxOpts;
 exports.buildIxLet = buildIxLet;
 exports.buildIxAssert = buildIxAssert;
+exports.buildIxAssertMulti = buildIxAssertMulti;
 exports.createIxCpi = createIxCpi;
 exports.createIxIfElse = createIxIfElse;
 const web3_js_1 = require("@solana/web3.js");
@@ -25,6 +26,7 @@ exports.IX_DISCRIMINATOR = {
     ifxResetFrame: Buffer.from([constants_1.IX_DISC_RESET_FRAME]),
     ifxLet: Buffer.from([constants_1.IX_DISC_LET]),
     ifxAssert: Buffer.from([constants_1.IX_DISC_ASSERT]),
+    ifxAssertMulti: Buffer.from([constants_1.IX_DISC_ASSERT_MULTI]),
     ifxPatchedCpi: Buffer.from([constants_1.IX_DISC_PATCHED_CPI]),
     ifxIfElse: Buffer.from([constants_1.IX_DISC_IF_ELSE]),
 };
@@ -118,6 +120,21 @@ function buildIxAssert(frame, cond, opts = {}) {
         programId,
         keys: [{ pubkey: frame, isSigner: false, isWritable: false }],
         data: Buffer.concat([exports.IX_DISCRIMINATOR.ifxAssert, (0, codec_1.encodeExpr)((0, cond_1.toCond)(cond))]),
+    });
+}
+/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+function buildIxAssertMulti(frame, conds, opts = {}) {
+    if (conds.length === 0) {
+        throw new Error("ifx_assert_multi requires at least one condition");
+    }
+    const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
+    return new web3_js_1.TransactionInstruction({
+        programId,
+        keys: [{ pubkey: frame, isSigner: false, isWritable: false }],
+        data: Buffer.concat([
+            exports.IX_DISCRIMINATOR.ifxAssertMulti,
+            (0, codec_1.encodeAssertMultiArgs)({ conds: conds.map((c) => (0, cond_1.toCond)(c)) }),
+        ]),
     });
 }
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */

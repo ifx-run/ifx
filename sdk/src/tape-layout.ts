@@ -2,7 +2,7 @@ import { MAX_FRAME_TAPE_LEN } from "./constants";
 import { valueTypeSize } from "./layout";
 import type { ValueType } from "./types";
 
-/** On-chain / wire tag order (matches `programs/ifx/src/state/value_type_tag.rs`). */
+/** On-chain / wire tag order (matches `crates/ifx-core/src/layout/value_type_tag.rs`). */
 export const VALUE_TYPE_TAG = [
   "bool",
   "u8",

@@ -1,5 +1,6 @@
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
+import { randomBytes } from "crypto";
 
 import { expr } from "../sdk/src";
 import {
@@ -16,7 +17,7 @@ describe("ifx pubkey", () => {
   it("AccountKey + ConstPubkey on tape; assert eq", async () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
-      frameId: Buffer.alloc(32, 11),
+      frameId: randomBytes(32),
       authority: payer.publicKey,
       tapeLen: 512,
     });

@@ -61,10 +61,26 @@ function sampleExpr(key: ExprVariantKey): Expr {
       return expr.isZero(U64);
     case "nonZero":
       return expr.nonZero(U64);
+    case "asU8":
+      return expr.asU8(expr.u32(1000));
+    case "asU16":
+      return expr.asU16(expr.u32(1000));
+    case "asU32":
+      return expr.asU32(U64);
     case "asU64":
       return expr.asU64(U128);
     case "asU128":
       return expr.asU128(U64);
+    case "asI8":
+      return expr.asI8(expr.i32(-3));
+    case "asI16":
+      return expr.asI16(expr.i32(-3));
+    case "asI32":
+      return expr.asI32(expr.i64(-3));
+    case "asI64":
+      return expr.asI64(expr.i64(-3));
+    case "asI128":
+      return expr.asI128(expr.i64(-3));
     case "add":
       return expr.add(U64, U64);
     case "sub":
@@ -119,16 +135,16 @@ function sampleExpr(key: ExprVariantKey): Expr {
 }
 
 describe("sdk Expr wire parity", () => {
-  it("EXPR_VARIANT matches IDL enum order (tags 0..43)", () => {
+  it("EXPR_VARIANT matches IDL enum order (tags 0..51)", () => {
     const def = idl.types.find((t) => t.name === "Expr");
     expect(def?.type.kind).to.equal("enum");
     const idlKeys = def!.type.variants.map((v) => pascalToCamel(v.name));
     expect(idlKeys).to.deep.equal([...EXPR_VARIANT]);
-    expect(EXPR_VARIANT_COUNT).to.equal(44);
-    expect(EXPR_NEXT_TAG).to.equal(44);
+    expect(EXPR_VARIANT_COUNT).to.equal(52);
+    expect(EXPR_NEXT_TAG).to.equal(52);
   });
 
-  it("EXPR_TAG indices are contiguous 0..43", () => {
+  it("EXPR_TAG indices are contiguous 0..51", () => {
     for (let tag = 0; tag < EXPR_VARIANT.length; tag++) {
       const key = EXPR_VARIANT[tag];
       expect(EXPR_TAG[key]).to.equal(tag);

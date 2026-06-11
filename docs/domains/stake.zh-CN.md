@@ -2,10 +2,10 @@
 
 # Stake 域：调研与 Ifx 覆盖计划
 
-**状态：** 调研草稿（R0.4 / R2 前置）  
+**状态：** R2+R5 已落地 typed lets（tag 31–38、60–64）；示例与集成测试见下文  
 **父文档：** [lighthouse-coverage.zh-CN.md](../lighthouse-coverage.zh-CN.md)
 
-Stake 在 [Lighthouse AssertStakeAccount](https://www.lighthouse.voyage/assert) 中是一等公民；Ifx 目前 **无** stake typed `LetBinding`。本文记录调研方向、与 Lighthouse 的对照、以及 Ifx **可组合** 覆盖计划（含 assert 与 Skip/CPI 编排）。
+Stake 在 [Lighthouse AssertStakeAccount](https://www.lighthouse.voyage/assert) 中是一等公民；Ifx 通过 **typed `LetBinding`** 覆盖 meta、delegation 与 R5 补全字段（state tag、custodian、rent_exempt_reserve、credits_observed、flags）。
 
 ---
 
@@ -58,35 +58,35 @@ ifx_let(lam_before ← lamports(stake_acc))
 
 ## 4. 待调研字段（Stake Program layout）
 
-实施 R2 前须 pinned SPL Stake program layout（与 Solana 版本一致）：
-
-| 字段 / 概念 | 用途 | Ifx 绑定优先级 |
-|-------------|------|----------------|
-| `meta.authorized.staker / withdrawer` | 权限 assert | P0 |
-| `meta.lockup`（epoch / unix_timestamp / custodian） | 时间锁 branch | P0 |
-| `delegation.stake` / `delegation.voter` | 委托状态 | P0 |
-| `delegation.deactivation_epoch` / `activation_epoch` | 分支 withdraw / delegate | P0 |
-| account lamports | withdraw 金额、rent | P0（已有 generic lamports；stake 账户专用文档） |
-
-**产出：** opcode 设计写入 [typed-let-bindings.zh-CN.md](../typed-let-bindings.zh-CN.md)（tag 29+）。
+已 pinned SPL Stake program layout（`StakeStateV2`，200 字节）。字段与 tag 见 [typed-let-bindings.zh-CN.md](../typed-let-bindings.zh-CN.md)（tag **31–38**、**60–64**）；账户 lamports 用通用 `AccountLamports`（tag 1）。
 
 ---
 
-## 5. 交付清单（R2）
+## 5. 交付清单（R2+R5）— ✅
 
 | 项 | 说明 |
 |----|------|
-| `programs/ifx` typed `LetBinding` | Stake 字段读取 |
-| `sdk/examples/stake-conditional-withdraw.ts` | assert + Skip/CPI 示例 |
-| `tests/stake_*.ts` | localnet / Surfpool |
-| 更新覆盖矩阵 | [lighthouse-coverage.zh-CN.md](../lighthouse-coverage.zh-CN.md) Stake 行 → ✅ |
+| `programs/ifx` typed `LetBinding` | tag 31–38、60–64 |
+| `sdk/examples/stake-conditional-withdraw.ts` | assert + Skip + structured `StakeWithdraw`（SP-5 tag 29） |
+| `tests/stake_typed_lets.ts` | localnet / Surfpool |
+| 覆盖矩阵 | [lighthouse-coverage.zh-CN.md](../lighthouse-coverage.zh-CN.md) Stake 行 → ✅ |
 
 ---
 
-## 6. 开放问题
+## 6. Structured CPI（SP-5）— ✅
+
+| Wire tag | 变体 | 动态字段 |
+|----------|------|----------|
+| `29` | `StakeWithdraw` | `lamports: Value` |
+| `30` | `StakeSplit` | `lamports: Value` |
+| `31` | `StakeDeactivate` | — |
+| `32` | `StakeDelegateStake` | — |
+
+见 [structured-cpi-patches.zh-CN.md](../structured-cpi-patches.zh-CN.md) · SDK `structuredCpiPatch.stake*`.
+
+## 7. 开放问题
 
 - [ ] 与 `clock` sysvar 组合的分支（epoch 边界）最佳 tx 形状  
-- [ ] Stake CPI 是否优先 **structured CPI** registry vs raw patch  
 - [ ] 钱包产品是否仅需 assert，还是需要 Skip 路径（决定示例侧重）  
 
 ---

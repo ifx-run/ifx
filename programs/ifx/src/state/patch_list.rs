@@ -1,7 +1,3 @@
-//! [`PatchList`] on [`super::types::Cpi`]: wire is [`U16LenVec`] — `u16` LE count + [`RawCpiPatch`] entries.
-//! Empty list = static CPI step (template `data` invoked as-is).
+//! Re-export from [`ifx_core::wire::patch_list`].
 
-use super::types::RawCpiPatch;
-use super::u16_len_vec::U16LenVec;
-
-pub type PatchList = U16LenVec<RawCpiPatch>;
+pub use ifx_core::wire::patch_list::PatchList;

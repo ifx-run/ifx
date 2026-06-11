@@ -249,7 +249,7 @@ ifElseArgs(flag, arm.cpi(built.cpi));
 
 ## 示例
 
-仓库内 [`examples/`](./examples/)（不随 npm 发布）：L0 `minimal-frame.ts` · L1 `dust-destroy-token2022.ts`（patched + static CPI）。
+仓库内 [`examples/`](./examples/)（不随 npm 发布）：L0 `minimal-frame.ts` · guardrail `guardrail-lamports-delta.ts` / `guardrail-token-balance.ts` · L1 `dust-destroy-token2022.ts`（patched + static CPI）。
 
 Go 客户端：[`go-sdk/README.zh-CN.md`](../go-sdk/README.zh-CN.md)。
 

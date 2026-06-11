@@ -6,7 +6,7 @@ exports.recordByteLength = recordByteLength;
 exports.planRecordOffsets = planRecordOffsets;
 const constants_1 = require("./constants");
 const layout_1 = require("./layout");
-/** On-chain / wire tag order (matches `programs/ifx/src/state/value_type_tag.rs`). */
+/** On-chain / wire tag order (matches `crates/ifx-core/src/layout/value_type_tag.rs`). */
 exports.VALUE_TYPE_TAG = [
     "bool",
     "u8",

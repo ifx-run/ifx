@@ -1,0 +1,29 @@
+{
+  "name": "IfElseArm",
+  "docs": [
+    "One side of `ifx_if_else`: skip, revert, or 1..254 `Cpi` steps (wire tag = step count)."
+  ],
+  "type": {
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Skip"
+      },
+      {
+        "name": "Cpi",
+        "fields": [
+          {
+            "vec": {
+              "defined": {
+                "name": "Cpi"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "Revert"
+      }
+    ]
+  }
+}

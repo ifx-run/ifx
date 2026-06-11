@@ -6,7 +6,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/constants"
 )
 
-// structuredPatchWireKeys mirrors TS STRUCTURED_CPI_PATCH_WIRE keys (29 variants).
+// structuredPatchWireKeys mirrors TS STRUCTURED_CPI_PATCH_WIRE keys (33 variants).
 var structuredPatchWireKeys = []struct {
 	name string
 	fn   func() PatchInput
@@ -105,6 +105,18 @@ var structuredPatchWireKeys = []struct {
 	}},
 	{"token2022SetTransferFee", func() PatchInput {
 		return StructuredCpiPatch.Token2022SetTransferFee().BpsOnly(FrameValue{Index: 0}, 1000)
+	}},
+	{"stakeWithdraw", func() PatchInput {
+		return StructuredCpiPatch.StakeWithdraw(FrameValue{Index: 0})
+	}},
+	{"stakeSplit", func() PatchInput {
+		return StructuredCpiPatch.StakeSplit(FrameValue{Index: 0})
+	}},
+	{"stakeDeactivate", func() PatchInput {
+		return StructuredCpiPatch.StakeDeactivate()
+	}},
+	{"stakeDelegateStake", func() PatchInput {
+		return StructuredCpiPatch.StakeDelegateStake()
 	}},
 }
 

@@ -4,7 +4,7 @@ exports.EXPR_TAG = exports.EXPR_NEXT_TAG = exports.EXPR_VARIANT_COUNT = exports.
 /**
  * Wire tag order for on-chain [`Expr`](../../programs/ifx/src/state/types.rs).
  *
- * **Must match the Rust enum declaration exactly** (tags `0`–`43`). When adding a
+ * **Must match the Rust enum declaration exactly** (tags `0`–`51`). When adding a
  * variant: append here, extend `expr` builder + `codec` switch, program match arms, IDL.
  */
 exports.EXPR_VARIANT = [
@@ -26,8 +26,16 @@ exports.EXPR_VARIANT = [
     "neg",
     "isZero",
     "nonZero",
+    "asU8",
+    "asU16",
+    "asU32",
     "asU64",
     "asU128",
+    "asI8",
+    "asI16",
+    "asI32",
+    "asI64",
+    "asI128",
     "add",
     "sub",
     "mul",

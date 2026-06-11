@@ -9,6 +9,7 @@ import {
   ACCOUNT_DISC_FRAME,
   DEFAULT_IFX_PROGRAM_ID,
   IX_DISC_ASSERT,
+  IX_DISC_ASSERT_MULTI,
   IX_DISC_CLOSE_FRAME,
   IX_DISC_CREATE_FRAME,
   IX_DISC_IF_ELSE,
@@ -23,6 +24,7 @@ import {
   encodeIfElseArgs,
   encodeExpr,
   encodeLetArgs,
+  encodeAssertMultiArgs,
 } from "./codec";
 import { prependWriteAuthorityRemaining } from "./frame-authority";
 import { framePda } from "./layout";
@@ -38,6 +40,7 @@ export const IX_DISCRIMINATOR = {
   ifxResetFrame: Buffer.from([IX_DISC_RESET_FRAME]),
   ifxLet: Buffer.from([IX_DISC_LET]),
   ifxAssert: Buffer.from([IX_DISC_ASSERT]),
+  ifxAssertMulti: Buffer.from([IX_DISC_ASSERT_MULTI]),
   ifxPatchedCpi: Buffer.from([IX_DISC_PATCHED_CPI]),
   ifxIfElse: Buffer.from([IX_DISC_IF_ELSE]),
 } as const;
@@ -183,6 +186,26 @@ export function buildIxAssert(
     programId,
     keys: [{ pubkey: frame, isSigner: false, isWritable: false }],
     data: Buffer.concat([IX_DISCRIMINATOR.ifxAssert, encodeExpr(toCond(cond))]),
+  });
+}
+
+/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+export function buildIxAssertMulti(
+  frame: PublicKey,
+  conds: readonly Cond[],
+  opts: IxOpts = {}
+): TransactionInstruction {
+  if (conds.length === 0) {
+    throw new Error("ifx_assert_multi requires at least one condition");
+  }
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [{ pubkey: frame, isSigner: false, isWritable: false }],
+    data: Buffer.concat([
+      IX_DISCRIMINATOR.ifxAssertMulti,
+      encodeAssertMultiArgs({ conds: conds.map((c) => toCond(c)) }),
+    ]),
   });
 }
 

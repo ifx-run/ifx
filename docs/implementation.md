@@ -17,6 +17,7 @@ Describes the **Anchor program currently in this repo** (`programs/ifx`). Transa
 | `ifx_close_frame` | Close Frame; reclaim rent |
 | `ifx_let` | Evaluate `bindings` in order and **append** to `tape` |
 | `ifx_assert` | Evaluate `cond: Expr` to bool |
+| `ifx_assert_multi` | Evaluate `U8LenVec<Expr>` in order; short-circuit on first false |
 | `ifx_patched_cpi` | CPI; patch template `data` from Frame tape (`Cpi` + `RawCpiPatch`; requires non-empty patches) |
 | `ifx_if_else` | Conditional branch: `Skip` / `Revert` / CPI sequence per arm | Evaluates `cond`; runs `then_arm` or `else_arm` (`IfElseArm`) |
 
@@ -85,7 +86,7 @@ Tape `Pubkey` loads: prefer **`AccountKey`** (ALT-friendly); **`ConstPubkey`** /
 
 ## 4. `ifx_let`
 
-[`LetBinding`](./typed-let-bindings.md) is a **single wire enum** (tags `0`–`28`). On-chain bindings **append in order**; there is no per-binding offset field on wire.
+[`LetBinding`](./typed-let-bindings.md) is a **single wire enum** (tags `0`–`67`). On-chain bindings **append in order**; there is no per-binding offset field on wire.
 
 **Off-chain:** Assign sequential binding **index** per planned value; fill `Expr::Value { index }`.
 
@@ -114,7 +115,7 @@ Off-chain `FrameScratch` assigns sequential binding indices; **type is implied b
 
 ## 5. Expressions (`Expr`)
 
-Flat enum: **one Borsh tag per operator** (no nested `Unary`/`Binary` + `*Operator` shells). Tags `0`–`43` — leaves `0`–`14`, unary `15`–`20`, binary `21`–`39`, ternary `40`–`43` (`ConstPubkey` = 43, append-only after `Select`).
+Flat enum: **one Borsh tag per operator** (no nested `Unary`/`Binary` + `*Operator` shells). Tags **`0`–`51`** — see `sdk/src/expr-variants.ts` (`ConstPubkey` = 51; cast family `AsU8`…`AsI128` at 18–28). Next append-only tag: **52**.
 
 **Core:** `Value`, `Const*`, `Not`, `Neg`, comparisons, `Add`…`Max`, `Div`.
 
@@ -127,13 +128,14 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 ## 6. Conditional execution
 
 - `ifx_assert(cond: Expr)` — revert if false
+- `ifx_assert_multi(args: AssertMultiArgs)` — revert on first false (`AssertFailedMulti`; index in return data)
 - `ifx_patched_cpi(arm: Cpi)` — one **RawPatched** or **Structured** step (requires patch apply)
 - `ifx_if_else(args: IfElseArgs)` — `cond` + two [`IfElseArm`] sides
 - **`IfElseArm` wire:** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] step
 - **`Cpi` wire kind** (first byte per step): **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md))
   - **Static:** `[0][accounts_start][accounts_len][U16LenVec data]` — invoke template as-is
   - **RawPatched:** `[1][accounts_start][accounts_len][data][PatchList]` — byte overlay via [`RawCpiPatch`]; DEX / non-registry layouts
-  - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **no ix data template**; flat enum (variant tag **0–28** inside Borsh blob); official System / SPL / Token-2022 registry
+  - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **no ix data template**; flat enum (variant tag **0–32** inside Borsh blob); official System / SPL / Token-2022 / Stake registry
 - **`U8LenVec<T>`:** **u8** element count + Borsh elements (max 255); `LetArgs::bindings`
 - **`U16LenVec<T>`:** **u16 LE** element count + elements; RawPatched `Cpi::data` and `PatchList`
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**; copies typed bytes from `payload_at[source.index]`
@@ -147,7 +149,7 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 ifx_create_frame
 
 # Business tx — typical
-ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else → …
 
 # Split — same landed Jito bundle only: tx1 reset+let, tx2 let+… (no reset)
 

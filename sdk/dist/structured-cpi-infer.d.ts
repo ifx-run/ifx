@@ -1,5 +1,7 @@
-import { TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import type { StructuredCpiPatch } from "./structured-cpi-patch";
+/** Native stake program (`Stake11111111111111111111111111111111111111`). */
+export declare const STAKE_PROGRAM_ID: PublicKey;
 export type StructuredCpiPatchTagName = StructuredCpiPatch["tag"];
 /**
  * Infer `StructuredCpiPatch.tag` from an official SDK instruction template.

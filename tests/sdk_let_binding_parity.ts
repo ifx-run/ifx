@@ -77,6 +77,84 @@ function sampleBinding(key: LetBindingVariantKey): LetBinding {
       return binding.frameGeneration();
     case "frameIndexCount":
       return binding.frameIndexCount();
+    case "accountIsSigner":
+      return binding.accountIsSigner(0);
+    case "accountIsWritable":
+      return binding.accountIsWritable(0);
+    case "stakeDelegationStake":
+      return binding.stakeDelegationStake(0);
+    case "stakeDelegationActivationEpoch":
+      return binding.stakeDelegationActivationEpoch(0);
+    case "stakeDelegationDeactivationEpoch":
+      return binding.stakeDelegationDeactivationEpoch(0);
+    case "stakeLockupUnixTimestamp":
+      return binding.stakeLockupUnixTimestamp(0);
+    case "stakeLockupEpoch":
+      return binding.stakeLockupEpoch(0);
+    case "stakeAuthorizedStaker":
+      return binding.stakeAuthorizedStaker(0);
+    case "stakeAuthorizedWithdrawer":
+      return binding.stakeAuthorizedWithdrawer(0);
+    case "stakeDelegationVoter":
+      return binding.stakeDelegationVoter(0);
+    case "splMintIsInitialized":
+      return binding.splMintIsInitialized(0);
+    case "splMintMintAuthority":
+      return binding.splMintMintAuthority(0);
+    case "splMintFreezeAuthority":
+      return binding.splMintFreezeAuthority(0);
+    case "splToken2022MintIsInitialized":
+      return binding.splToken2022MintIsInitialized(0);
+    case "splToken2022MintMintAuthority":
+      return binding.splToken2022MintMintAuthority(0);
+    case "splToken2022MintFreezeAuthority":
+      return binding.splToken2022MintFreezeAuthority(0);
+    case "accountProgramOwner":
+      return binding.accountProgramOwner(0);
+    case "accountExecutable":
+      return binding.accountExecutable(0);
+    case "accountRentEpoch":
+      return binding.accountRentEpoch(0);
+    case "splTokenAccountMint":
+      return binding.splTokenAccountMint(0);
+    case "splTokenAccountOwner":
+      return binding.splTokenAccountOwner(0);
+    case "splTokenAccountDelegate":
+      return binding.splTokenAccountDelegate(0);
+    case "splTokenAccountCloseAuthority":
+      return binding.splTokenAccountCloseAuthority(0);
+    case "splTokenAccountIsNative":
+      return binding.splTokenAccountIsNative(0);
+    case "splTokenAccountOwnerIsDerived":
+      return binding.splTokenAccountOwnerIsDerived(0);
+    case "splToken2022AccountMint":
+      return binding.splToken2022AccountMint(0);
+    case "splToken2022AccountOwner":
+      return binding.splToken2022AccountOwner(0);
+    case "splToken2022AccountDelegate":
+      return binding.splToken2022AccountDelegate(0);
+    case "splToken2022AccountCloseAuthority":
+      return binding.splToken2022AccountCloseAuthority(0);
+    case "splToken2022AccountIsNative":
+      return binding.splToken2022AccountIsNative(0);
+    case "splToken2022AccountOwnerIsDerived":
+      return binding.splToken2022AccountOwnerIsDerived(0);
+    case "stakeAccountState":
+      return binding.stakeAccountState(0);
+    case "stakeLockupCustodian":
+      return binding.stakeLockupCustodian(0);
+    case "stakeRentExemptReserve":
+      return binding.stakeRentExemptReserve(0);
+    case "stakeCreditsObserved":
+      return binding.stakeCreditsObserved(0);
+    case "stakeStakeFlags":
+      return binding.stakeStakeFlags(0);
+    case "upgradeableProgramDataTag":
+      return binding.upgradeableProgramDataTag(0);
+    case "upgradeableProgramDataUpgradeAuthority":
+      return binding.upgradeableProgramDataUpgradeAuthority(0);
+    case "upgradeableProgramProgramDataAddress":
+      return binding.upgradeableProgramProgramDataAddress(0);
     default: {
       const _exhaustive: never = key;
       throw new Error(`missing sample for ${String(_exhaustive)}`);
@@ -90,8 +168,8 @@ describe("sdk LetBinding wire parity", () => {
     expect(def?.type.kind).to.equal("enum");
     const idlKeys = def!.type.variants.map((v) => pascalToCamel(v.name));
     expect(idlKeys).to.deep.equal([...LET_BINDING_VARIANT]);
-    expect(LET_BINDING_VARIANT_COUNT).to.equal(29);
-    expect(LET_BINDING_NEXT_TAG).to.equal(29);
+    expect(LET_BINDING_VARIANT_COUNT).to.equal(68);
+    expect(LET_BINDING_NEXT_TAG).to.equal(68);
   });
 
   it("binding.* exposes a builder for every wire variant key", () => {

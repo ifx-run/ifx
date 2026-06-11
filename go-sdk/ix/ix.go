@@ -96,6 +96,18 @@ func BuildAssert(framePK solana.PublicKey, cond expr.Node, opts *Options) (solan
 	return solana.NewInstruction(programID, accounts, data), nil
 }
 
+// BuildAssertMulti returns ifx_assert_multi (each cond must evaluate to bool; short-circuits).
+func BuildAssertMulti(framePK solana.PublicKey, conds []expr.Node, opts *Options) (solana.Instruction, error) {
+	body, err := codec.EncodeAssertMultiArgs(codec.AssertMultiArgs{Conds: conds})
+	if err != nil {
+		return nil, err
+	}
+	programID := programID(opts)
+	data := append([]byte{constants.IxDiscAssertMulti}, body...)
+	accounts := solana.AccountMetaSlice{solana.Meta(framePK)}
+	return solana.NewInstruction(programID, accounts, data), nil
+}
+
 // BuildCloseFrame returns ifx_close_frame.
 func BuildCloseFrame(framePK, authority solana.PublicKey, opts *Options) solana.Instruction {
 	programID := programID(opts)

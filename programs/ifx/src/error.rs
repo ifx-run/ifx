@@ -103,6 +103,12 @@ pub enum ErrorCode {
     /// Instruction data trailing bytes or CPI payload invalid.
     #[msg("Invalid instruction data")]
     InvalidInstructionData,
+    /// Failed to unpack SPL stake account (`StakeStateV2`).
+    #[msg("Failed to unpack stake account")]
+    StakeUnpackFailed,
+    /// Stake field requires `Initialized` or `Stake` state (e.g. delegation on uninitialized).
+    #[msg("Stake account state does not expose the requested field")]
+    StakeStateMismatch,
     /// `ifx_reset_frame` was invoked via CPI (must be transaction top level).
     #[msg("ifx_reset_frame must be invoked at transaction top level (stack height 1)")]
     ResetNotTopLevel,
@@ -115,4 +121,11 @@ pub enum ErrorCode {
     /// On-curve `authority` missing or wrong signer on `reset` / `let`.
     #[msg("Frame write requires authority signer")]
     UnauthorizedFrameWrite,
+    /// SPL mint optional field (`mint_authority` / `freeze_authority`) is unset.
+    #[msg("SPL mint optional authority is not set")]
+    SplMintOptionEmpty,
+    /// `ifx_assert_multi` short-circuited on a false condition.
+    /// Failing index (u8) is in **return data** when available; see pseudocode logs.
+    #[msg("Assertion failed in ifx_assert_multi")]
+    AssertFailedMulti,
 }

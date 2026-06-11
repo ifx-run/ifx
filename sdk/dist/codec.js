@@ -14,6 +14,7 @@ exports.encodeU16LenBytes = encodeU16LenBytes;
 exports.encodeExpr = encodeExpr;
 exports.encodeLetBinding = encodeLetBinding;
 exports.encodeLetArgs = encodeLetArgs;
+exports.encodeAssertMultiArgs = encodeAssertMultiArgs;
 exports.encodeRawCpiPatch = encodeRawCpiPatch;
 exports.encodePatchList = encodePatchList;
 exports.encodeCpi = encodeCpi;
@@ -256,11 +257,22 @@ function encodeExpr(expr) {
     if ("nonZero" in expr) {
         return encodeUnary(expr_variants_1.EXPR_TAG.nonZero, exprField(expr.nonZero, "operand"));
     }
-    if ("asU64" in expr) {
-        return encodeUnary(expr_variants_1.EXPR_TAG.asU64, exprField(expr.asU64, "operand"));
-    }
-    if ("asU128" in expr) {
-        return encodeUnary(expr_variants_1.EXPR_TAG.asU128, exprField(expr.asU128, "operand"));
+    const castKeys = [
+        ["asU8", expr_variants_1.EXPR_TAG.asU8],
+        ["asU16", expr_variants_1.EXPR_TAG.asU16],
+        ["asU32", expr_variants_1.EXPR_TAG.asU32],
+        ["asU64", expr_variants_1.EXPR_TAG.asU64],
+        ["asU128", expr_variants_1.EXPR_TAG.asU128],
+        ["asI8", expr_variants_1.EXPR_TAG.asI8],
+        ["asI16", expr_variants_1.EXPR_TAG.asI16],
+        ["asI32", expr_variants_1.EXPR_TAG.asI32],
+        ["asI64", expr_variants_1.EXPR_TAG.asI64],
+        ["asI128", expr_variants_1.EXPR_TAG.asI128],
+    ];
+    for (const [key, tag] of castKeys) {
+        if (key in expr) {
+            return encodeUnary(tag, exprField(expr[key], "operand"));
+        }
     }
     const binKeys = [
         ["add", expr_variants_1.EXPR_TAG.add],
@@ -381,6 +393,45 @@ function encodeLetBinding(binding) {
         case "splToken2022MintTransferFeeMaximum":
         case "splToken2022MintWithheldAmount":
         case "splToken2022MintDefaultAccountState":
+        case "accountIsSigner":
+        case "accountIsWritable":
+        case "stakeDelegationStake":
+        case "stakeDelegationActivationEpoch":
+        case "stakeDelegationDeactivationEpoch":
+        case "stakeLockupUnixTimestamp":
+        case "stakeLockupEpoch":
+        case "stakeAuthorizedStaker":
+        case "stakeAuthorizedWithdrawer":
+        case "stakeDelegationVoter":
+        case "splMintIsInitialized":
+        case "splMintMintAuthority":
+        case "splMintFreezeAuthority":
+        case "splToken2022MintIsInitialized":
+        case "splToken2022MintMintAuthority":
+        case "splToken2022MintFreezeAuthority":
+        case "accountProgramOwner":
+        case "accountExecutable":
+        case "accountRentEpoch":
+        case "splTokenAccountMint":
+        case "splTokenAccountOwner":
+        case "splTokenAccountDelegate":
+        case "splTokenAccountCloseAuthority":
+        case "splTokenAccountIsNative":
+        case "splTokenAccountOwnerIsDerived":
+        case "splToken2022AccountMint":
+        case "splToken2022AccountOwner":
+        case "splToken2022AccountDelegate":
+        case "splToken2022AccountCloseAuthority":
+        case "splToken2022AccountIsNative":
+        case "splToken2022AccountOwnerIsDerived":
+        case "stakeAccountState":
+        case "stakeLockupCustodian":
+        case "stakeRentExemptReserve":
+        case "stakeCreditsObserved":
+        case "stakeStakeFlags":
+        case "upgradeableProgramDataTag":
+        case "upgradeableProgramDataUpgradeAuthority":
+        case "upgradeableProgramProgramDataAddress":
             parts.push(Buffer.from([v.accountIndex]));
             break;
         case "frameGeneration":
@@ -393,6 +444,9 @@ function encodeLetBinding(binding) {
 }
 function encodeLetArgs(args) {
     return encodeU8LenVec(args.bindings, encodeLetBinding);
+}
+function encodeAssertMultiArgs(args) {
+    return encodeU8LenVec(args.conds, encodeExpr);
 }
 function encodeRawCpiPatch(patch) {
     const dataOffset = patch.dataOffset;

@@ -2,8 +2,10 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::get_stack_height;
 use anchor_lang::solana_program::clock::Clock;
 use anchor_lang::solana_program::rent::Rent;
+use spl_token::solana_program::program_option::COption;
 use spl_token::solana_program::program_pack::Pack;
 use spl_token::state::{Account as SplAccount, Mint as SplMint};
+use solana_stake_interface::state::StakeStateV2;
 use spl_token_2022::extension::transfer_fee::{TransferFeeAmount, TransferFeeConfig};
 use spl_token_2022::extension::{
     default_account_state::DefaultAccountState, BaseStateWithExtensions, StateWithExtensions,
@@ -14,12 +16,19 @@ use crate::{
     error::ErrorCode,
     pseudocode,
     state::types::{LetArgs, LetBinding, ValueType},
-    state::value_codec::{encode_typed, TypedValue, ValueBytes},
+    state::value_codec::{copy_from, encode_typed, TypedValue, ValueBytes},
 };
 
 use super::frame_access::{FrameReader, FrameWriter};
 use super::frame_account::FrameAccount;
 use super::let_exec::{eval_expr, get_remaining, infer_expr_ty};
+use super::stake_load::{
+    load_stake_state, require_stake_delegation, require_stake_meta, require_stake_record,
+    stake_state_tag,
+};
+use super::upgradeable_load::{
+    load_upgradeable_state, program_data_tag, require_program, require_program_data,
+};
 
 const SPL_TOKEN_ACCOUNT_LEN: usize = SplAccount::LEN;
 const SPL_TOKEN_MINT_LEN: usize = SplMint::LEN;
@@ -264,6 +273,215 @@ fn eval_binding<'info>(
         LetBinding::FrameIndexCount => {
             encode_typed(ValueType::U16, TypedValue::U16(frame.index_count()?))?
         }
+        LetBinding::AccountIsSigner { account_index } => {
+            let acc = get_remaining(remaining, *account_index)?;
+            encode_typed(ValueType::Bool, TypedValue::Bool(acc.is_signer))?
+        }
+        LetBinding::AccountIsWritable { account_index } => {
+            let acc = get_remaining(remaining, *account_index)?;
+            encode_typed(ValueType::Bool, TypedValue::Bool(acc.is_writable))?
+        }
+        LetBinding::StakeDelegationStake { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let delegation = require_stake_delegation(&state)?;
+            encode_typed(ValueType::U64, TypedValue::U64(delegation.stake))?
+        }
+        LetBinding::StakeDelegationActivationEpoch { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let delegation = require_stake_delegation(&state)?;
+            encode_typed(
+                ValueType::U64,
+                TypedValue::U64(delegation.activation_epoch),
+            )?
+        }
+        LetBinding::StakeDelegationDeactivationEpoch { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let delegation = require_stake_delegation(&state)?;
+            encode_typed(
+                ValueType::U64,
+                TypedValue::U64(delegation.deactivation_epoch),
+            )?
+        }
+        LetBinding::StakeLockupUnixTimestamp { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(
+                ValueType::I64,
+                TypedValue::I64(meta.lockup.unix_timestamp),
+            )?
+        }
+        LetBinding::StakeLockupEpoch { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(ValueType::U64, TypedValue::U64(meta.lockup.epoch))?
+        }
+        LetBinding::StakeAuthorizedStaker { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(
+                ValueType::Pubkey,
+                TypedValue::Pubkey(meta.authorized.staker.to_bytes()),
+            )?
+        }
+        LetBinding::StakeAuthorizedWithdrawer { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(
+                ValueType::Pubkey,
+                TypedValue::Pubkey(meta.authorized.withdrawer.to_bytes()),
+            )?
+        }
+        LetBinding::StakeDelegationVoter { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let delegation = require_stake_delegation(&state)?;
+            encode_typed(
+                ValueType::Pubkey,
+                TypedValue::Pubkey(delegation.voter_pubkey.to_bytes()),
+            )?
+        }
+        LetBinding::SplMintIsInitialized { account_index } => {
+            let mint = load_spl_token_mint(remaining, *account_index)?;
+            encode_typed(ValueType::Bool, TypedValue::Bool(mint.is_initialized))?
+        }
+        LetBinding::SplMintMintAuthority { account_index } => {
+            let mint = load_spl_token_mint(remaining, *account_index)?;
+            encode_coption_pubkey(mint.mint_authority)?
+        }
+        LetBinding::SplMintFreezeAuthority { account_index } => {
+            let mint = load_spl_token_mint(remaining, *account_index)?;
+            encode_coption_pubkey(mint.freeze_authority)?
+        }
+        LetBinding::SplToken2022MintIsInitialized { account_index } => {
+            let mint = load_spl_token_2022_mint_base(remaining, *account_index)?;
+            encode_typed(ValueType::Bool, TypedValue::Bool(mint.is_initialized))?
+        }
+        LetBinding::SplToken2022MintMintAuthority { account_index } => {
+            let mint = load_spl_token_2022_mint_base(remaining, *account_index)?;
+            encode_coption_pubkey(mint.mint_authority)?
+        }
+        LetBinding::SplToken2022MintFreezeAuthority { account_index } => {
+            let mint = load_spl_token_2022_mint_base(remaining, *account_index)?;
+            encode_coption_pubkey(mint.freeze_authority)?
+        }
+        LetBinding::AccountProgramOwner { account_index } => {
+            load_account_program_owner(remaining, *account_index)?
+        }
+        LetBinding::AccountExecutable { account_index } => {
+            let acc = get_remaining(remaining, *account_index)?;
+            encode_typed(ValueType::Bool, TypedValue::Bool(acc.executable))?
+        }
+        LetBinding::AccountRentEpoch { account_index } => {
+            let acc = get_remaining(remaining, *account_index)?;
+            // Solana 3.x: legacy `rent_epoch` ABI slot (`_unused` on `AccountInfo`).
+            #[allow(deprecated)]
+            let rent_epoch = acc._unused;
+            encode_typed(ValueType::U64, TypedValue::U64(rent_epoch))?
+        }
+        LetBinding::SplTokenAccountMint { account_index } => {
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.mint.to_bytes()))?
+        }
+        LetBinding::SplTokenAccountOwner { account_index } => {
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.owner.to_bytes()))?
+        }
+        LetBinding::SplTokenAccountDelegate { account_index } => {
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            encode_coption_pubkey(acc.delegate)?
+        }
+        LetBinding::SplTokenAccountCloseAuthority { account_index } => {
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            encode_coption_pubkey(acc.close_authority)?
+        }
+        LetBinding::SplTokenAccountIsNative { account_index } => {
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            encode_coption_u64(acc.is_native)?
+        }
+        LetBinding::SplTokenAccountOwnerIsDerived { account_index } => {
+            let acc_info = get_remaining(remaining, *account_index)?;
+            let acc = load_spl_token_account(remaining, *account_index)?;
+            let derived = spl_token_owner_is_derived(acc_info, &acc.owner, &acc.mint, &spl_token::ID);
+            encode_typed(ValueType::Bool, TypedValue::Bool(derived))?
+        }
+        LetBinding::SplToken2022AccountMint { account_index } => {
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.mint.to_bytes()))?
+        }
+        LetBinding::SplToken2022AccountOwner { account_index } => {
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.owner.to_bytes()))?
+        }
+        LetBinding::SplToken2022AccountDelegate { account_index } => {
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            encode_coption_pubkey(acc.delegate)?
+        }
+        LetBinding::SplToken2022AccountCloseAuthority { account_index } => {
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            encode_coption_pubkey(acc.close_authority)?
+        }
+        LetBinding::SplToken2022AccountIsNative { account_index } => {
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            encode_coption_u64(acc.is_native)?
+        }
+        LetBinding::SplToken2022AccountOwnerIsDerived { account_index } => {
+            let acc_info = get_remaining(remaining, *account_index)?;
+            let acc = load_spl_token_2022_account(remaining, *account_index)?;
+            let derived =
+                spl_token_owner_is_derived(acc_info, &acc.owner, &acc.mint, &spl_token_2022::ID);
+            encode_typed(ValueType::Bool, TypedValue::Bool(derived))?
+        }
+        LetBinding::StakeAccountState { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            encode_typed(ValueType::U8, TypedValue::U8(stake_state_tag(&state)))?
+        }
+        LetBinding::StakeLockupCustodian { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(
+                ValueType::Pubkey,
+                TypedValue::Pubkey(meta.lockup.custodian.to_bytes()),
+            )?
+        }
+        LetBinding::StakeRentExemptReserve { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let meta = require_stake_meta(&state)?;
+            encode_typed(
+                ValueType::U64,
+                TypedValue::U64(meta.rent_exempt_reserve),
+            )?
+        }
+        LetBinding::StakeCreditsObserved { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let stake = require_stake_record(&state)?;
+            encode_typed(ValueType::U64, TypedValue::U64(stake.credits_observed))?
+        }
+        LetBinding::StakeStakeFlags { account_index } => {
+            let state = load_stake_state(remaining, *account_index)?;
+            let flags_byte = match &state {
+                StakeStateV2::Stake(_, _, flags) => {
+                    borsh::to_vec(flags).map_err(|_| ErrorCode::StakeUnpackFailed)?[0]
+                }
+                _ => return err!(ErrorCode::StakeStateMismatch),
+            };
+            encode_typed(ValueType::U8, TypedValue::U8(flags_byte))?
+        }
+        LetBinding::UpgradeableProgramDataTag { account_index } => {
+            let state = load_upgradeable_state(remaining, *account_index)?;
+            encode_typed(
+                ValueType::U32,
+                TypedValue::U32(program_data_tag(&state)),
+            )?
+        }
+        LetBinding::UpgradeableProgramDataUpgradeAuthority { account_index } => {
+            let state = load_upgradeable_state(remaining, *account_index)?;
+            let (_, auth) = require_program_data(state)?;
+            encode_option_pubkey(auth)?
+        }
+        LetBinding::UpgradeableProgramProgramDataAddress { account_index } => {
+            let state = load_upgradeable_state(remaining, *account_index)?;
+            let addr = require_program(state)?;
+            encode_typed(ValueType::Pubkey, TypedValue::Pubkey(addr.to_bytes()))?
+        }
         LetBinding::Eval { expr } => {
             let ty = infer_expr_ty(frame, expr)?;
             return Ok((ty, eval_expr(frame, ty, expr)?));
@@ -392,7 +610,7 @@ fn load_account_data_slice<'info>(
         .checked_add(ty.size())
         .ok_or(ErrorCode::AccountDataTooShort)?;
     require!(data.len() >= end, ErrorCode::AccountDataTooShort);
-    ValueBytes::copy_from(ty, &data[off..end])
+    copy_from(ty, &data[off..end])
 }
 
 fn load_account_lamports<'info>(
@@ -451,4 +669,84 @@ fn load_spl_token_mint<'info>(
     let data = acc.try_borrow_data()?;
     require!(data.len() == SPL_TOKEN_MINT_LEN, ErrorCode::AccountDataLenMismatch);
     SplMint::unpack(&data).map_err(|_| ErrorCode::SplTokenUnpackFailed.into())
+}
+
+fn load_spl_token_2022_mint_base<'info>(
+    remaining: &'info [AccountInfo<'info>],
+    account_index: u8,
+) -> Result<Spl2022Mint> {
+    let acc = get_remaining(remaining, account_index)?;
+    require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
+    let data = acc.try_borrow_data()?;
+    require!(data.len() >= Spl2022Mint::LEN, ErrorCode::AccountDataLenMismatch);
+    let parsed = StateWithExtensions::<Spl2022Mint>::unpack(&data)
+        .map_err(|_| ErrorCode::SplToken2022UnpackFailed)?;
+    Ok(parsed.base)
+}
+
+fn encode_coption_pubkey(opt: COption<Pubkey>) -> Result<ValueBytes> {
+    match opt {
+        COption::Some(pk) => encode_typed(ValueType::Pubkey, TypedValue::Pubkey(pk.to_bytes())),
+        COption::None => Err(ErrorCode::SplMintOptionEmpty.into()),
+    }
+}
+
+fn encode_coption_u64(opt: COption<u64>) -> Result<ValueBytes> {
+    match opt {
+        COption::Some(v) => encode_typed(ValueType::U64, TypedValue::U64(v)),
+        COption::None => Err(ErrorCode::SplMintOptionEmpty.into()),
+    }
+}
+
+fn encode_option_pubkey(opt: Option<Pubkey>) -> Result<ValueBytes> {
+    match opt {
+        Some(pk) => encode_typed(ValueType::Pubkey, TypedValue::Pubkey(pk.to_bytes())),
+        None => Err(ErrorCode::SplMintOptionEmpty.into()),
+    }
+}
+
+fn load_account_program_owner<'info>(
+    remaining: &'info [AccountInfo<'info>],
+    account_index: u8,
+) -> Result<ValueBytes> {
+    let acc = get_remaining(remaining, account_index)?;
+    encode_typed(
+        ValueType::Pubkey,
+        TypedValue::Pubkey(acc.owner.to_bytes()),
+    )
+}
+
+fn load_spl_token_2022_account<'info>(
+    remaining: &'info [AccountInfo<'info>],
+    account_index: u8,
+) -> Result<Spl2022Account> {
+    let acc = get_remaining(remaining, account_index)?;
+    require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
+    let data = acc.try_borrow_data()?;
+    require!(
+        data.len() >= Spl2022Account::LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
+    StateWithExtensions::<Spl2022Account>::unpack(&data)
+        .map_err(|_| ErrorCode::SplToken2022UnpackFailed.into())
+        .map(|p| p.base)
+}
+
+const ATA_PROGRAM_ID: Pubkey = pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+
+fn spl_token_owner_is_derived(
+    acc: &AccountInfo<'_>,
+    owner: &spl_token::solana_program::pubkey::Pubkey,
+    mint: &spl_token::solana_program::pubkey::Pubkey,
+    token_program: &Pubkey,
+) -> bool {
+    let (ata, _) = Pubkey::find_program_address(
+        &[
+            owner.as_ref(),
+            token_program.as_ref(),
+            mint.as_ref(),
+        ],
+        &ATA_PROGRAM_ID,
+    );
+    *acc.key == ata
 }

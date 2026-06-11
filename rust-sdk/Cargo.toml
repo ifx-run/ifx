@@ -1,0 +1,27 @@
+[package]
+name = "ifx-sdk"
+version = "0.1.0"
+description = "Off-chain Ifx transaction builder (FrameScratch, wire encoding)"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/ifx-run/ifx"
+readme = "README.md"
+
+[lib]
+name = "ifx_sdk"
+path = "src/lib.rs"
+
+[dependencies]
+anchor-lang = { version = "1.0.2", default-features = false }
+ifx-core = { path = "../crates/ifx-core", version = "0.1.0", features = ["wire", "anchor-wire", "layout", "structured-cpi"] }
+borsh = "1.5"
+solana-sdk = { workspace = true }
+solana-system-interface = { workspace = true }
+
+[dev-dependencies]
+solana-client = { workspace = true }
+solana-transaction-status-client-types = { workspace = true }
+spl-token-interface = { workspace = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

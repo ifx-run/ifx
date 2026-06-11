@@ -45,7 +45,7 @@ const pubkeyValueTag = {
     fromFrame: 0,
     literal: 1,
 };
-/** Wire tag 0–28 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 exports.STRUCTURED_CPI_PATCH_WIRE = {
     /** (0) System `Transfer` — dynamic lamports. */
     systemTransfer: 0,
@@ -105,6 +105,14 @@ exports.STRUCTURED_CPI_PATCH_WIRE = {
     token2022TransferCheckedWithFee: 27,
     /** (28) Token-2022 TransferFee `SetTransferFee` — `SetTransferFeePatch`. */
     token2022SetTransferFee: 28,
+    /** (29) Stake `Withdraw` — dynamic lamports. */
+    stakeWithdraw: 29,
+    /** (30) Stake `Split` — dynamic lamports. */
+    stakeSplit: 30,
+    /** (31) Stake `Deactivate` — no dynamic fields. */
+    stakeDeactivate: 31,
+    /** (32) Stake `DelegateStake` — no dynamic fields. */
+    stakeDelegateStake: 32,
 };
 function asValue(source) {
     if (typeof source === "object" && source !== null && "index" in source) {
@@ -335,6 +343,12 @@ function encodeStructuredCpiPatchBody(patch) {
         case "token2022InitializeMint":
         case "token2022InitializeMint2":
             return encodeInitializeMintPatch(patch.initializeMint);
+        case "stakeWithdraw":
+        case "stakeSplit":
+            return writeValueIndex(patch.lamports);
+        case "stakeDeactivate":
+        case "stakeDelegateStake":
+            return Buffer.alloc(0);
     }
 }
 /** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
@@ -458,7 +472,7 @@ function initializeMintBuilder(tag) {
         initializeMint: buildInitializeMintPatch(args),
     });
 }
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–28). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
 exports.structuredCpiPatch = {
     systemTransfer(lamports) {
         return { tag: "systemTransfer", lamports: asValue(lamports) };
@@ -578,6 +592,18 @@ exports.structuredCpiPatch = {
                 },
             };
         },
+    },
+    stakeWithdraw(lamports) {
+        return { tag: "stakeWithdraw", lamports: asValue(lamports) };
+    },
+    stakeSplit(lamports) {
+        return { tag: "stakeSplit", lamports: asValue(lamports) };
+    },
+    stakeDeactivate() {
+        return { tag: "stakeDeactivate" };
+    },
+    stakeDelegateStake() {
+        return { tag: "stakeDelegateStake" };
     },
     /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
     tokenAmount(amount) {

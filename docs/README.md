@@ -10,7 +10,7 @@ Design and implementation docs live here. The repo root [README.md](../README.md
 | [glossary.md](./glossary.md) | Everyone | **Naming guide** — why `tape`, `index`, `cursor`, etc. |
 | [implementation.md](./implementation.md) | Integrators | Instructions, types, limits |
 | [rust-integration.md](./rust-integration.md) | Rust / Anchor integrators | CPI, wire encoding, SDK vs program crate |
-| [typed-let-bindings.md](./typed-let-bindings.md) | Integrators | `LetBinding` opcode registry (tags 0–28) |
+| [typed-let-bindings.md](./typed-let-bindings.md) | Integrators | `LetBinding` opcode registry (tags 0–67) |
 | [errors.md](./errors.md) | Integrators | Anchor error codes 6000–6035 |
 | [debugging.md](./debugging.md) | Integrators | Program log pseudocode format |
 | [bundles.md](./bundles.md) | Integrators | Multi-tx ordering; Jito bundle patterns |

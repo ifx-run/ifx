@@ -353,3 +353,19 @@ func InitializeMint2Patch(decimals FrameValue, mintAuthority PubkeyValue, freeze
 		Freeze:        freeze,
 	})
 }
+
+func (structuredCpiPatch) StakeWithdraw(lamports FrameValue) PatchInput {
+	return singleAmountPatch(constants.StructuredPatchStakeWithdraw, lamports)
+}
+
+func (structuredCpiPatch) StakeSplit(lamports FrameValue) PatchInput {
+	return singleAmountPatch(constants.StructuredPatchStakeSplit, lamports)
+}
+
+func (structuredCpiPatch) StakeDeactivate() PatchInput {
+	return PatchInput{WireTag: constants.StructuredPatchStakeDeactivate}
+}
+
+func (structuredCpiPatch) StakeDelegateStake() PatchInput {
+	return PatchInput{WireTag: constants.StructuredPatchStakeDelegateStake}
+}

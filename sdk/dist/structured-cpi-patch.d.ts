@@ -7,7 +7,7 @@
 import type { ScratchValue } from "./scratch";
 import type { IfxTy } from "./typed";
 import type { Value } from "./types";
-/** Wire tag 0–28 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 export declare const STRUCTURED_CPI_PATCH_WIRE: {
     /** (0) System `Transfer` — dynamic lamports. */
     readonly systemTransfer: 0;
@@ -67,6 +67,14 @@ export declare const STRUCTURED_CPI_PATCH_WIRE: {
     readonly token2022TransferCheckedWithFee: 27;
     /** (28) Token-2022 TransferFee `SetTransferFee` — `SetTransferFeePatch`. */
     readonly token2022SetTransferFee: 28;
+    /** (29) Stake `Withdraw` — dynamic lamports. */
+    readonly stakeWithdraw: 29;
+    /** (30) Stake `Split` — dynamic lamports. */
+    readonly stakeSplit: 30;
+    /** (31) Stake `Deactivate` — no dynamic fields. */
+    readonly stakeDeactivate: 31;
+    /** (32) Stake `DelegateStake` — no dynamic fields. */
+    readonly stakeDelegateStake: 32;
 };
 export type StructuredCpiPatchWireTag = (typeof STRUCTURED_CPI_PATCH_WIRE)[keyof typeof STRUCTURED_CPI_PATCH_WIRE];
 export type ValueInput = Value | ScratchValue<IfxTy>;
@@ -326,6 +334,24 @@ export type StructuredCpiPatch =
  | {
     tag: "token2022SetTransferFee";
     setTransferFee: SetTransferFeePatch;
+}
+/** (29) Stake `Withdraw` — dynamic lamports. */
+ | {
+    tag: "stakeWithdraw";
+    lamports: Value;
+}
+/** (30) Stake `Split` — dynamic lamports. */
+ | {
+    tag: "stakeSplit";
+    lamports: Value;
+}
+/** (31) Stake `Deactivate` — no dynamic fields. */
+ | {
+    tag: "stakeDeactivate";
+}
+/** (32) Stake `DelegateStake` — no dynamic fields. */
+ | {
+    tag: "stakeDelegateStake";
 };
 export declare function structuredCpiPatchWireTag(patch: StructuredCpiPatch): number;
 /** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
@@ -335,7 +361,7 @@ export declare function encodeStructuredCpiPatch(patch: StructuredCpiPatch): Buf
  * variant tag (it lived in `Cpi::Structured` before `accounts_start`).
  */
 export declare function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buffer;
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–28). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
 export declare const structuredCpiPatch: {
     systemTransfer(lamports: ValueInput): StructuredCpiPatch;
     systemCreateAccount: {
@@ -430,6 +456,10 @@ export declare const structuredCpiPatch: {
         maxOnly(basisPoints: number, maximumFee: ValueInput): StructuredCpiPatch;
         both(basisPoints: ValueInput, maximumFee: ValueInput): StructuredCpiPatch;
     };
+    stakeWithdraw(lamports: ValueInput): StructuredCpiPatch;
+    stakeSplit(lamports: ValueInput): StructuredCpiPatch;
+    stakeDeactivate(): StructuredCpiPatch;
+    stakeDelegateStake(): StructuredCpiPatch;
     /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
     tokenAmount(amount: ValueInput): StructuredCpiPatch;
     /** @deprecated Use {@link structuredCpiPatch.tokenInitializeMint2}. */

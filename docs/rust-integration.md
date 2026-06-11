@@ -10,32 +10,73 @@ How to use Ifx from **Rust** projects: on-chain CPI, off-chain transaction build
 
 | Role | Recommended path |
 |------|------------------|
-| **App / bot / wallet (off-chain)** | [`@ifx-run/sdk`](../sdk/README.md) or [`go-sdk`](../go-sdk/README.md) — layout planning, `expr` builders, instruction encoding |
-| **Anchor program (on-chain CPI)** | `ifx` program crate with `features = ["cpi"]` |
-| **Pure Rust off-chain (advanced)** | Path dependency on `ifx` crate for wire types + manual Borsh encoding (must match SDK codec) |
+| **App / bot / wallet (off-chain)** | **`ifx-sdk`** (`rust-sdk/`) or [`@ifx-run/sdk`](../sdk/README.md) / [`go-sdk`](../go-sdk/README.md) |
+| **Anchor program (on-chain CPI)** | **`ifx`** program crate, `features = ["cpi"]` |
+| **Wire-only / custom encoder** | **`ifx-core`** directly (types + codec, no RPC) |
 
-There is **no published Rust SDK crate** yet (planned: `ifx-core` + `ifx-sdk`). The program crate (`programs/ifx`) is the source of truth for wire types and on-chain semantics.
+There is **no requirement** for off-chain code to depend on the **`ifx`** program crate. Shared wire lives in **`ifx-core`** (crates.io). The program crate is for **on-chain execution and CPI account structs** only.
 
-**Planned client SDKs (Go P0, Rust P1):** [client-sdks.md](./client-sdks.md)
+**Terminal B (Rust SDK):** [client-sdks.md](./client-sdks.md) § P1.
 
 ---
 
-## Off-chain: TypeScript or Go SDK
+## Three Rust crates (crates.io)
 
-For almost all integrators, encode transactions with **`@ifx-run/sdk`** or **[`go-sdk`](../go-sdk/README.md)** (same wire; Go needs no Node):
+| Crate | Directory | Depends on | Audience |
+|-------|-----------|------------|----------|
+| **`ifx-core`** | `crates/ifx-core/` | `borsh`, … (no `solana-sdk` tx builder) | Program + SDK + advanced encoders |
+| **`ifx-sdk`** | `rust-sdk/` | **`ifx-core`**, `solana-sdk` | Off-chain tx planning (like TS/Go SDK) |
+| **`ifx`** | `programs/ifx/` | **`ifx-core`**, `anchor-lang` | On-chain program + **`features = ["cpi"]`** for other programs |
+
+```text
+ifx-core  ◄──  ifx (program)     ← CPI integrators only
+    ▲
+    └──  ifx-sdk (rust-sdk/)    ← wallets / bots (NOT ifx program)
+```
+
+**`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk` + `idl/ifx.json`) and Go (`go-sdk` + bundled IDL): wire truth in a shared library, not the deployed program binary.
+
+### `ifx-core` features (incremental)
+
+| Feature | Contents |
+|---------|----------|
+| *(default)* | `constants` |
+| `wire` | `U8LenVec`, `U16LenVec`, … |
+| `anchor-wire` | `LetBinding`, `LetArgs` (Anchor-compatible serialize) |
+| `layout` | Frame tape layout, `plan_record_offsets`, `infer_expr_ty` |
+| `structured-cpi` | Official ix `data` assembly (no `invoke`) |
+
+---
+
+## Anchor-generated client vs `ifx-sdk`
+
+Anchor can generate a **client layer** from `idl/ifx.json` (discriminators, account metas, `anchor-client`). That is **optional** and **orthogonal** to `ifx-sdk`:
+
+| Capability | Anchor IDL client | `ifx-sdk` |
+|------------|-------------------|-----------|
+| Program id, ix shells, account types | ✅ | ✅ (via constants + ix builders) |
+| Flat **`Expr`** Borsh (tags 0–51) | ❌ — recursive Anchor coder **stack-overflows** | ✅ |
+| **`FrameScratch`** / tape layout / remaining dedup | ❌ | ✅ |
+| Structured / Raw CPI patch helpers | ❌ | ✅ (R3) |
+| Golden parity with TS/Go | ❌ | ✅ |
+
+**Recommended:** use **`ifx-sdk`** (or `ifx-core` encoders) for instruction **data**; use Anchor client only if you already standardize on it for account metas — do **not** encode deep `Expr` trees with Anchor's recursive serializer.
+
+**Optional future:** `ifx-sdk` feature `anchor` — convert `solana_sdk::instruction::Instruction` ↔ Anchor `RequestBuilder` glue **without** depending on the `ifx` program crate.
+
+---
+
+## Off-chain: TypeScript, Go, or Rust SDK
+
+For almost all integrators, encode transactions with **`ifx-sdk`**, **`@ifx-run/sdk`**, or **[`go-sdk`](../go-sdk/README.md)**:
 
 - `FrameScratch` simulates tape layout (`planRecordOffsets` + `indexCapForTapeLen`)
-- `expr.*` builds flat `Expr` trees (Borsh tags 0–43)
+- `expr.*` builds flat `Expr` trees (Borsh tags 0–51)
 - `letBuilder` / `ixLet` deduplicates `remaining_accounts`
 
-A Rust backend can:
+Rust backends should use **`ifx-sdk`** (in progress) — not path-depend on the **`ifx`** program crate for tx building.
 
-1. Call the **Go SDK** from a sidecar or separate service, or
-2. Shell out to a small TS script that returns serialized instructions, or
-3. Call the SDK via Node from Rust, or
-4. Reimplement the codec (see below) and keep golden tests aligned with `tests/sdk_expr_flat.ts`
-
-**Do not** use Anchor's recursive instruction coder for [`Expr`](../programs/ifx/src/state/types.rs). `Expr` is a deep recursive enum; Anchor's coder can stack-overflow. The program uses **Borsh** with a flat per-operator tag layout. Encode with SDK `codec.ts` or `borsh` against the same shape.
+**Do not** use Anchor's recursive instruction coder for [`Expr`](../programs/ifx/src/state/types.rs). The program uses **Borsh** flat enum tags; match `ifx-core` / TS `codec.ts` / Go `codec` packages.
 
 ---
 
@@ -70,8 +111,8 @@ Instruction-level docs live in [`programs/ifx/src/lib.rs`](../programs/ifx/src/l
 
 | Type | Serialization | Notes |
 |------|---------------|-------|
-| `Expr` | **Borsh**, flat enum tags **0–43** | See [implementation.md](./implementation.md) §5 |
-| `LetBinding` | Anchor / Borsh enum tags **0–28** | See [typed-let-bindings.md](./typed-let-bindings.md) |
+| `Expr` | **Borsh**, flat enum tags **0–51** | See [implementation.md](./implementation.md) §5 |
+| `LetBinding` | Anchor / Borsh enum tags **0–67** | See [typed-let-bindings.md](./typed-let-bindings.md) |
 | `LetArgs.bindings` | `U8LenVec<LetBinding>` | u8 length prefix + elements (max 255) |
 | `Cpi` step | Wire kind **`0/1/2`** + payload | **Static** / **RawPatched** (`U16LenVec` data + patches) / **Structured** (`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`, no template) — [structured-cpi-patches.md](./structured-cpi-patches.md) |
 | `ifx_patched_cpi` ix data | **`Cpi`** (Anchor arg) | Wire kind **`0/1/2`** + payload — see [structured-cpi-patches.md](./structured-cpi-patches.md) |
@@ -94,7 +135,7 @@ At create: `tape_len` up to **65_535**; `index_cap = min(256, tape_len / 2)`.
 
 Off-chain simulation:
 
-- Rust: [`plan_record_offsets`](../programs/ifx/src/state/tape.rs), [`index_cap_for_tape_len`](../programs/ifx/src/constants.rs)
+- Rust: [`ifx_core::layout::plan_record_offsets`](../crates/ifx-core/src/layout/tape.rs), [`ifx_core::constants::index_cap_for_tape_len`](../crates/ifx-core/src/constants.rs) (program re-exports `plan_record_offsets` from `state::tape`)
 - TypeScript: `@ifx-run/sdk` `planRecordOffsets`, `indexCapForTapeLen`
 - Go: `go-sdk/frame` decode + `scratch` planner (same rules)
 
@@ -118,14 +159,24 @@ When `patches` is non-empty, bytes copy from `Frame::tape` (via `payload_at[sour
 
 ---
 
-## Pure Rust off-chain encoding (advanced)
+## Pure Rust off-chain encoding
 
-1. Path-depend on `ifx` with `default-features = false, features = ["no-entrypoint"]` (or `"cpi"` if you only need types in another program).
-2. Build `LetBinding` / `Expr` values in Rust.
-3. Serialize `Expr` with **`borsh::to_vec`** (not `AnchorSerialize`).
-4. Serialize instruction data: 1-byte discriminator (`constants.rs`) + Borsh args.
-5. Plan with `plan_record_offsets` + sequential binding indices before filling `Expr::Value { index }`.
-6. Compare bytes against `@ifx-run/sdk` output in tests.
+**Preferred:** depend on **`ifx-sdk`** / **`ifx-core`** (not the `ifx` program crate):
+
+```toml
+[dependencies]
+ifx-sdk = { version = "0.1", features = ["layout"] }  # crates.io when published
+# or during development:
+ifx-core = { path = "../ifx/crates/ifx-core", features = ["wire", "layout"] }
+```
+
+1. Build `LetBinding` / `Expr` via `ifx-sdk` builders (R2+) or `ifx-core` types.
+2. Serialize `Expr` with **`borsh::to_vec`** (not `AnchorSerialize`).
+3. Instruction data: 1-byte discriminator (`ifx_core::IX_DISC_*`) + args bytes.
+4. Plan tape with `plan_record_offsets` + binding indices before filling `Expr::Value { index }`.
+5. Golden-test against `@ifx-run/sdk` / `tests/sdk_*_parity.ts`.
+
+**Legacy (discouraged):** path-depend on `ifx` with `no-entrypoint` only for types during migration — will be removed once `ifx-core` extraction completes.
 
 ---
 

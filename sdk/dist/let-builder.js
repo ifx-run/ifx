@@ -98,6 +98,14 @@ class LetIxBuilder {
     frameIndexCount() {
         return this.push(this.scratch.plan(binding_1.binding.frameIndexCount()));
     }
+    accountIsSigner(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.plan(binding_1.binding.accountIsSigner(idx)));
+    }
+    accountIsWritable(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.plan(binding_1.binding.accountIsWritable(idx)));
+    }
     accountDataSlice(account, expectedOwner, ty, dataOffset) {
         const dataIdx = this.accountIndex(account);
         const ownerIdx = this.accountIndex(expectedOwner);
@@ -149,6 +157,143 @@ class LetIxBuilder {
     }
     splToken2022MintDefaultAccountState(mint) {
         return this.push((0, token2022_bind_1.bindSplToken2022MintDefaultAccountState)(this.scratch, this.accountIndex(mint)));
+    }
+    /** Stake `meta.authorized.staker` (stake program owner, `StakeStateV2`). */
+    stakeAuthorizedStaker(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeAuthorizedStaker(0), idx));
+    }
+    stakeAuthorizedWithdrawer(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeAuthorizedWithdrawer(0), idx));
+    }
+    stakeLockupUnixTimestamp(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeLockupUnixTimestamp(0), idx));
+    }
+    stakeLockupEpoch(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeLockupEpoch(0), idx));
+    }
+    stakeDelegationStake(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeDelegationStake(0), idx));
+    }
+    splMintIsInitialized(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splMintIsInitialized(0), idx));
+    }
+    splMintMintAuthority(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splMintMintAuthority(0), idx));
+    }
+    splMintFreezeAuthority(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splMintFreezeAuthority(0), idx));
+    }
+    splToken2022MintIsInitialized(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022MintIsInitialized(0), idx));
+    }
+    splToken2022MintMintAuthority(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022MintMintAuthority(0), idx));
+    }
+    splToken2022MintFreezeAuthority(mint) {
+        const idx = this.accountIndex(mint);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022MintFreezeAuthority(0), idx));
+    }
+    accountProgramOwner(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.accountProgramOwner(0), idx));
+    }
+    accountExecutable(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.accountExecutable(0), idx));
+    }
+    accountRentEpoch(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.accountRentEpoch(0), idx));
+    }
+    splTokenAccountMint(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountMint(0), idx));
+    }
+    splTokenAccountOwner(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountOwner(0), idx));
+    }
+    splTokenAccountDelegate(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountDelegate(0), idx));
+    }
+    splTokenAccountCloseAuthority(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountCloseAuthority(0), idx));
+    }
+    splTokenAccountIsNative(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountIsNative(0), idx));
+    }
+    splTokenAccountOwnerIsDerived(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splTokenAccountOwnerIsDerived(0), idx));
+    }
+    splToken2022AccountMint(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountMint(0), idx));
+    }
+    splToken2022AccountOwner(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountOwner(0), idx));
+    }
+    splToken2022AccountDelegate(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountDelegate(0), idx));
+    }
+    splToken2022AccountCloseAuthority(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountCloseAuthority(0), idx));
+    }
+    splToken2022AccountIsNative(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountIsNative(0), idx));
+    }
+    splToken2022AccountOwnerIsDerived(tokenAccount) {
+        const idx = this.accountIndex(tokenAccount);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.splToken2022AccountOwnerIsDerived(0), idx));
+    }
+    stakeAccountState(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeAccountState(0), idx));
+    }
+    stakeLockupCustodian(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeLockupCustodian(0), idx));
+    }
+    stakeRentExemptReserve(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeRentExemptReserve(0), idx));
+    }
+    stakeCreditsObserved(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeCreditsObserved(0), idx));
+    }
+    stakeStakeFlags(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.stakeStakeFlags(0), idx));
+    }
+    upgradeableProgramDataTag(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.upgradeableProgramDataTag(0), idx));
+    }
+    upgradeableProgramDataUpgradeAuthority(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.upgradeableProgramDataUpgradeAuthority(0), idx));
+    }
+    upgradeableProgramProgramDataAddress(account) {
+        const idx = this.accountIndex(account);
+        return this.push(this.scratch.planAtRemainingIndex(binding_1.binding.upgradeableProgramProgramDataAddress(0), idx));
     }
     finish() {
         return {

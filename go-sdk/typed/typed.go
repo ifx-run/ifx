@@ -103,6 +103,7 @@ func InferBindingTy(b binding.Node, indexTypes map[uint8]IfxTy) (IfxTy, error) {
 func inferAccountIndexTy(tag uint8) (IfxTy, error) {
 	switch tag {
 	case constants.LetTagAccountLamports,
+		constants.LetTagAccountRentEpoch,
 		constants.LetTagSplTokenAccountAmount,
 		constants.LetTagSplTokenAccountDelegatedAmount,
 		constants.LetTagSplMintSupply,
@@ -111,20 +112,62 @@ func inferAccountIndexTy(tag uint8) (IfxTy, error) {
 		constants.LetTagSplToken2022MintSupply,
 		constants.LetTagSplToken2022AccountTransferFeeWithheld,
 		constants.LetTagSplToken2022MintTransferFeeMaximum,
-		constants.LetTagSplToken2022MintWithheldAmount:
+		constants.LetTagSplToken2022MintWithheldAmount,
+		constants.LetTagSplTokenAccountIsNative,
+		constants.LetTagSplToken2022AccountIsNative,
+		constants.LetTagStakeRentExemptReserve,
+		constants.LetTagStakeCreditsObserved:
 		return TyU64, nil
-	case constants.LetTagAccountDataLen:
+	case constants.LetTagAccountDataLen,
+		constants.LetTagUpgradeableProgramDataTag:
 		return TyU32, nil
 	case constants.LetTagSplTokenAccountState,
 		constants.LetTagSplMintDecimals,
 		constants.LetTagSplToken2022AccountState,
 		constants.LetTagSplToken2022MintDecimals,
-		constants.LetTagSplToken2022MintDefaultAccountState:
+		constants.LetTagSplToken2022MintDefaultAccountState,
+		constants.LetTagStakeAccountState,
+		constants.LetTagStakeStakeFlags:
 		return TyU8, nil
 	case constants.LetTagSplToken2022MintTransferFeeBasisPoints:
 		return TyU16, nil
-	case constants.LetTagAccountKey:
+	case constants.LetTagAccountKey,
+		constants.LetTagAccountProgramOwner,
+		constants.LetTagSplTokenAccountMint,
+		constants.LetTagSplTokenAccountOwner,
+		constants.LetTagSplTokenAccountDelegate,
+		constants.LetTagSplTokenAccountCloseAuthority,
+		constants.LetTagSplToken2022AccountMint,
+		constants.LetTagSplToken2022AccountOwner,
+		constants.LetTagSplToken2022AccountDelegate,
+		constants.LetTagSplToken2022AccountCloseAuthority,
+		constants.LetTagStakeAuthorizedStaker,
+		constants.LetTagStakeAuthorizedWithdrawer,
+		constants.LetTagStakeDelegationVoter,
+		constants.LetTagStakeLockupCustodian,
+		constants.LetTagSplMintMintAuthority,
+		constants.LetTagSplMintFreezeAuthority,
+		constants.LetTagSplToken2022MintMintAuthority,
+		constants.LetTagSplToken2022MintFreezeAuthority,
+		constants.LetTagUpgradeableProgramDataUpgradeAuthority,
+		constants.LetTagUpgradeableProgramProgramDataAddress:
 		return TyPubkey, nil
+	case constants.LetTagAccountIsSigner,
+		constants.LetTagAccountIsWritable,
+		constants.LetTagAccountExecutable,
+		constants.LetTagSplTokenAccountOwnerIsDerived,
+		constants.LetTagSplToken2022AccountOwnerIsDerived:
+		return TyBool, nil
+	case constants.LetTagStakeDelegationStake,
+		constants.LetTagStakeDelegationActivationEpoch,
+		constants.LetTagStakeDelegationDeactivationEpoch,
+		constants.LetTagStakeLockupEpoch:
+		return TyU64, nil
+	case constants.LetTagStakeLockupUnixTimestamp:
+		return TyI64, nil
+	case constants.LetTagSplMintIsInitialized,
+		constants.LetTagSplToken2022MintIsInitialized:
+		return TyBool, nil
 	default:
 		return "", fmt.Errorf("unknown account binding tag %d", tag)
 	}
@@ -225,10 +268,26 @@ func InferExprTy(n expr.Node, indexTypes map[uint8]IfxTy) (IfxTy, error) {
 		switch v.Tag {
 		case constants.ExprTagNot, constants.ExprTagIsZero, constants.ExprTagNonZero:
 			return TyBool, nil
+		case constants.ExprTagAsU8:
+			return TyU8, nil
+		case constants.ExprTagAsU16:
+			return TyU16, nil
+		case constants.ExprTagAsU32:
+			return TyU32, nil
 		case constants.ExprTagAsU64:
 			return TyU64, nil
 		case constants.ExprTagAsU128:
 			return TyU128, nil
+		case constants.ExprTagAsI8:
+			return TyI8, nil
+		case constants.ExprTagAsI16:
+			return TyI16, nil
+		case constants.ExprTagAsI32:
+			return TyI32, nil
+		case constants.ExprTagAsI64:
+			return TyI64, nil
+		case constants.ExprTagAsI128:
+			return TyI128, nil
 		case constants.ExprTagNeg:
 			return InferExprTy(v.Operand, indexTypes)
 		default:

@@ -72,13 +72,12 @@
 
 | 统计 | 数量 |
 |------|------|
-| 当前已用 | **44**（tag `0`–`43`，含 `ConstPubkey`） |
-| IR-1 新增 cast | **+8**（补 `AsU8/U16/U32` + 五条 `AsI*`；`AsU64`/`AsU128` 已在族内） |
-| IR-1 后合计 | **52** |
+| 当前已用 | **52**（tag `0`–`51`，含 cast 族 + `ConstPubkey`） |
+| 下一 append-only tag | **52** |
 | 剩余 headroom | **~204** |
 
 即使将来加 float cast、`Reinterpret`、更多一元 helper，**远低于 100**，更不可能碰 256。  
-`LetBinding` 是 **Anchor enum（tag 亦 u8 级）**，同样 256 上限；当前 tag `0`–`28`，与 `Expr` 独立计数。
+`LetBinding` 是 **Anchor enum（tag 亦 u8 级）**，同样 256 上限；当前 tag `0`–`67`（**68** 变体），与 `Expr` 独立计数。
 
 ### 3.3 Tag 布局（devnet breaking 一次重排）
 
@@ -140,12 +139,12 @@ AsU32 { operand: Box<Expr> }  // 仅 1B tag + 子树，无额外 target 字段
 
 | ID | 项 | 状态 | 优先级 |
 |----|-----|------|--------|
-| LB-1 | Account **is_signer** / **is_writable** | ⏳ | P0 |
-| LB-2 | Stake 字段族 | ⏳ | P0 — [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) |
-| LB-3 | Mint 更多字段（freeze authority、is_initialized…） | 部分 | P1 |
-| LB-4 | Upgradeable loader / program data | ⏳ | P2 |
+| LB-1 | Account **is_signer** / **is_writable** | ✅ | P0 |
+| LB-2 | Stake 字段族 | ✅ | P0 — [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) |
+| LB-3 | Mint 更多字段（freeze authority、is_initialized…） | ✅ | P1 |
+| LB-4 | Upgradeable loader / program data | ✅ tag 65–67 | R5 — [domains/upgradeable-loader.zh-CN.md](./domains/upgradeable-loader.zh-CN.md) |
 | LB-5 | **Re-read 同一 account**（tx 内前后两次 let） | ✅ 已有 | 文档化 delta 模式 |
-| LB-6 | 下一 opcode **从 tag 29 连续分配** | 规则 | 见 [typed-let-bindings.zh-CN.md](./typed-let-bindings.zh-CN.md) |
+| LB-6 | 下一 opcode **append-only** | 规则 | 下一 tag **68** — [typed-let-bindings.zh-CN.md](./typed-let-bindings.zh-CN.md) |
 
 ---
 
@@ -157,9 +156,9 @@ AsU32 { operand: Box<Expr> }  // 仅 1B tag + 子树，无额外 target 字段
 | SP-2 | SPL Transfer / TransferChecked amount | ✅ | |
 | SP-3 | InitializeMint / MintTo / Burn | ✅ | |
 | SP-4 | Token-2022 扩展（harvest、fee） | 部分 | dust 示例已覆盖部分 |
-| SP-5 | **Stake program** CPI patch 槽位 | ⏳ | 依赖 LB-2 + stake 示例 |
-| SP-6 | Patch 源类型与 **Cast** 组合（u32 amount patch） | ⏳ | 依赖 §3 Cast |
-| SP-7 | Raw patch 文档化 offset 约定 | 🟡 | DEX 仍走 Raw |
+| SP-5 | **Stake program** CPI patch 槽位 | ✅ | tag 29–32：`Withdraw` / `Split` / `Deactivate` / `DelegateStake` |
+| SP-6 | Patch 源类型与 **Cast** 组合（u32 amount patch） | ✅ | 见 [raw-cpi-patches.zh-CN.md](./raw-cpi-patches.zh-CN.md) |
+| SP-7 | Raw patch 文档化 offset 约定 | ✅ | [raw-cpi-patches.zh-CN.md](./raw-cpi-patches.zh-CN.md) |
 
 ---
 
@@ -178,8 +177,8 @@ AsU32 { operand: Box<Expr> }  // 仅 1B tag + 子树，无额外 target 字段
 | **IR-0** | 本文 + cast 语义 PR 评审 | 维护者 sign-off |
 | **IR-1** | 显式 **AsU8…AsI128**（10 变体连续 tag `19`–`28`）；`Add`+ 顺延 +8；TS/Go golden | `npm test` / `go:test` |
 | **IR-2** | LB-1、LB-2；SP-5/6；lighthouse 矩阵主要行 ✅ | 集成测试 |
-| **IR-3** | LB-3/4；SP-7；guardrail 示例 R0.2/R0.3 | 文档 |
-| **IR-4** | `ifx_assert_multi`（仅 integrator 证明 CU 需要） | 可选 |
+| **IR-3** | LB-3/4；SP-7；guardrail 示例 R0.2/R0.3 | ✅ |
+| **IR-4** | `ifx_assert_multi` | ✅ — [r4-assert-multi.zh-CN.md](./r4-assert-multi.zh-CN.md) |
 
 **Breaking 变更流程（devnet）：** bump npm **0.2.0-devnet**；CHANGELOG；`Expr` tag 表重写 [implementation.zh-CN.md](./implementation.zh-CN.md) §5；Go `gen-golden`。
 

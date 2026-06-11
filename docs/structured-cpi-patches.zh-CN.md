@@ -4,7 +4,7 @@
 
 Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 
-链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（29 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
+链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（33 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
 
 ## Wire layout（`Cpi::Structured`）
 
@@ -13,7 +13,7 @@ Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 ```
 
 - **`accounts_start` / `accounts_len`：** `remaining_accounts` 切片（与 Static / RawPatched 相同）。
-- **`StructuredCpiPatch`：** 完整 Borsh enum — 首字节为 variant tag **0–28**（见下表）；嵌套 sub-enum 与 `Value` 字段紧随其后。
+- **`StructuredCpiPatch`：** 完整 Borsh enum — 首字节为 variant tag **0–32**（见下表）；嵌套 sub-enum 与 `Value` 字段紧随其后。
 - **`Value` wire：** 单字节 = Frame binding index（无旧版 `[0][index]` 前缀）。
 
 TS codec：**`encodeStructuredCpiPatch`**（含 variant tag）。**`encodeStructuredCpiPatchPayload`** 已 deprecated（仅 body，0.4 前 layout）。
@@ -45,9 +45,9 @@ structuredCpi(transferCheckedIx, {
 
 RawPatched 仍用于 DEX / 非 registry layout。
 
-Variant tag **0–28** 为 Borsh enum 索引（SDK 中 `STRUCTURED_CPI_PATCH_WIRE`）— **不是** account slice 之前的独立字节。
+Variant tag **0–32** 为 Borsh enum 索引（SDK 中 `STRUCTURED_CPI_PATCH_WIRE`）— **不是** account slice 之前的独立字节。
 
-## Variant 注册表（wire tag 0–28）
+## Variant 注册表（wire tag 0–32）
 
 SPL 指令 **discriminator** 为官方 ix `data` 首字节（u8 enum）。Token-2022 TransferFee 扩展使用独立程序与 discriminator。
 
@@ -82,6 +82,12 @@ SPL 指令 **discriminator** 为官方 ix `data` 首字节（u8 enum）。Token-
 | `26` | Token-2022 | `InitializeMultisig` | 2 | `m: Value` |
 | `27` | Token-2022 TransferFee | `TransferCheckedWithFee` | 1 | `AmountDecimalsFeePatch` |
 | `28` | Token-2022 TransferFee | `SetTransferFee` | 5 | `SetTransferFeePatch` |
+| `29` | Stake | `Withdraw` | 4 (bincode u32) | `lamports: Value` |
+| `30` | Stake | `Split` | 3 (bincode u32) | `lamports: Value` |
+| `31` | Stake | `Deactivate` | 5 (bincode u32) | — |
+| `32` | Stake | `DelegateStake` | 2 (bincode u32) | — |
+
+Stake ix data 为 **bincode** `u32` variant + 可选 `u64`（与 SPL 单字节 discriminator 不同）。
 
 ### 嵌套 payload
 

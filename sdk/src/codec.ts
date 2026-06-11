@@ -15,7 +15,7 @@ import { CPI_WIRE } from "./types";
 import {
   encodeStructuredCpiPatch,
 } from "./structured-cpi-patch";
-import type { Cpi } from "./types";
+import type { Cpi, Expr } from "./types";
 
 export { LET_BINDING_VARIANT } from "./let-binding-variants";
 export { EXPR_TAG, EXPR_VARIANT, EXPR_VARIANT_COUNT } from "./expr-variants";
@@ -285,11 +285,22 @@ export function encodeExpr(expr: AnyExpr): Buffer {
   if ("nonZero" in expr) {
     return encodeUnary(EXPR_TAG.nonZero, exprField(expr.nonZero, "operand"));
   }
-  if ("asU64" in expr) {
-    return encodeUnary(EXPR_TAG.asU64, exprField(expr.asU64, "operand"));
-  }
-  if ("asU128" in expr) {
-    return encodeUnary(EXPR_TAG.asU128, exprField(expr.asU128, "operand"));
+  const castKeys = [
+    ["asU8", EXPR_TAG.asU8],
+    ["asU16", EXPR_TAG.asU16],
+    ["asU32", EXPR_TAG.asU32],
+    ["asU64", EXPR_TAG.asU64],
+    ["asU128", EXPR_TAG.asU128],
+    ["asI8", EXPR_TAG.asI8],
+    ["asI16", EXPR_TAG.asI16],
+    ["asI32", EXPR_TAG.asI32],
+    ["asI64", EXPR_TAG.asI64],
+    ["asI128", EXPR_TAG.asI128],
+  ] as const;
+  for (const [key, tag] of castKeys) {
+    if (key in expr) {
+      return encodeUnary(tag, exprField(expr[key as keyof typeof expr] as AnyRecord, "operand"));
+    }
   }
 
   const binKeys = [
@@ -435,6 +446,45 @@ export function encodeLetBinding(binding: AnyRecord): Buffer {
     case "splToken2022MintTransferFeeMaximum":
     case "splToken2022MintWithheldAmount":
     case "splToken2022MintDefaultAccountState":
+    case "accountIsSigner":
+    case "accountIsWritable":
+    case "stakeDelegationStake":
+    case "stakeDelegationActivationEpoch":
+    case "stakeDelegationDeactivationEpoch":
+    case "stakeLockupUnixTimestamp":
+    case "stakeLockupEpoch":
+    case "stakeAuthorizedStaker":
+    case "stakeAuthorizedWithdrawer":
+    case "stakeDelegationVoter":
+    case "splMintIsInitialized":
+    case "splMintMintAuthority":
+    case "splMintFreezeAuthority":
+    case "splToken2022MintIsInitialized":
+    case "splToken2022MintMintAuthority":
+    case "splToken2022MintFreezeAuthority":
+    case "accountProgramOwner":
+    case "accountExecutable":
+    case "accountRentEpoch":
+    case "splTokenAccountMint":
+    case "splTokenAccountOwner":
+    case "splTokenAccountDelegate":
+    case "splTokenAccountCloseAuthority":
+    case "splTokenAccountIsNative":
+    case "splTokenAccountOwnerIsDerived":
+    case "splToken2022AccountMint":
+    case "splToken2022AccountOwner":
+    case "splToken2022AccountDelegate":
+    case "splToken2022AccountCloseAuthority":
+    case "splToken2022AccountIsNative":
+    case "splToken2022AccountOwnerIsDerived":
+    case "stakeAccountState":
+    case "stakeLockupCustodian":
+    case "stakeRentExemptReserve":
+    case "stakeCreditsObserved":
+    case "stakeStakeFlags":
+    case "upgradeableProgramDataTag":
+    case "upgradeableProgramDataUpgradeAuthority":
+    case "upgradeableProgramProgramDataAddress":
       parts.push(Buffer.from([v.accountIndex]));
       break;
     case "frameGeneration":
@@ -448,6 +498,10 @@ export function encodeLetBinding(binding: AnyRecord): Buffer {
 
 export function encodeLetArgs(args: AnyRecord): Buffer {
   return encodeU8LenVec(args.bindings, encodeLetBinding);
+}
+
+export function encodeAssertMultiArgs(args: { conds: readonly Expr[] }): Buffer {
+  return encodeU8LenVec(args.conds, encodeExpr);
 }
 
 export function encodeRawCpiPatch(patch: AnyRecord): Buffer {

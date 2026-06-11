@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACCOUNT_DISC_FRAME = exports.IX_DISC_IF_ELSE = exports.IX_DISC_PATCHED_CPI = exports.IX_DISC_ASSERT = exports.IX_DISC_LET = exports.IX_DISC_RESET_FRAME = exports.IX_DISC_CLOSE_FRAME = exports.IX_DISC_CREATE_FRAME = exports.MAX_FRAME_MEMORY_LEN = exports.MIN_MEMORY_LEN = exports.MAX_BINDING_INDEX = exports.MAX_FRAME_TAPE_LEN = exports.MIN_TAPE_LEN = exports.FRAME_SEED = exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_DEVNET_PROGRAM_ID = exports.IFX_LOCALNET_PROGRAM_ID = void 0;
+exports.ACCOUNT_DISC_FRAME = exports.IX_DISC_IF_ELSE = exports.IX_DISC_PATCHED_CPI = exports.IX_DISC_ASSERT_MULTI = exports.IX_DISC_ASSERT = exports.IX_DISC_LET = exports.IX_DISC_RESET_FRAME = exports.IX_DISC_CLOSE_FRAME = exports.IX_DISC_CREATE_FRAME = exports.MAX_FRAME_MEMORY_LEN = exports.MIN_MEMORY_LEN = exports.MAX_BINDING_INDEX = exports.MAX_FRAME_TAPE_LEN = exports.MIN_TAPE_LEN = exports.FRAME_SEED = exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_DEVNET_PROGRAM_ID = exports.IFX_LOCALNET_PROGRAM_ID = void 0;
 exports.indexCapForTapeLen = indexCapForTapeLen;
 const web3_js_1 = require("@solana/web3.js");
 /** Localnet / default repo build (`keys/localnet-program-keypair.json`). */
@@ -42,7 +42,8 @@ exports.IX_DISC_CLOSE_FRAME = 1;
 exports.IX_DISC_RESET_FRAME = 2;
 exports.IX_DISC_LET = 3;
 exports.IX_DISC_ASSERT = 4;
-exports.IX_DISC_PATCHED_CPI = 5;
-exports.IX_DISC_IF_ELSE = 6;
+exports.IX_DISC_ASSERT_MULTI = 5;
+exports.IX_DISC_PATCHED_CPI = 6;
+exports.IX_DISC_IF_ELSE = 7;
 /** 1-byte `Frame` account type discriminator. */
 exports.ACCOUNT_DISC_FRAME = 6;

@@ -1,11 +1,16 @@
+//! Instruction / account discriminators and Frame tape limits.
+//!
+//! Pure `const` — safe for SBF and host targets.
+
 /// 1-byte instruction discriminators (`#[instruction(discriminator = …)]`).
 pub const IX_DISC_CREATE_FRAME: u8 = 0;
 pub const IX_DISC_CLOSE_FRAME: u8 = 1;
 pub const IX_DISC_RESET_FRAME: u8 = 2;
 pub const IX_DISC_LET: u8 = 3;
 pub const IX_DISC_ASSERT: u8 = 4;
-pub const IX_DISC_PATCHED_CPI: u8 = 5;
-pub const IX_DISC_IF_ELSE: u8 = 6;
+pub const IX_DISC_ASSERT_MULTI: u8 = 5;
+pub const IX_DISC_PATCHED_CPI: u8 = 6;
+pub const IX_DISC_IF_ELSE: u8 = 7;
 
 /// 1-byte `Frame` account discriminator (`#[account(discriminator = …)]`).
 pub const ACCOUNT_DISC_FRAME: u8 = 6;
@@ -26,5 +31,17 @@ pub const fn index_cap_for_tape_len(tape_len: u32) -> u16 {
         MAX_BINDING_INDEX
     } else {
         optimistic as u16
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn index_cap_matches_spec() {
+        assert_eq!(index_cap_for_tape_len(512), 256);
+        assert_eq!(index_cap_for_tape_len(100), 50);
+        assert_eq!(index_cap_for_tape_len(1), 0);
     }
 }

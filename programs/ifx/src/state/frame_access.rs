@@ -2,8 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::error::ErrorCode;
 use crate::state::types::ValueType;
-use crate::state::value_codec::decode_bool;
-use crate::state::value_codec::ValueBytes;
+use crate::state::value_codec::{copy_from, decode_bool, ValueBytes};
 use crate::state::value_type_tag::{tag_to_value_type, value_type_to_tag};
 
 use crate::frame_require;
@@ -102,7 +101,7 @@ impl<'a> FrameRef<'a> {
         let off = self.resolve_payload_offset(index)? as usize;
         let tape = self.layout.tape(self.data)?;
         let slice = self.layout.tape_range(tape, off, ty.size())?;
-        ValueBytes::copy_from(ty, slice).map_err(|_| {
+        copy_from(ty, slice).map_err(|_| {
             FrameError::new(FrameSite::ReadBytesTypeMismatch, ErrorCode::LoadTypeMismatch)
         })
     }

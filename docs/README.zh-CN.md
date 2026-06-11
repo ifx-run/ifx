@@ -10,8 +10,8 @@
 | [glossary.zh-CN.md](./glossary.zh-CN.md) | 所有人 | **术语表** — 为何叫 `tape`、`index`、`cursor` 等 |
 | [implementation.zh-CN.md](./implementation.zh-CN.md) | 集成者 | 指令、类型、限制 |
 | [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) | Rust / Anchor 集成者 | CPI、wire 编码、SDK 与 program crate |
-| [typed-let-bindings.zh-CN.md](./typed-let-bindings.zh-CN.md) | 集成者 | `LetBinding` opcode 表（tag 0–28） |
-| [errors.zh-CN.md](./errors.zh-CN.md) | 集成者 | Anchor 错误码 6000–6035 |
+| [typed-let-bindings.zh-CN.md](./typed-let-bindings.zh-CN.md) | 集成者 | `LetBinding` opcode 表（tag 0–67） |
+| [errors.zh-CN.md](./errors.zh-CN.md) | 集成者 | Anchor 错误码 6000–6039 |
 | [debugging.zh-CN.md](./debugging.zh-CN.md) | 集成者 | Program log 伪代码格式 |
 | [bundles.zh-CN.md](./bundles.zh-CN.md) | 集成者 | 多 tx 顺序；Jito bundle |
 | [frame-memory-index.zh-CN.md](./frame-memory-index.zh-CN.md) | 架构 | Frame index 寻址（已上线）；与临时原型对照 |

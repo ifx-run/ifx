@@ -6,6 +6,8 @@ import { isScratchValue, scratchValue, taggedExpr } from "../typed";
 export type { Cond, ExprInput, IfxTy, ScratchValue, TypedExpr };
 export { isScratchValue, scratchValue, taggedExpr };
 export { toCond } from "./cond";
+type IntegerLike = "u8" | "u16" | "u32" | "u64" | "u128" | "i8" | "i16" | "i32" | "i64" | "i128";
+type IntegerExprInput = ExprInput<IntegerLike>;
 export declare function resolveRef(s: ScratchValue<IfxTy> | Value): Value;
 /** Build wire {@link Expr} trees (1:1 with on-chain). Combine freely with {@link ScratchValue}. */
 export declare const expr: {
@@ -28,8 +30,16 @@ export declare const expr: {
     neg: <T extends ArithmeticTy>(operand: TypedExpr<T>) => TypedExpr<T>;
     isZero: <T extends IfxTy>(operand: ExprInput<T>) => TypedExpr<"bool">;
     nonZero: <T extends IfxTy>(operand: ExprInput<T>) => TypedExpr<"bool">;
-    asU64: (operand: ExprInput<"u64" | "u128">) => TypedExpr<"u64">;
-    asU128: (operand: ExprInput<"u8" | "u16" | "u32" | "u64" | "u128">) => TypedExpr<"u128">;
+    asU8: (operand: IntegerExprInput) => TypedExpr<"u8">;
+    asU16: (operand: IntegerExprInput) => TypedExpr<"u16">;
+    asU32: (operand: IntegerExprInput) => TypedExpr<"u32">;
+    asU64: (operand: IntegerExprInput) => TypedExpr<"u64">;
+    asU128: (operand: IntegerExprInput) => TypedExpr<"u128">;
+    asI8: (operand: IntegerExprInput) => TypedExpr<"i8">;
+    asI16: (operand: IntegerExprInput) => TypedExpr<"i16">;
+    asI32: (operand: IntegerExprInput) => TypedExpr<"i32">;
+    asI64: (operand: IntegerExprInput) => TypedExpr<"i64">;
+    asI128: (operand: IntegerExprInput) => TypedExpr<"i128">;
     add: <T extends ArithmeticTy>(lhs: ExprInput<T>, rhs: ExprInput<T>) => TypedExpr<T>;
     sub: <T extends ArithmeticTy>(lhs: ExprInput<T>, rhs: ExprInput<T>) => TypedExpr<T>;
     mul: <T extends ArithmeticTy>(lhs: ExprInput<T>, rhs: ExprInput<T>) => TypedExpr<T>;

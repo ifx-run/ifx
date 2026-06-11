@@ -2,7 +2,7 @@ import type { Expr, LetBinding, ValueType } from "./types";
 import type { IfxTy } from "./typed";
 import { inferIfxTyFromExpr, tyForIfxTy } from "./typed";
 
-/** `LetBinding` builders for `ifx_let` (wire enum tags `0`–`23`). */
+/** `LetBinding` builders for `ifx_let` (wire enum tags `0`–`67`). */
 export const binding = {
   accountDataSlice(
     ty: ValueType,
@@ -134,6 +134,128 @@ export const binding = {
   frameIndexCount(): LetBinding {
     return { frameIndexCount: {} };
   },
+
+  accountIsSigner(accountIndex: number): LetBinding {
+    return { accountIsSigner: { accountIndex } };
+  },
+
+  accountIsWritable(accountIndex: number): LetBinding {
+    return { accountIsWritable: { accountIndex } };
+  },
+
+  stakeDelegationStake(accountIndex: number): LetBinding {
+    return { stakeDelegationStake: { accountIndex } };
+  },
+  stakeDelegationActivationEpoch(accountIndex: number): LetBinding {
+    return { stakeDelegationActivationEpoch: { accountIndex } };
+  },
+  stakeDelegationDeactivationEpoch(accountIndex: number): LetBinding {
+    return { stakeDelegationDeactivationEpoch: { accountIndex } };
+  },
+  stakeLockupUnixTimestamp(accountIndex: number): LetBinding {
+    return { stakeLockupUnixTimestamp: { accountIndex } };
+  },
+  stakeLockupEpoch(accountIndex: number): LetBinding {
+    return { stakeLockupEpoch: { accountIndex } };
+  },
+  stakeAuthorizedStaker(accountIndex: number): LetBinding {
+    return { stakeAuthorizedStaker: { accountIndex } };
+  },
+  stakeAuthorizedWithdrawer(accountIndex: number): LetBinding {
+    return { stakeAuthorizedWithdrawer: { accountIndex } };
+  },
+  stakeDelegationVoter(accountIndex: number): LetBinding {
+    return { stakeDelegationVoter: { accountIndex } };
+  },
+
+  splMintIsInitialized(accountIndex: number): LetBinding {
+    return { splMintIsInitialized: { accountIndex } };
+  },
+  splMintMintAuthority(accountIndex: number): LetBinding {
+    return { splMintMintAuthority: { accountIndex } };
+  },
+  splMintFreezeAuthority(accountIndex: number): LetBinding {
+    return { splMintFreezeAuthority: { accountIndex } };
+  },
+  splToken2022MintIsInitialized(accountIndex: number): LetBinding {
+    return { splToken2022MintIsInitialized: { accountIndex } };
+  },
+  splToken2022MintMintAuthority(accountIndex: number): LetBinding {
+    return { splToken2022MintMintAuthority: { accountIndex } };
+  },
+  splToken2022MintFreezeAuthority(accountIndex: number): LetBinding {
+    return { splToken2022MintFreezeAuthority: { accountIndex } };
+  },
+
+  accountProgramOwner(accountIndex: number): LetBinding {
+    return { accountProgramOwner: { accountIndex } };
+  },
+  accountExecutable(accountIndex: number): LetBinding {
+    return { accountExecutable: { accountIndex } };
+  },
+  accountRentEpoch(accountIndex: number): LetBinding {
+    return { accountRentEpoch: { accountIndex } };
+  },
+  splTokenAccountMint(accountIndex: number): LetBinding {
+    return { splTokenAccountMint: { accountIndex } };
+  },
+  splTokenAccountOwner(accountIndex: number): LetBinding {
+    return { splTokenAccountOwner: { accountIndex } };
+  },
+  splTokenAccountDelegate(accountIndex: number): LetBinding {
+    return { splTokenAccountDelegate: { accountIndex } };
+  },
+  splTokenAccountCloseAuthority(accountIndex: number): LetBinding {
+    return { splTokenAccountCloseAuthority: { accountIndex } };
+  },
+  splTokenAccountIsNative(accountIndex: number): LetBinding {
+    return { splTokenAccountIsNative: { accountIndex } };
+  },
+  splTokenAccountOwnerIsDerived(accountIndex: number): LetBinding {
+    return { splTokenAccountOwnerIsDerived: { accountIndex } };
+  },
+  splToken2022AccountMint(accountIndex: number): LetBinding {
+    return { splToken2022AccountMint: { accountIndex } };
+  },
+  splToken2022AccountOwner(accountIndex: number): LetBinding {
+    return { splToken2022AccountOwner: { accountIndex } };
+  },
+  splToken2022AccountDelegate(accountIndex: number): LetBinding {
+    return { splToken2022AccountDelegate: { accountIndex } };
+  },
+  splToken2022AccountCloseAuthority(accountIndex: number): LetBinding {
+    return { splToken2022AccountCloseAuthority: { accountIndex } };
+  },
+  splToken2022AccountIsNative(accountIndex: number): LetBinding {
+    return { splToken2022AccountIsNative: { accountIndex } };
+  },
+  splToken2022AccountOwnerIsDerived(accountIndex: number): LetBinding {
+    return { splToken2022AccountOwnerIsDerived: { accountIndex } };
+  },
+  stakeAccountState(accountIndex: number): LetBinding {
+    return { stakeAccountState: { accountIndex } };
+  },
+  stakeLockupCustodian(accountIndex: number): LetBinding {
+    return { stakeLockupCustodian: { accountIndex } };
+  },
+  stakeRentExemptReserve(accountIndex: number): LetBinding {
+    return { stakeRentExemptReserve: { accountIndex } };
+  },
+  stakeCreditsObserved(accountIndex: number): LetBinding {
+    return { stakeCreditsObserved: { accountIndex } };
+  },
+  stakeStakeFlags(accountIndex: number): LetBinding {
+    return { stakeStakeFlags: { accountIndex } };
+  },
+  upgradeableProgramDataTag(accountIndex: number): LetBinding {
+    return { upgradeableProgramDataTag: { accountIndex } };
+  },
+  upgradeableProgramDataUpgradeAuthority(accountIndex: number): LetBinding {
+    return { upgradeableProgramDataUpgradeAuthority: { accountIndex } };
+  },
+  upgradeableProgramProgramDataAddress(accountIndex: number): LetBinding {
+    return { upgradeableProgramProgramDataAddress: { accountIndex } };
+  },
 };
 
 /** Frame tape type implied by a `LetBinding` variant. */
@@ -191,6 +313,68 @@ export function inferBindingTy(
   }
   if ("frameGeneration" in b) return "u64";
   if ("frameIndexCount" in b) return "u16";
+  if ("accountIsSigner" in b || "accountIsWritable" in b) return "bool";
+  if (
+    "accountExecutable" in b ||
+    "splTokenAccountOwnerIsDerived" in b ||
+    "splToken2022AccountOwnerIsDerived" in b
+  ) {
+    return "bool";
+  }
+  if ("accountRentEpoch" in b) return "u64";
+  if (
+    "accountProgramOwner" in b ||
+    "splTokenAccountMint" in b ||
+    "splTokenAccountOwner" in b ||
+    "splTokenAccountDelegate" in b ||
+    "splTokenAccountCloseAuthority" in b ||
+    "splToken2022AccountMint" in b ||
+    "splToken2022AccountOwner" in b ||
+    "splToken2022AccountDelegate" in b ||
+    "splToken2022AccountCloseAuthority" in b ||
+    "stakeLockupCustodian" in b ||
+    "upgradeableProgramDataUpgradeAuthority" in b ||
+    "upgradeableProgramProgramDataAddress" in b
+  ) {
+    return "pubkey";
+  }
+  if (
+    "splTokenAccountIsNative" in b ||
+    "splToken2022AccountIsNative" in b ||
+    "stakeRentExemptReserve" in b ||
+    "stakeCreditsObserved" in b
+  ) {
+    return "u64";
+  }
+  if ("stakeAccountState" in b || "stakeStakeFlags" in b) return "u8";
+  if ("upgradeableProgramDataTag" in b) return "u32";
+  if ("splMintIsInitialized" in b || "splToken2022MintIsInitialized" in b) {
+    return "bool";
+  }
+  if (
+    "splMintMintAuthority" in b ||
+    "splMintFreezeAuthority" in b ||
+    "splToken2022MintMintAuthority" in b ||
+    "splToken2022MintFreezeAuthority" in b
+  ) {
+    return "pubkey";
+  }
+  if (
+    "stakeDelegationStake" in b ||
+    "stakeDelegationActivationEpoch" in b ||
+    "stakeDelegationDeactivationEpoch" in b ||
+    "stakeLockupEpoch" in b
+  ) {
+    return "u64";
+  }
+  if ("stakeLockupUnixTimestamp" in b) return "i64";
+  if (
+    "stakeAuthorizedStaker" in b ||
+    "stakeAuthorizedWithdrawer" in b ||
+    "stakeDelegationVoter" in b
+  ) {
+    return "pubkey";
+  }
   throw new Error("unknown LetBinding shape");
 }
 
@@ -267,6 +451,123 @@ export function remapBindingAccountIndex(
   }
   if ("splToken2022MintDefaultAccountState" in b) {
     return binding.splToken2022MintDefaultAccountState(accountIndex);
+  }
+  if ("accountIsSigner" in b) {
+    return binding.accountIsSigner(accountIndex);
+  }
+  if ("accountIsWritable" in b) {
+    return binding.accountIsWritable(accountIndex);
+  }
+  if ("stakeDelegationStake" in b) {
+    return binding.stakeDelegationStake(accountIndex);
+  }
+  if ("stakeDelegationActivationEpoch" in b) {
+    return binding.stakeDelegationActivationEpoch(accountIndex);
+  }
+  if ("stakeDelegationDeactivationEpoch" in b) {
+    return binding.stakeDelegationDeactivationEpoch(accountIndex);
+  }
+  if ("stakeLockupUnixTimestamp" in b) {
+    return binding.stakeLockupUnixTimestamp(accountIndex);
+  }
+  if ("stakeLockupEpoch" in b) {
+    return binding.stakeLockupEpoch(accountIndex);
+  }
+  if ("stakeAuthorizedStaker" in b) {
+    return binding.stakeAuthorizedStaker(accountIndex);
+  }
+  if ("stakeAuthorizedWithdrawer" in b) {
+    return binding.stakeAuthorizedWithdrawer(accountIndex);
+  }
+  if ("stakeDelegationVoter" in b) {
+    return binding.stakeDelegationVoter(accountIndex);
+  }
+  if ("splMintIsInitialized" in b) {
+    return binding.splMintIsInitialized(accountIndex);
+  }
+  if ("splMintMintAuthority" in b) {
+    return binding.splMintMintAuthority(accountIndex);
+  }
+  if ("splMintFreezeAuthority" in b) {
+    return binding.splMintFreezeAuthority(accountIndex);
+  }
+  if ("splToken2022MintIsInitialized" in b) {
+    return binding.splToken2022MintIsInitialized(accountIndex);
+  }
+  if ("splToken2022MintMintAuthority" in b) {
+    return binding.splToken2022MintMintAuthority(accountIndex);
+  }
+  if ("splToken2022MintFreezeAuthority" in b) {
+    return binding.splToken2022MintFreezeAuthority(accountIndex);
+  }
+  if ("accountProgramOwner" in b) {
+    return binding.accountProgramOwner(accountIndex);
+  }
+  if ("accountExecutable" in b) {
+    return binding.accountExecutable(accountIndex);
+  }
+  if ("accountRentEpoch" in b) {
+    return binding.accountRentEpoch(accountIndex);
+  }
+  if ("splTokenAccountMint" in b) {
+    return binding.splTokenAccountMint(accountIndex);
+  }
+  if ("splTokenAccountOwner" in b) {
+    return binding.splTokenAccountOwner(accountIndex);
+  }
+  if ("splTokenAccountDelegate" in b) {
+    return binding.splTokenAccountDelegate(accountIndex);
+  }
+  if ("splTokenAccountCloseAuthority" in b) {
+    return binding.splTokenAccountCloseAuthority(accountIndex);
+  }
+  if ("splTokenAccountIsNative" in b) {
+    return binding.splTokenAccountIsNative(accountIndex);
+  }
+  if ("splTokenAccountOwnerIsDerived" in b) {
+    return binding.splTokenAccountOwnerIsDerived(accountIndex);
+  }
+  if ("splToken2022AccountMint" in b) {
+    return binding.splToken2022AccountMint(accountIndex);
+  }
+  if ("splToken2022AccountOwner" in b) {
+    return binding.splToken2022AccountOwner(accountIndex);
+  }
+  if ("splToken2022AccountDelegate" in b) {
+    return binding.splToken2022AccountDelegate(accountIndex);
+  }
+  if ("splToken2022AccountCloseAuthority" in b) {
+    return binding.splToken2022AccountCloseAuthority(accountIndex);
+  }
+  if ("splToken2022AccountIsNative" in b) {
+    return binding.splToken2022AccountIsNative(accountIndex);
+  }
+  if ("splToken2022AccountOwnerIsDerived" in b) {
+    return binding.splToken2022AccountOwnerIsDerived(accountIndex);
+  }
+  if ("stakeAccountState" in b) {
+    return binding.stakeAccountState(accountIndex);
+  }
+  if ("stakeLockupCustodian" in b) {
+    return binding.stakeLockupCustodian(accountIndex);
+  }
+  if ("stakeRentExemptReserve" in b) {
+    return binding.stakeRentExemptReserve(accountIndex);
+  }
+  if ("stakeCreditsObserved" in b) {
+    return binding.stakeCreditsObserved(accountIndex);
+  }
+  if ("stakeStakeFlags" in b) {
+    return binding.stakeStakeFlags(accountIndex);
+  }
+  if ("upgradeableProgramDataTag" in b) {
+    return binding.upgradeableProgramDataTag(accountIndex);
+  }
+  if ("upgradeableProgramDataUpgradeAuthority" in b) {
+    return binding.upgradeableProgramDataUpgradeAuthority(accountIndex);
+  }
+  if ("upgradeableProgramProgramDataAddress" in b) {
+    return binding.upgradeableProgramProgramDataAddress(accountIndex);
   }
   return b;
 }

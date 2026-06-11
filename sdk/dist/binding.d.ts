@@ -1,6 +1,6 @@
 import type { Expr, LetBinding, ValueType } from "./types";
 import type { IfxTy } from "./typed";
-/** `LetBinding` builders for `ifx_let` (wire enum tags `0`–`23`). */
+/** `LetBinding` builders for `ifx_let` (wire enum tags `0`–`67`). */
 export declare const binding: {
     accountDataSlice(ty: ValueType, accountIndex: number, offset: number, expectedProgramOwner: number): LetBinding;
     accountLamports(accountIndex: number): LetBinding;
@@ -31,6 +31,45 @@ export declare const binding: {
     constPubkey(bytes: Buffer): LetBinding;
     frameGeneration(): LetBinding;
     frameIndexCount(): LetBinding;
+    accountIsSigner(accountIndex: number): LetBinding;
+    accountIsWritable(accountIndex: number): LetBinding;
+    stakeDelegationStake(accountIndex: number): LetBinding;
+    stakeDelegationActivationEpoch(accountIndex: number): LetBinding;
+    stakeDelegationDeactivationEpoch(accountIndex: number): LetBinding;
+    stakeLockupUnixTimestamp(accountIndex: number): LetBinding;
+    stakeLockupEpoch(accountIndex: number): LetBinding;
+    stakeAuthorizedStaker(accountIndex: number): LetBinding;
+    stakeAuthorizedWithdrawer(accountIndex: number): LetBinding;
+    stakeDelegationVoter(accountIndex: number): LetBinding;
+    splMintIsInitialized(accountIndex: number): LetBinding;
+    splMintMintAuthority(accountIndex: number): LetBinding;
+    splMintFreezeAuthority(accountIndex: number): LetBinding;
+    splToken2022MintIsInitialized(accountIndex: number): LetBinding;
+    splToken2022MintMintAuthority(accountIndex: number): LetBinding;
+    splToken2022MintFreezeAuthority(accountIndex: number): LetBinding;
+    accountProgramOwner(accountIndex: number): LetBinding;
+    accountExecutable(accountIndex: number): LetBinding;
+    accountRentEpoch(accountIndex: number): LetBinding;
+    splTokenAccountMint(accountIndex: number): LetBinding;
+    splTokenAccountOwner(accountIndex: number): LetBinding;
+    splTokenAccountDelegate(accountIndex: number): LetBinding;
+    splTokenAccountCloseAuthority(accountIndex: number): LetBinding;
+    splTokenAccountIsNative(accountIndex: number): LetBinding;
+    splTokenAccountOwnerIsDerived(accountIndex: number): LetBinding;
+    splToken2022AccountMint(accountIndex: number): LetBinding;
+    splToken2022AccountOwner(accountIndex: number): LetBinding;
+    splToken2022AccountDelegate(accountIndex: number): LetBinding;
+    splToken2022AccountCloseAuthority(accountIndex: number): LetBinding;
+    splToken2022AccountIsNative(accountIndex: number): LetBinding;
+    splToken2022AccountOwnerIsDerived(accountIndex: number): LetBinding;
+    stakeAccountState(accountIndex: number): LetBinding;
+    stakeLockupCustodian(accountIndex: number): LetBinding;
+    stakeRentExemptReserve(accountIndex: number): LetBinding;
+    stakeCreditsObserved(accountIndex: number): LetBinding;
+    stakeStakeFlags(accountIndex: number): LetBinding;
+    upgradeableProgramDataTag(accountIndex: number): LetBinding;
+    upgradeableProgramDataUpgradeAuthority(accountIndex: number): LetBinding;
+    upgradeableProgramProgramDataAddress(accountIndex: number): LetBinding;
 };
 /** Frame tape type implied by a `LetBinding` variant. */
 export declare function inferBindingTy(b: LetBinding, indexTypes?: ReadonlyMap<number, IfxTy>): IfxTy;

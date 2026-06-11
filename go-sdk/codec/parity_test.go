@@ -16,7 +16,8 @@ import (
 var exprVariantKeys = []string{
 	"value", "constBool", "constU8", "constU16", "constU32", "constU64", "constU128",
 	"constI8", "constI16", "constI32", "constI64", "constI128", "constF32", "constF64",
-	"not", "neg", "isZero", "nonZero", "asU64", "asU128",
+	"not", "neg", "isZero", "nonZero",
+	"asU8", "asU16", "asU32", "asU64", "asU128", "asI8", "asI16", "asI32", "asI64", "asI128",
 	"add", "sub", "mul", "div", "divFloor", "divCeil", "min", "max",
 	"eq", "ne", "gt", "ge", "lt", "le", "saturatingSub", "and", "or",
 	"bpsMulFloor", "bpsMulCeil", 	"mulDivFloor", "mulDivCeil", "clamp", "select", "constPubkey",
@@ -35,6 +36,23 @@ var letBindingKeys = []string{
 	"splToken2022MintDefaultAccountState", "accountDataLen",
 	"accountKey", "constPubkey",
 	"frameGeneration", "frameIndexCount",
+	"accountIsSigner", "accountIsWritable",
+	"stakeDelegationStake", "stakeDelegationActivationEpoch",
+	"stakeDelegationDeactivationEpoch", "stakeLockupUnixTimestamp",
+	"stakeLockupEpoch", 	"stakeAuthorizedStaker", "stakeAuthorizedWithdrawer",
+	"stakeDelegationVoter",
+	"splMintIsInitialized", "splMintMintAuthority", "splMintFreezeAuthority",
+	"splToken2022MintIsInitialized", "splToken2022MintMintAuthority",
+	"splToken2022MintFreezeAuthority",
+	"accountProgramOwner", "accountExecutable", "accountRentEpoch",
+	"splTokenAccountMint", "splTokenAccountOwner", "splTokenAccountDelegate",
+	"splTokenAccountCloseAuthority", "splTokenAccountIsNative", "splTokenAccountOwnerIsDerived",
+	"splToken2022AccountMint", "splToken2022AccountOwner", "splToken2022AccountDelegate",
+	"splToken2022AccountCloseAuthority", "splToken2022AccountIsNative", "splToken2022AccountOwnerIsDerived",
+	"stakeAccountState", "stakeLockupCustodian", "stakeRentExemptReserve",
+	"stakeCreditsObserved", "stakeStakeFlags",
+	"upgradeableProgramDataTag", "upgradeableProgramDataUpgradeAuthority",
+	"upgradeableProgramProgramDataAddress",
 }
 
 type wireGolden struct {

@@ -32,7 +32,7 @@ func TestCodeBase(t *testing.T) {
 	if CodeBase != 6000 {
 		t.Fatalf("CodeBase = %d", CodeBase)
 	}
-	if len(nameByCode) != 36 {
-		t.Fatalf("error count = %d, want 36", len(nameByCode))
+	if len(nameByCode) != 40 {
+		t.Fatalf("error count = %d, want 40", len(nameByCode))
 	}
 }

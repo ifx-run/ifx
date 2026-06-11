@@ -1,6 +1,6 @@
 package constants
 
-// LetBinding wire tags 0..24 — must match programs/ifx and sdk/src/let-binding-variants.ts.
+// LetBinding wire tags 0..67 — must match programs/ifx and sdk/src/let-binding-variants.ts.
 const (
 	LetTagAccountDataSlice = iota
 	LetTagAccountLamports
@@ -31,9 +31,48 @@ const (
 	LetTagConstPubkey
 	LetTagFrameGeneration
 	LetTagFrameIndexCount
+	LetTagAccountIsSigner
+	LetTagAccountIsWritable
+	LetTagStakeDelegationStake
+	LetTagStakeDelegationActivationEpoch
+	LetTagStakeDelegationDeactivationEpoch
+	LetTagStakeLockupUnixTimestamp
+	LetTagStakeLockupEpoch
+	LetTagStakeAuthorizedStaker
+	LetTagStakeAuthorizedWithdrawer
+	LetTagStakeDelegationVoter
+	LetTagSplMintIsInitialized
+	LetTagSplMintMintAuthority
+	LetTagSplMintFreezeAuthority
+	LetTagSplToken2022MintIsInitialized
+	LetTagSplToken2022MintMintAuthority
+	LetTagSplToken2022MintFreezeAuthority
+	LetTagAccountProgramOwner
+	LetTagAccountExecutable
+	LetTagAccountRentEpoch
+	LetTagSplTokenAccountMint
+	LetTagSplTokenAccountOwner
+	LetTagSplTokenAccountDelegate
+	LetTagSplTokenAccountCloseAuthority
+	LetTagSplTokenAccountIsNative
+	LetTagSplTokenAccountOwnerIsDerived
+	LetTagSplToken2022AccountMint
+	LetTagSplToken2022AccountOwner
+	LetTagSplToken2022AccountDelegate
+	LetTagSplToken2022AccountCloseAuthority
+	LetTagSplToken2022AccountIsNative
+	LetTagSplToken2022AccountOwnerIsDerived
+	LetTagStakeAccountState
+	LetTagStakeLockupCustodian
+	LetTagStakeRentExemptReserve
+	LetTagStakeCreditsObserved
+	LetTagStakeStakeFlags
+	LetTagUpgradeableProgramDataTag
+	LetTagUpgradeableProgramDataUpgradeAuthority
+	LetTagUpgradeableProgramProgramDataAddress
 )
 
-const LetBindingVariantCount = 29
+const LetBindingVariantCount = 68
 
 // ValueType wire tags for AccountDataSlice.ty (Borsh enum order).
 const (

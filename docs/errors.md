@@ -39,12 +39,14 @@ Anchor maps each [`ErrorCode`](../programs/ifx/src/error.rs) variant to **`6000 
 | 6030 | `InvalidStructuredCpiProgram` | Structured CPI program id does not match patch | Wrong program in remaining accounts for the chosen `StructuredCpiPatch` variant |
 | 6031 | `InvalidInstructionData` | Invalid instruction data | Trailing bytes or CPI payload invalid |
 
-| 6032 | `ResetNotTopLevel` | `ifx_reset_frame` must be top level | CPI-wrapped reset |
-| 6033 | `CloseNotTopLevel` | `ifx_close_frame` must be top level | CPI-wrapped close |
-| 6034 | `CreateNotTopLevel` | `ifx_create_frame` must be top level | CPI-wrapped create |
-| 6035 | `UnauthorizedFrameWrite` | Frame write requires authority signer | Private Frame `reset` / `let` without on-curve authority signature |
-
-Full table through 6035. See [frame-authority.md](./frame-authority.md) and [structured-cpi-patches.md](./structured-cpi-patches.md).
+| 6032 | `StakeUnpackFailed` | Failed to unpack stake account | Corrupt `StakeStateV2` layout |
+| 6033 | `StakeStateMismatch` | Stake state does not expose field | e.g. delegation on `Initialized` |
+| 6034 | `ResetNotTopLevel` | `ifx_reset_frame` must be top level | CPI-wrapped reset |
+| 6035 | `CloseNotTopLevel` | `ifx_close_frame` must be top level | CPI-wrapped close |
+| 6036 | `CreateNotTopLevel` | `ifx_create_frame` must be top level | CPI-wrapped create |
+| 6037 | `UnauthorizedFrameWrite` | Frame write requires authority signer | Private frame `reset` / `let` without authority signature |
+| 6038 | `SplMintOptionEmpty` | SPL optional field is not set | e.g. unset delegate / mint authority |
+| 6039 | `AssertFailedMulti` | Assertion failed in ifx_assert_multi | `ifx_assert_multi` short-circuited; failing index in **return data** (u8) + pseudocode logs |
 
 ### Frame append: two independent limits
 

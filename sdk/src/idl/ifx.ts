@@ -42,11 +42,39 @@ export type Ifx = {
       ]
     },
     {
+      "name": "ifxAssertMulti",
+      "docs": [
+        "Require every entry in `args.conds` to evaluate to `true`; short-circuit on first failure",
+        "with [`ErrorCode::AssertFailedMulti`] (failing index in return data + pseudocode logs).",
+        "",
+        "`conds` is a [`U8LenVec`] of [`Expr`] over values already in `Frame::tape` (via prior",
+        "[`ifx_let`]). At least one condition is required."
+      ],
+      "discriminator": [
+        5
+      ],
+      "accounts": [
+        {
+          "name": "frame"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "assertMultiArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "ifxCloseFrame",
       "docs": [
         "Close a [`Frame`] PDA and return rent to `authority`.",
         "",
-        "Requires `authority` signer to match `Frame.authority` stored at create.",
+        "Requires `authority` signer to match `Frame.authority`. Top-level only.",
         "Typical usage: standalone teardown tx when the Frame is no longer needed."
       ],
       "discriminator": [
@@ -55,7 +83,6 @@ export type Ifx = {
       "accounts": [
         {
           "name": "authority",
-          "writable": true,
           "signer": true
         },
         {
@@ -76,9 +103,7 @@ export type Ifx = {
         "The PDA seeds are `[FRAME_SEED, payer, frame_id]`.",
         "",
         "**Off-curve `authority`** (e.g. Frame PDA) → public scratch. **On-curve** → private Frame.",
-        "Top-level only. See `docs/frame-authority.md`.",
-        "",
-        "Typical usage: standalone tx before business flows; not every swap/settlement tx."
+        "Top-level only. See `docs/frame-authority.md`."
       ],
       "discriminator": [
         0
@@ -157,7 +182,7 @@ export type Ifx = {
         "`remaining_accounts` layout matches [`ifx_patched_cpi`] when an arm invokes CPI."
       ],
       "discriminator": [
-        6
+        7
       ],
       "accounts": [
         {
@@ -214,17 +239,10 @@ export type Ifx = {
       "docs": [
         "Unconditional patched CPI into an existing program.",
         "",
-        "`arm` is a [`Cpi`]: template instruction `data` plus optional [`RawCpiPatch`] ranges",
-        "copied from `Frame::tape` immediately before `invoke`. Accounts are taken from",
-        "`remaining_accounts[accounts_start .. accounts_start + accounts_len]` as",
-        "`[program_id, …inner_accounts]` (program id is not repeated in the inner slice).",
-        "",
-        "Use when CPI fields (e.g. transfer lamports) were bound on-chain in the same tx",
-        "via [`ifx_let`]. For unconditional CPI without patches, add the target ix to the",
-        "transaction directly; use [`ifx_if_else`] [`IfElseArm::Cpi`] for conditional static CPI."
+        "`arm` is a [`Cpi`] step (see [`state::cpi`] wire: Static | RawPatched | Structured)."
       ],
       "discriminator": [
-        5
+        6
       ],
       "accounts": [
         {
@@ -252,8 +270,8 @@ export type Ifx = {
         "continues bindings written by an earlier tx (same scratch session).",
         "",
         "Does not change `authority` or account size — only clears session data.",
-        "Top-level only. **Public** Frame: no `remaining_accounts`. **Private** Frame:",
-        "`remaining_accounts[0]` = on-curve `authority` signer."
+        "Top-level only. **Public** Frame (off-curve `authority`): no `remaining_accounts`.",
+        "**Private** Frame: `remaining_accounts[0]` = on-curve `authority` signer."
       ],
       "discriminator": [
         2
@@ -438,26 +456,75 @@ export type Ifx = {
     },
     {
       "code": 6032,
+      "name": "stakeUnpackFailed",
+      "msg": "Failed to unpack stake account"
+    },
+    {
+      "code": 6033,
+      "name": "stakeStateMismatch",
+      "msg": "Stake account state does not expose the requested field"
+    },
+    {
+      "code": 6034,
       "name": "resetNotTopLevel",
       "msg": "ifx_reset_frame must be invoked at transaction top level (stack height 1)"
     },
     {
-      "code": 6033,
+      "code": 6035,
       "name": "closeNotTopLevel",
       "msg": "ifx_close_frame must be invoked at transaction top level (stack height 1)"
     },
     {
-      "code": 6034,
+      "code": 6036,
       "name": "createNotTopLevel",
       "msg": "ifx_create_frame must be invoked at transaction top level (stack height 1)"
     },
     {
-      "code": 6035,
+      "code": 6037,
       "name": "unauthorizedFrameWrite",
       "msg": "Frame write requires authority signer"
+    },
+    {
+      "code": 6038,
+      "name": "splMintOptionEmpty",
+      "msg": "SPL mint optional authority is not set"
+    },
+    {
+      "code": 6039,
+      "name": "assertFailedMulti",
+      "msg": "Assertion failed in ifx_assert_multi"
     }
   ],
   "types": [
+    {
+      "name": "assertMultiArgs",
+      "docs": [
+        "Arguments for [`crate::ifx_assert_multi`]: each `conds` entry must evaluate to **`Bool`**."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "conds",
+            "type": {
+              "defined": {
+                "name": "ifx::state::u8_len_vec::U8LenVec<ifx::state::types::Expr>",
+                "generics": [
+                  {
+                    "kind": "type",
+                    "type": {
+                      "defined": {
+                        "name": "expr"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
     {
       "name": "cpi",
       "docs": [
@@ -466,35 +533,6 @@ export type Ifx = {
       "type": {
         "kind": "struct",
         "fields": []
-      }
-    },
-    {
-      "name": "rawCpiPatch",
-      "docs": [
-        "Overwrite a slice of [`Cpi::data`] with bytes read from [`Frame::tape`] before invoke."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "dataOffset",
-            "docs": [
-              "Byte offset into [`Cpi::data`] (not a Frame index; may exceed 255)."
-            ],
-            "type": "u16"
-          },
-          {
-            "name": "source",
-            "docs": [
-              "Binding index in the Frame (`payload_at[index]` → tape payload bytes)."
-            ],
-            "type": {
-              "defined": {
-                "name": "value"
-              }
-            }
-          }
-        ]
       }
     },
     {
@@ -646,6 +684,45 @@ export type Ifx = {
             ]
           },
           {
+            "name": "asU8",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asU16",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asU32",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
             "name": "asU64",
             "fields": [
               {
@@ -660,6 +737,71 @@ export type Ifx = {
           },
           {
             "name": "asU128",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asI8",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asI16",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asI32",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asI64",
+            "fields": [
+              {
+                "name": "operand",
+                "type": {
+                  "defined": {
+                    "name": "expr"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "asI128",
             "fields": [
               {
                 "name": "operand",
@@ -1354,7 +1496,7 @@ export type Ifx = {
       "docs": [
         "One `ifx_let` binding: wire tag selects variant; Frame `ty` is implied (or explicit for slices/eval).",
         "",
-        "Variant order matches opcode tags `0`–`28` (see `docs/typed-let-bindings.md`)."
+        "Variant order matches opcode tags `0`–`67` (see `docs/typed-let-bindings.md`)."
       ],
       "type": {
         "kind": "enum",
@@ -1602,21 +1744,357 @@ export type Ifx = {
           },
           {
             "name": "frameIndexCount"
-          }
-        ]
-      }
-    },
-    {
-      "name": "value",
-      "docs": [
-        "Reference to a bound value by **binding index** (0-based append order)."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
+          },
           {
-            "name": "index",
-            "type": "u8"
+            "name": "accountIsSigner",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "accountIsWritable",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeDelegationStake",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeDelegationActivationEpoch",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeDelegationDeactivationEpoch",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeLockupUnixTimestamp",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeLockupEpoch",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeAuthorizedStaker",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeAuthorizedWithdrawer",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeDelegationVoter",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splMintIsInitialized",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splMintMintAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splMintFreezeAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022MintIsInitialized",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022MintMintAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022MintFreezeAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "accountProgramOwner",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "accountExecutable",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "accountRentEpoch",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountMint",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountOwner",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountDelegate",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountCloseAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountIsNative",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splTokenAccountOwnerIsDerived",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountMint",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountOwner",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountDelegate",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountCloseAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountIsNative",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "splToken2022AccountOwnerIsDerived",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeAccountState",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeLockupCustodian",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeRentExemptReserve",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeCreditsObserved",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "stakeStakeFlags",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "upgradeableProgramDataTag",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "upgradeableProgramDataUpgradeAuthority",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
+          },
+          {
+            "name": "upgradeableProgramProgramDataAddress",
+            "fields": [
+              {
+                "name": "accountIndex",
+                "type": "u8"
+              }
+            ]
           }
         ]
       }

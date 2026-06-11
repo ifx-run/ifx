@@ -28,6 +28,27 @@ function toOperand<T extends IfxTy>(x: ExprInput<T>): Expr {
   return x;
 }
 
+type IntegerLike =
+  | "u8"
+  | "u16"
+  | "u32"
+  | "u64"
+  | "u128"
+  | "i8"
+  | "i16"
+  | "i32"
+  | "i64"
+  | "i128";
+type IntegerExprInput = ExprInput<IntegerLike>;
+
+function asCast<T extends IntegerLike>(
+  ty: T,
+  key: string,
+  operand: IntegerExprInput
+): TypedExpr<T> {
+  return taggedExpr(ty, { [key]: { operand: toOperand(operand) } } as unknown as Expr);
+}
+
 function bin<T extends IfxTy>(
   key: string,
   lhs: ExprInput<T>,
@@ -89,13 +110,18 @@ export const expr = {
   nonZero: <T extends IfxTy>(operand: ExprInput<T>): TypedExpr<"bool"> =>
     taggedExpr("bool", { nonZero: { operand: toOperand(operand) } }),
 
-  asU64: (operand: ExprInput<"u64" | "u128">): TypedExpr<"u64"> =>
-    taggedExpr("u64", { asU64: { operand: toOperand(operand) } }),
-
-  asU128: (
-    operand: ExprInput<"u8" | "u16" | "u32" | "u64" | "u128">
-  ): TypedExpr<"u128"> =>
-    taggedExpr("u128", { asU128: { operand: toOperand(operand) } }),
+  asU8: (operand: IntegerExprInput): TypedExpr<"u8"> => asCast("u8", "asU8", operand),
+  asU16: (operand: IntegerExprInput): TypedExpr<"u16"> => asCast("u16", "asU16", operand),
+  asU32: (operand: IntegerExprInput): TypedExpr<"u32"> => asCast("u32", "asU32", operand),
+  asU64: (operand: IntegerExprInput): TypedExpr<"u64"> => asCast("u64", "asU64", operand),
+  asU128: (operand: IntegerExprInput): TypedExpr<"u128"> =>
+    asCast("u128", "asU128", operand),
+  asI8: (operand: IntegerExprInput): TypedExpr<"i8"> => asCast("i8", "asI8", operand),
+  asI16: (operand: IntegerExprInput): TypedExpr<"i16"> => asCast("i16", "asI16", operand),
+  asI32: (operand: IntegerExprInput): TypedExpr<"i32"> => asCast("i32", "asI32", operand),
+  asI64: (operand: IntegerExprInput): TypedExpr<"i64"> => asCast("i64", "asI64", operand),
+  asI128: (operand: IntegerExprInput): TypedExpr<"i128"> =>
+    asCast("i128", "asI128", operand),
 
   add: <T extends ArithmeticTy>(lhs: ExprInput<T>, rhs: ExprInput<T>): TypedExpr<T> =>
     bin("add", lhs, rhs),

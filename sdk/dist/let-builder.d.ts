@@ -41,6 +41,8 @@ export declare class LetIxBuilder {
     frameGeneration(): ScratchValue<"u64">;
     /** `Frame.index_count` (bindings since last reset; no remaining account). */
     frameIndexCount(): ScratchValue<"u16">;
+    accountIsSigner(account: LetAccountInput): ScratchValue<"bool">;
+    accountIsWritable(account: LetAccountInput): ScratchValue<"bool">;
     accountDataSlice<T extends IfxTy>(account: LetAccountInput, expectedOwner: LetAccountInput, ty: T, dataOffset: number): ScratchValue<T>;
     splTokenAmount(account: LetAccountInput): ScratchValue<"u64">;
     splTokenDelegatedAmount(account: LetAccountInput): ScratchValue<"u64">;
@@ -59,6 +61,41 @@ export declare class LetIxBuilder {
     splToken2022MintTransferFeeMaximum(mint: LetAccountInput): ScratchValue<"u64">;
     splToken2022MintWithheldAmount(mint: LetAccountInput): ScratchValue<"u64">;
     splToken2022MintDefaultAccountState(mint: LetAccountInput): ScratchValue<"u8">;
+    /** Stake `meta.authorized.staker` (stake program owner, `StakeStateV2`). */
+    stakeAuthorizedStaker(account: LetAccountInput): ScratchValue<"pubkey">;
+    stakeAuthorizedWithdrawer(account: LetAccountInput): ScratchValue<"pubkey">;
+    stakeLockupUnixTimestamp(account: LetAccountInput): ScratchValue<"i64">;
+    stakeLockupEpoch(account: LetAccountInput): ScratchValue<"u64">;
+    stakeDelegationStake(account: LetAccountInput): ScratchValue<"u64">;
+    splMintIsInitialized(mint: LetAccountInput): ScratchValue<"bool">;
+    splMintMintAuthority(mint: LetAccountInput): ScratchValue<"pubkey">;
+    splMintFreezeAuthority(mint: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022MintIsInitialized(mint: LetAccountInput): ScratchValue<"bool">;
+    splToken2022MintMintAuthority(mint: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022MintFreezeAuthority(mint: LetAccountInput): ScratchValue<"pubkey">;
+    accountProgramOwner(account: LetAccountInput): ScratchValue<"pubkey">;
+    accountExecutable(account: LetAccountInput): ScratchValue<"bool">;
+    accountRentEpoch(account: LetAccountInput): ScratchValue<"u64">;
+    splTokenAccountMint(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splTokenAccountOwner(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splTokenAccountDelegate(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splTokenAccountCloseAuthority(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splTokenAccountIsNative(tokenAccount: LetAccountInput): ScratchValue<"u64">;
+    splTokenAccountOwnerIsDerived(tokenAccount: LetAccountInput): ScratchValue<"bool">;
+    splToken2022AccountMint(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022AccountOwner(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022AccountDelegate(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022AccountCloseAuthority(tokenAccount: LetAccountInput): ScratchValue<"pubkey">;
+    splToken2022AccountIsNative(tokenAccount: LetAccountInput): ScratchValue<"u64">;
+    splToken2022AccountOwnerIsDerived(tokenAccount: LetAccountInput): ScratchValue<"bool">;
+    stakeAccountState(account: LetAccountInput): ScratchValue<"u8">;
+    stakeLockupCustodian(account: LetAccountInput): ScratchValue<"pubkey">;
+    stakeRentExemptReserve(account: LetAccountInput): ScratchValue<"u64">;
+    stakeCreditsObserved(account: LetAccountInput): ScratchValue<"u64">;
+    stakeStakeFlags(account: LetAccountInput): ScratchValue<"u8">;
+    upgradeableProgramDataTag(account: LetAccountInput): ScratchValue<"u32">;
+    upgradeableProgramDataUpgradeAuthority(account: LetAccountInput): ScratchValue<"pubkey">;
+    upgradeableProgramProgramDataAddress(account: LetAccountInput): ScratchValue<"pubkey">;
     finish(): {
         args: import("./types").LetArgs;
         bindings: ScratchValue<IfxTy>[];

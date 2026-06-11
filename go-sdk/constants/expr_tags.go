@@ -1,6 +1,6 @@
 package constants
 
-// Expr wire tags 0..42 — must match programs/ifx Expr enum and sdk/src/expr-variants.ts.
+// Expr wire tags 0..51 — must match programs/ifx Expr enum and sdk/src/expr-variants.ts.
 const (
 	ExprTagValue = iota
 	ExprTagConstBool
@@ -20,8 +20,16 @@ const (
 	ExprTagNeg
 	ExprTagIsZero
 	ExprTagNonZero
+	ExprTagAsU8
+	ExprTagAsU16
+	ExprTagAsU32
 	ExprTagAsU64
 	ExprTagAsU128
+	ExprTagAsI8
+	ExprTagAsI16
+	ExprTagAsI32
+	ExprTagAsI64
+	ExprTagAsI128
 	ExprTagAdd
 	ExprTagSub
 	ExprTagMul
@@ -48,4 +56,4 @@ const (
 	ExprTagConstPubkey
 )
 
-const ExprVariantCount = 44
+const ExprVariantCount = 52

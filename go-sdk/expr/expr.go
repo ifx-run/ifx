@@ -136,8 +136,16 @@ func Not(op Node) Node     { return Unary{Tag: constants.ExprTagNot, Operand: op
 func Neg(op Node) Node     { return Unary{Tag: constants.ExprTagNeg, Operand: op} }
 func IsZero(op Node) Node  { return Unary{Tag: constants.ExprTagIsZero, Operand: op} }
 func NonZero(op Node) Node { return Unary{Tag: constants.ExprTagNonZero, Operand: op} }
+func AsU8(op Node) Node   { return Unary{Tag: constants.ExprTagAsU8, Operand: op} }
+func AsU16(op Node) Node  { return Unary{Tag: constants.ExprTagAsU16, Operand: op} }
+func AsU32(op Node) Node  { return Unary{Tag: constants.ExprTagAsU32, Operand: op} }
 func AsU64(op Node) Node   { return Unary{Tag: constants.ExprTagAsU64, Operand: op} }
 func AsU128(op Node) Node  { return Unary{Tag: constants.ExprTagAsU128, Operand: op} }
+func AsI8(op Node) Node   { return Unary{Tag: constants.ExprTagAsI8, Operand: op} }
+func AsI16(op Node) Node  { return Unary{Tag: constants.ExprTagAsI16, Operand: op} }
+func AsI32(op Node) Node  { return Unary{Tag: constants.ExprTagAsI32, Operand: op} }
+func AsI64(op Node) Node  { return Unary{Tag: constants.ExprTagAsI64, Operand: op} }
+func AsI128(op Node) Node { return Unary{Tag: constants.ExprTagAsI128, Operand: op} }
 
 func Add(a, b Node) Node          { return Binary{Tag: constants.ExprTagAdd, Lhs: a, Rhs: b} }
 func Sub(a, b Node) Node          { return Binary{Tag: constants.ExprTagSub, Lhs: a, Rhs: b} }
@@ -166,7 +174,7 @@ func Select(cond, thenExpr, elseExpr Node) Node {
 	return Ternary{Tag: constants.ExprTagSelect, A: cond, B: thenExpr, C: elseExpr}
 }
 
-// Sample returns the minimal parity sample for wire tag index 0..42 (tests/sdk_expr_parity.ts).
+// Sample returns the minimal parity sample for wire tag index 0..51 (tests/sdk_expr_parity.ts).
 func Sample(tag int) Node {
 	u64 := U64(1)
 	u128 := U128(2)
@@ -209,59 +217,73 @@ func Sample(tag int) Node {
 	case 17:
 		return NonZero(u64)
 	case 18:
-		return AsU64(u128)
+		return AsU8(U32(1000))
 	case 19:
-		return AsU128(u64)
+		return AsU16(U32(1000))
 	case 20:
-		return Add(u64, u64)
+		return AsU32(u64)
 	case 21:
-		return Sub(u64, u64)
+		return AsU64(u128)
 	case 22:
-		return Mul(u64, u64)
+		return AsU128(u64)
 	case 23:
-		return Div(u64, u64)
+		return AsI8(I32(-3))
 	case 24:
-		return DivFloor(u64, u64)
+		return AsI16(I32(-3))
 	case 25:
-		return DivCeil(u64, u64)
+		return AsI32(I64(-3))
 	case 26:
-		return Min(u64, u64)
+		return AsI64(I64(-3))
 	case 27:
-		return Max(u64, u64)
+		return AsI128(I64(-3))
 	case 28:
-		return Eq(u64, u64)
+		return Add(u64, u64)
 	case 29:
-		return Ne(u64, u64)
+		return Sub(u64, u64)
 	case 30:
-		return Gt(u64, u64)
+		return Mul(u64, u64)
 	case 31:
-		return Ge(u64, u64)
+		return Div(u64, u64)
 	case 32:
-		return Lt(u64, u64)
+		return DivFloor(u64, u64)
 	case 33:
-		return Le(u64, u64)
+		return DivCeil(u64, u64)
 	case 34:
-		return SaturatingSub(u64, u64)
+		return Min(u64, u64)
 	case 35:
-		return And(b, b)
+		return Max(u64, u64)
 	case 36:
-		return Or(b, b)
+		return Eq(u64, u64)
 	case 37:
-		return BpsMulFloor(u64, u64)
+		return Ne(u64, u64)
 	case 38:
-		return BpsMulCeil(u64, u64)
+		return Gt(u64, u64)
 	case 39:
-		return MulDivFloor(u64, u64, u64)
+		return Ge(u64, u64)
 	case 40:
-		return MulDivCeil(u64, u64, u64)
+		return Lt(u64, u64)
 	case 41:
-		return Clamp(u64, u64, u64)
+		return Le(u64, u64)
 	case 42:
-		return Select(b, u64, u64)
+		return SaturatingSub(u64, u64)
 	case 43:
-		var pk [32]byte
-		pk[0] = 7
-		return Pubkey(pk)
+		return And(b, b)
+	case 44:
+		return Or(b, b)
+	case 45:
+		return BpsMulFloor(u64, u64)
+	case 46:
+		return BpsMulCeil(u64, u64)
+	case 47:
+		return MulDivFloor(u64, u64, u64)
+	case 48:
+		return MulDivCeil(u64, u64, u64)
+	case 49:
+		return Clamp(u64, u64, u64)
+	case 50:
+		return Select(b, u64, u64)
+	case 51:
+		return Pubkey([32]byte{})
 	default:
 		panic("invalid expr sample tag")
 	}

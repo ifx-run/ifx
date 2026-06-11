@@ -1,8 +1,9 @@
 use anchor_lang::prelude::*;
 
 use crate::error::ErrorCode;
+use crate::state::layout_map::map_layout_err;
 use crate::state::types::ValueType;
-use crate::state::value_codec::{decode_bool, ValueBytes};
+use crate::state::value_codec::{copy_from, decode_bool, ValueBytes};
 use crate::state::value_type_tag::{tag_to_value_type, value_type_to_tag};
 
 use super::frame_access::{FrameReader, FrameWriter};
@@ -14,14 +15,7 @@ use super::Frame;
 /// placed immediately after the prior record — `ty @ cursor`, `payload @ cursor + 1`.
 /// Off-chain simulators (SDK `planRecordOffsets`) must use identical rules.
 pub fn plan_record_offsets(cursor: u32, ty: ValueType) -> Result<(u32, u32)> {
-    let ty_offset = cursor;
-    let payload_offset = cursor
-        .checked_add(1)
-        .ok_or(ErrorCode::TapeOutOfBounds)?;
-    let _end = payload_offset
-        .checked_add(ty.size() as u32)
-        .ok_or(ErrorCode::TapeOutOfBounds)?;
-    Ok((ty_offset, payload_offset))
+    ifx_core::layout::plan_record_offsets(cursor, ty).map_err(map_layout_err)
 }
 
 impl FrameReader for Frame {
@@ -64,7 +58,7 @@ impl FrameReader for Frame {
             .checked_add(ty.size())
             .ok_or(ErrorCode::TapeOutOfBounds)?;
         require!(end <= self.tape.len(), ErrorCode::TapeOutOfBounds);
-        ValueBytes::copy_from(ty, &self.tape[off..end])
+        copy_from(ty, &self.tape[off..end])
     }
 
     fn read_bool_at(&self, index: u8) -> Result<bool> {
@@ -139,20 +133,8 @@ impl Frame {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::{index_cap_for_tape_len, MAX_FRAME_TAPE_LEN};
+    use crate::constants::index_cap_for_tape_len;
     use crate::state::types::ValueType;
-
-    #[test]
-    fn packed_u64_chain() {
-        let mut cursor = 0u32;
-        let (ty0, pay0) = plan_record_offsets(cursor, ValueType::U64).unwrap();
-        assert_eq!((ty0, pay0), (0, 1));
-        cursor = pay0 + 8;
-        let (ty1, pay1) = plan_record_offsets(cursor, ValueType::U64).unwrap();
-        assert_eq!((ty1, pay1), (9, 10));
-        cursor = pay1 + 8;
-        assert_eq!(cursor, 18);
-    }
 
     #[test]
     fn append_returns_binding_index() {
@@ -188,10 +170,5 @@ mod tests {
         assert_eq!(index_cap_for_tape_len(20), 10);
         assert_eq!(index_cap_for_tape_len(256), 128);
         assert_eq!(index_cap_for_tape_len(8192), 256);
-    }
-
-    #[test]
-    fn tape_len_bounds() {
-        assert!(MAX_FRAME_TAPE_LEN <= u16::MAX as u32);
     }
 }

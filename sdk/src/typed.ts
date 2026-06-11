@@ -121,7 +121,20 @@ const BOOL_EXPR_KEYS = new Set([
   "or",
 ]);
 
-const UNARY_NUMERIC_KEYS = new Set(["neg", "asU64", "asU128"]);
+const CAST_EXPR_KEYS: Record<string, IfxTy> = {
+  asU8: "u8",
+  asU16: "u16",
+  asU32: "u32",
+  asU64: "u64",
+  asU128: "u128",
+  asI8: "i8",
+  asI16: "i16",
+  asI32: "i32",
+  asI64: "i64",
+  asI128: "i128",
+};
+
+const UNARY_NUMERIC_KEYS = new Set(["neg"]);
 
 const BINARY_NUMERIC_KEYS = new Set([
   "add",
@@ -174,15 +187,14 @@ export function inferIfxTyFromExpr(
   for (const key of BOOL_EXPR_KEYS) {
     if (key in node) return "bool";
   }
-  if ("asU64" in node) return "u64";
-  if ("asU128" in node) return "u128";
+  for (const [key, ty] of Object.entries(CAST_EXPR_KEYS)) {
+    if (key in node) return ty;
+  }
   if ("bpsMulFloor" in node || "bpsMulCeil" in node) return "u64";
 
   for (const key of UNARY_NUMERIC_KEYS) {
     if (key in node) {
       const inner = (node[key] as { operand: Expr }).operand;
-      if (key === "asU64") return "u64";
-      if (key === "asU128") return "u128";
       return inferIfxTyFromExpr(inner, indexTypes);
     }
   }
@@ -236,8 +248,16 @@ export function isExprLike(v: unknown): v is Expr {
     "neg",
     "isZero",
     "nonZero",
+    "asU8",
+    "asU16",
+    "asU32",
     "asU64",
     "asU128",
+    "asI8",
+    "asI16",
+    "asI32",
+    "asI64",
+    "asI128",
     "add",
     "sub",
     "mul",

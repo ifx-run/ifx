@@ -21,11 +21,11 @@ describe("sdk Pubkey wire", () => {
   it("encodeExpr constPubkey and eq", () => {
     const pk = PublicKey.unique();
     const lit = encodeExpr(expr.pubkey(pk));
-    expect(lit[0]).to.equal(43);
+    expect(lit[0]).to.equal(51);
     expect(lit.subarray(1, 33)).to.deep.equal(pk.toBuffer());
 
     const cmp = encodeExpr(expr.eq(expr.pubkey(pk), { value: { value: { index: 1 } } }));
-    expect(cmp[0]).to.equal(28);
+    expect(cmp[0]).to.equal(36);
   });
 
   it("ValueType pubkey tag is 13", () => {

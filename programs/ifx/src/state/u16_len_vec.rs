@@ -1,13 +1,11 @@
-//! `U16LenVec<T>` — Borsh collection with **u16 LE** element-count prefix (not Borsh `Vec`'s u32).
+//! Program-local [`U16LenVec`] (wire via [`ifx_core::U16LenVec`]; enables [`IdlBuild`] here).
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::ops::{Deref, DerefMut};
 
-use borsh::io::{Error, ErrorKind, Read, Result, Write};
+use borsh::io::{Read, Result, Write};
 
 /// Vector serialized as `u16` element count (LE) followed by each element in Borsh order.
-///
-/// For `T = u8`, the payload is raw bytes after the length (same body as Borsh `[u8]`, shorter prefix).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct U16LenVec<T>(pub Vec<T>);
 
@@ -58,35 +56,15 @@ impl<T> DerefMut for U16LenVec<T> {
     }
 }
 
-fn check_len(len: usize) -> Result<()> {
-    if len > usize::from(u16::MAX) {
-        return Err(Error::new(
-            ErrorKind::InvalidData,
-            "U16LenVec length exceeds u16::MAX",
-        ));
-    }
-    Ok(())
-}
-
 impl<T: BorshSerialize> BorshSerialize for U16LenVec<T> {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<()> {
-        check_len(self.0.len())?;
-        (self.0.len() as u16).serialize(writer)?;
-        for item in &self.0 {
-            item.serialize(writer)?;
-        }
-        Ok(())
+        ifx_core::u16_len_vec::serialize_items(&self.0, writer)
     }
 }
 
 impl<T: BorshDeserialize> BorshDeserialize for U16LenVec<T> {
     fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self> {
-        let len = usize::from(u16::deserialize_reader(reader)?);
-        let mut out = Vec::with_capacity(len);
-        for _ in 0..len {
-            out.push(T::deserialize_reader(reader)?);
-        }
-        Ok(Self(out))
+        Ok(Self(ifx_core::u16_len_vec::deserialize_items(reader)?))
     }
 }
 
@@ -100,10 +78,10 @@ mod tests {
         let v = U16LenVec(vec![1u8, 2, 3]);
         let mut buf = Vec::new();
         v.serialize(&mut buf).unwrap();
-        assert_eq!(&buf[..2], &[3, 0]); // u16 LE len
+        assert_eq!(&buf[..2], &[3, 0]);
         assert_eq!(&buf[2..], &[1, 2, 3]);
         let back = U16LenVec::<u8>::deserialize(&mut buf.as_slice()).unwrap();
-        assert_eq!(back.0, v.0);
+        assert_eq!(back.to_vec(), v.to_vec());
     }
 
     #[test]

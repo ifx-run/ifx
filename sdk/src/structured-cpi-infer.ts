@@ -39,6 +39,24 @@ const SYSTEM_IX = {
   allocate: 8,
 } as const;
 
+/** Native stake program (`Stake11111111111111111111111111111111111111`). */
+export const STAKE_PROGRAM_ID = new PublicKey(
+  "Stake11111111111111111111111111111111111111"
+);
+
+/** Stake instruction variant (u32 LE at data[0..4], bincode). */
+const STAKE_IX = {
+  delegateStake: 2,
+  split: 3,
+  withdraw: 4,
+  deactivate: 5,
+} as const;
+
+function readU32Le(data: Buffer): number | null {
+  if (data.length < 4) return null;
+  return data.readUInt32LE(0);
+}
+
 export type StructuredCpiPatchTagName = StructuredCpiPatch["tag"];
 
 function readSystemDiscriminator(data: Buffer): number | null {
@@ -137,6 +155,22 @@ export function inferStructuredCpiPatchTag(
     programId.equals(TOKEN_2022_PROGRAM_ID)
   ) {
     return inferTokenFamily(programId, data);
+  }
+
+  if (programId.equals(STAKE_PROGRAM_ID)) {
+    const variant = readU32Le(data);
+    switch (variant) {
+      case STAKE_IX.withdraw:
+        return "stakeWithdraw";
+      case STAKE_IX.split:
+        return "stakeSplit";
+      case STAKE_IX.deactivate:
+        return "stakeDeactivate";
+      case STAKE_IX.delegateStake:
+        return "stakeDelegateStake";
+      default:
+        return null;
+    }
   }
 
   return null;

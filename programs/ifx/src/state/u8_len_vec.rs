@@ -1,9 +1,9 @@
-//! `U8LenVec<T>` — Borsh collection with **u8** element-count prefix (max 255 elements).
+//! Program-local [`U8LenVec`] (wire via [`ifx_core::U8LenVec`]; enables [`IdlBuild`] here).
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::ops::{Deref, DerefMut};
 
-use borsh::io::{Error, ErrorKind, Read, Result, Write};
+use borsh::io::{Read, Result, Write};
 
 /// Vector serialized as `u8` element count followed by each element in Borsh order.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -49,42 +49,22 @@ impl<T> DerefMut for U8LenVec<T> {
     }
 }
 
-fn check_len(len: usize) -> Result<()> {
-    if len > usize::from(u8::MAX) {
-        return Err(Error::new(
-            ErrorKind::InvalidData,
-            "U8LenVec length exceeds u8::MAX",
-        ));
-    }
-    Ok(())
-}
-
 impl<T: BorshSerialize> BorshSerialize for U8LenVec<T> {
     fn serialize<W: Write>(&self, writer: &mut W) -> Result<()> {
-        check_len(self.0.len())?;
-        (self.0.len() as u8).serialize(writer)?;
-        for item in &self.0 {
-            item.serialize(writer)?;
-        }
-        Ok(())
+        ifx_core::u8_len_vec::serialize_items(&self.0, writer)
     }
 }
 
 impl<T: BorshDeserialize> BorshDeserialize for U8LenVec<T> {
     fn deserialize_reader<R: Read>(reader: &mut R) -> Result<Self> {
-        let len = usize::from(u8::deserialize_reader(reader)?);
-        let mut out = Vec::with_capacity(len);
-        for _ in 0..len {
-            out.push(T::deserialize_reader(reader)?);
-        }
-        Ok(Self(out))
+        Ok(Self(ifx_core::u8_len_vec::deserialize_items(reader)?))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{RawCpiPatch, LetBinding, Value};
+    use crate::state::{LetBinding, RawCpiPatch, Value};
 
     #[test]
     fn roundtrip_bindings() {
@@ -92,37 +72,7 @@ mod tests {
         let encoded = borsh::to_vec(&v).unwrap();
         assert_eq!(encoded[0], 1);
         let back = borsh::from_slice::<U8LenVec<LetBinding>>(&encoded).unwrap();
-        assert_eq!(back.0.len(), 1);
-    }
-
-    #[test]
-    fn anchor_encode_spl_token_amount_matches_sdk() {
-        use crate::state::LetArgs;
-        use anchor_lang::AnchorSerialize;
-
-        let args = LetArgs {
-            bindings: U8LenVec(vec![LetBinding::SplTokenAccountAmount {
-                account_index: 0,
-            }]),
-        };
-        let mut buf = Vec::new();
-        args.serialize(&mut buf).unwrap();
-        assert_eq!(buf.as_slice(), &[1, 9, 0]);
-    }
-
-    #[test]
-    fn decode_sdk_spl_token_amount_wire() {
-        use crate::state::LetArgs;
-        use anchor_lang::AnchorDeserialize;
-
-        // SDK `encodeLetArgs`: u8 len=1, enum tag=9 (SplTokenAccountAmount), account_index=0
-        let bytes = [1u8, 9u8, 0u8];
-        let args = LetArgs::deserialize(&mut &bytes[..]).unwrap();
-        assert_eq!(args.bindings.len(), 1);
-        assert!(matches!(
-            args.bindings[0],
-            LetBinding::SplTokenAccountAmount { account_index: 0 }
-        ));
+        assert_eq!(back.len(), 1);
     }
 
     #[test]

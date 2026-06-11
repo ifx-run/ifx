@@ -160,6 +160,19 @@ func (s *FrameScratch) IxAssert(cond interface{}) (solana.Instruction, error) {
 	return ix.BuildAssert(s.Frame, c, s.ixOpts())
 }
 
+// IxAssertMulti returns ifx_assert_multi.
+func (s *FrameScratch) IxAssertMulti(conds []interface{}) (solana.Instruction, error) {
+	nodes := make([]expr.Node, len(conds))
+	for i, c := range conds {
+		node, err := ToCond(c)
+		if err != nil {
+			return nil, err
+		}
+		nodes[i] = node
+	}
+	return ix.BuildAssertMulti(s.Frame, nodes, s.ixOpts())
+}
+
 // IxCpi returns ifx_patched_cpi.
 func (s *FrameScratch) IxCpi(built codec.WireBuildResult) (solana.Instruction, error) {
 	return ix.BuildCpi(s.Frame, built, s.ixOpts())

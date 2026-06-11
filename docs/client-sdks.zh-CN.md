@@ -23,7 +23,7 @@
 ## 共同原则（Go / Rust 均适用）
 
 1. **不包装 RPC / 钱包** — 与 TS 相同：只产出 `Instruction` / 账户 meta；签名与发送由集成方负责。
-2. **Wire 与 TS 一致** — `Expr` 扁平 Borsh tag **0–43**；`LetBinding` tag **0–28**；`Cpi` 步 kind **`0/1/2`**；`ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` 为强类型 Anchor 参数（内层 custom wire）。勿用 Anchor TS/Rust 递归 coder 编 deep `Expr`。
+2. **Wire 与 TS 一致** — `Expr` 扁平 Borsh tag **0–51**；`LetBinding` tag **0–67**；`Cpi` 步 kind **`0/1/2`**；`ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` 为强类型 Anchor 参数（内层 custom wire）。勿用 Anchor TS/Rust 递归 coder 编 deep `Expr`。
 3. **Layout 与链上一致** — `plan_record_offsets`、`index_cap_for_tape_len`、packed tape `[ty:1][payload]`；链下 planner 失败应 **fail fast**（对应链上 `TapeOutOfBounds` / `IndexCapReached`）。
 4. **测试** — 字节级 golden 对齐 `tests/sdk_expr_parity.ts`、`tests/sdk_let_binding_parity.ts`、`tests/sdk_if_else_codec.ts` 等；集成测试可复用 Surfpool / `anchor test` 场景。
 5. **IDL** — 分发 bundled `idl/ifx.json`（或与 npm SDK 同 revision pin program id）。
@@ -69,7 +69,7 @@ go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
 | 阶段 | 内容 | 验收 |
 |------|------|------|
 | **G1 — Wire** | constants、PDA、`encodeExpr` / `encodeLetArgs` / patch & if_else codec | 与 TS parity tests 字节一致 | ✅ |
-| **G2 — IR** | `expr` 构造、`LetBinding` helper、类型推断（Eval） | opcode 0–28 / Expr 0–43 样例 | ✅ |
+| **G2 — IR** | `expr` 构造、`LetBinding` helper、类型推断（Eval） | LetBinding 0–67 / Expr 0–51 样例 | ✅ |
 | **G3 — Planner** | `FrameScratch`、`LetBuilder`（remaining 去重）、`ix_*` | `scratch/*_test.go` | ✅ |
 | **G4 — 完整** | RawPatched + **Structured** CPI、if_else、Pubkey let、L0–L1 e2e | `integration/*_test.go`、`structuredcpi/*_test.go` | ✅ |
 | **G5 — 文档** | Go SDK README、examples 说明 | `go-sdk/README` | ✅ |
@@ -103,13 +103,26 @@ go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
 ### 架构（目标）
 
 ```
-crates/ifx-core/          # 从 programs/ifx 抽出：types, constants, tape, frame_layout,
-                          # value_codec, infer_expr_ty, plan_record_offsets
-programs/ifx/             # 依赖 ifx-core；链上 execute_let / CPI
-crates/ifx-sdk/           # FrameScratch, LetBuilder, ix_*, expr builders；solana-sdk
+crates/ifx-core/          # 共用：constants、wire 类型、tape layout、codec（crates.io: ifx-core）
+programs/ifx/             # 仅链上：#[program]、execute_let、invoke；依赖 ifx-core（crates.io: ifx）
+rust-sdk/                 # 链下 planner；package 名 ifx-sdk（crates.io: ifx-sdk）
 ```
 
-**短期可** path 依赖 `ifx` + `no-entrypoint` 验证 planner；**中期** 抽 `ifx-core` 避免 wallet 后端拖入整包 Anchor program。
+**依赖方向：** `ifx-core` ← `ifx`（program）且 `ifx-core` ← `ifx-sdk`。Core **不**依赖 Anchor 账户运行时或 `solana-sdk` 组 Instruction。
+
+**`ifx-core` 增量 feature**（未启用时零成本）：
+
+| Feature | 内容 |
+|---------|------|
+| *(default)* | `constants` |
+| `wire` | `Cpi`、`StructuredCpiPatch`、`Expr`、`U8LenVec` … |
+| `anchor-wire` | `LetBinding`、`LetArgs`（迁移期 Anchor 兼容序列化） |
+| `layout` | `frame_layout`、`plan_record_offsets`、`infer_expr_ty`、`value_codec` |
+| `structured-cpi` | `assemble_structured_cpi` ix data（SPL/System/Stake；无 `invoke`） |
+
+**仅留 program：** `#[program]` handler、`AccountInfo`/PDA、`let_binding_exec`、`program::invoke`、`pseudocode`、`#[error_code]`。
+
+**短期** path 依赖 `ifx` + `no-entrypoint` 仍可用于 CPI 集成。**中期** 钱包/backend 只依赖 `ifx-sdk` + `ifx-core`。
 
 ### 可共用（不必重写）
 
@@ -128,9 +141,9 @@ crates/ifx-sdk/           # FrameScratch, LetBuilder, ix_*, expr builders；sola
 
 | 阶段 | 内容 |
 |------|------|
-| **R1** | `ifx-core` 抽取 + golden vs TS |
-| **R2** | planner + `ix_let` / reset / assert |
-| **R3** | patched CPI、if_else、示例与集成测试（`ifx-sdk`） |
+| **R1** | `ifx-core` 抽取 + golden vs TS | ✅ wire + layout + `structured-cpi`；`frame_layout` 暂缓 |
+| **R2** | planner + `ix_*` + `expr` | ✅ `FrameScratch`、`LetBuilder`、`let_*`、`ix_cpi` / `ix_if_else` / `ix_close`、parity 测试 |
+| **R3** | 示例与集成测试（`ifx-sdk`） | ⏳ |
 
 ---
 

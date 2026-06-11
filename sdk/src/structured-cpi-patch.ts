@@ -49,7 +49,7 @@ const pubkeyValueTag = {
   literal: 1,
 } as const;
 
-/** Wire tag 0–28 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 export const STRUCTURED_CPI_PATCH_WIRE = {
   /** (0) System `Transfer` — dynamic lamports. */
   systemTransfer: 0,
@@ -109,6 +109,14 @@ export const STRUCTURED_CPI_PATCH_WIRE = {
   token2022TransferCheckedWithFee: 27,
   /** (28) Token-2022 TransferFee `SetTransferFee` — `SetTransferFeePatch`. */
   token2022SetTransferFee: 28,
+  /** (29) Stake `Withdraw` — dynamic lamports. */
+  stakeWithdraw: 29,
+  /** (30) Stake `Split` — dynamic lamports. */
+  stakeSplit: 30,
+  /** (31) Stake `Deactivate` — no dynamic fields. */
+  stakeDeactivate: 31,
+  /** (32) Stake `DelegateStake` — no dynamic fields. */
+  stakeDelegateStake: 32,
 } as const;
 
 export type StructuredCpiPatchWireTag =
@@ -234,7 +242,15 @@ export type StructuredCpiPatch =
   /** (27) Token-2022 TransferFee `TransferCheckedWithFee` — `AmountDecimalsFeePatch`. */
   | { tag: "token2022TransferCheckedWithFee"; amountDecimalsFee: AmountDecimalsFeePatch }
   /** (28) Token-2022 TransferFee `SetTransferFee` — `SetTransferFeePatch`. */
-  | { tag: "token2022SetTransferFee"; setTransferFee: SetTransferFeePatch };
+  | { tag: "token2022SetTransferFee"; setTransferFee: SetTransferFeePatch }
+  /** (29) Stake `Withdraw` — dynamic lamports. */
+  | { tag: "stakeWithdraw"; lamports: Value }
+  /** (30) Stake `Split` — dynamic lamports. */
+  | { tag: "stakeSplit"; lamports: Value }
+  /** (31) Stake `Deactivate` — no dynamic fields. */
+  | { tag: "stakeDeactivate" }
+  /** (32) Stake `DelegateStake` — no dynamic fields. */
+  | { tag: "stakeDelegateStake" };
 
 function writeU64(n: bigint): Buffer {
   const b = Buffer.alloc(8);
@@ -468,6 +484,12 @@ function encodeStructuredCpiPatchBody(patch: StructuredCpiPatch): Buffer {
     case "token2022InitializeMint":
     case "token2022InitializeMint2":
       return encodeInitializeMintPatch(patch.initializeMint);
+    case "stakeWithdraw":
+    case "stakeSplit":
+      return writeValueIndex(patch.lamports);
+    case "stakeDeactivate":
+    case "stakeDelegateStake":
+      return Buffer.alloc(0);
   }
 }
 
@@ -665,7 +687,7 @@ function initializeMintBuilder(tag: InitializeMintPatchTag) {
     }) as StructuredCpiPatch;
 }
 
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–28). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
 export const structuredCpiPatch = {
   systemTransfer(lamports: ValueInput): StructuredCpiPatch {
     return { tag: "systemTransfer", lamports: asValue(lamports) };
@@ -787,6 +809,18 @@ export const structuredCpiPatch = {
         },
       };
     },
+  },
+  stakeWithdraw(lamports: ValueInput): StructuredCpiPatch {
+    return { tag: "stakeWithdraw", lamports: asValue(lamports) };
+  },
+  stakeSplit(lamports: ValueInput): StructuredCpiPatch {
+    return { tag: "stakeSplit", lamports: asValue(lamports) };
+  },
+  stakeDeactivate(): StructuredCpiPatch {
+    return { tag: "stakeDeactivate" };
+  },
+  stakeDelegateStake(): StructuredCpiPatch {
+    return { tag: "stakeDelegateStake" };
   },
   /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
   tokenAmount(amount: ValueInput): StructuredCpiPatch {

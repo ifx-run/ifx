@@ -9,6 +9,7 @@ export declare const IX_DISCRIMINATOR: {
     readonly ifxResetFrame: Buffer<ArrayBuffer>;
     readonly ifxLet: Buffer<ArrayBuffer>;
     readonly ifxAssert: Buffer<ArrayBuffer>;
+    readonly ifxAssertMulti: Buffer<ArrayBuffer>;
     readonly ifxPatchedCpi: Buffer<ArrayBuffer>;
     readonly ifxIfElse: Buffer<ArrayBuffer>;
 };
@@ -34,6 +35,8 @@ export declare function isIxOpts(value: unknown): value is IxOpts;
 export declare function buildIxLet(frame: PublicKey, authority: PublicKey, args: LetArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
 export declare const buildIxResetFrame: typeof createIxResetFrame;
 export declare function buildIxAssert(frame: PublicKey, cond: Cond, opts?: IxOpts): TransactionInstruction;
+/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+export declare function buildIxAssertMulti(frame: PublicKey, conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
 export declare function createIxCpi(frame: PublicKey, built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
 export declare function createIxIfElse(frame: PublicKey, args: IfElseArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;

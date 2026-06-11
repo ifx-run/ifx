@@ -18,7 +18,14 @@ import {
   STRUCTURED_CPI_PATCH_WIRE,
 } from "../sdk/src/structured-cpi-patch";
 import { structuredCpi, structuredCpiStep } from "../sdk/src/structured-cpi";
-import { inferStructuredCpiPatchTag } from "../sdk/src/structured-cpi-infer";
+import {
+  inferStructuredCpiPatchTag,
+  STAKE_PROGRAM_ID,
+} from "../sdk/src/structured-cpi-infer";
+import {
+  stakeDeactivateInstruction,
+  stakeWithdrawInstruction,
+} from "./helpers/stake";
 
 describe("sdk structured CPI codec", () => {
   it("encodeStructuredCpiPatchPayload amountOnly matches nested Borsh body", () => {
@@ -125,7 +132,7 @@ describe("sdk structured CPI codec", () => {
     const wireKeys = Object.keys(STRUCTURED_CPI_PATCH_WIRE) as Array<
       keyof typeof STRUCTURED_CPI_PATCH_WIRE
     >;
-    expect(wireKeys).to.have.length(29);
+    expect(wireKeys).to.have.length(33);
     for (const key of wireKeys) {
       expect(structuredCpiPatch).to.have.property(key);
     }
@@ -164,5 +171,51 @@ describe("sdk structured CPI codec", () => {
     );
     expect(splIx.data[0]).to.equal(20);
     expect(splIx.data[1]).to.equal(6);
+  });
+
+  it("encodeStructuredCpiPatch stake withdraw matches wire tag 29", () => {
+    const patch = structuredCpiPatch.stakeWithdraw(asValue({ index: 2 }));
+    const wire = encodeStructuredCpiPatch(patch);
+    expect(wire).to.deep.equal(Buffer.from([29, 2]));
+    expect(structuredCpiPatchWireTag(patch)).to.equal(
+      STRUCTURED_CPI_PATCH_WIRE.stakeWithdraw
+    );
+  });
+
+  it("inferStructuredCpiPatchTag resolves stake withdraw / deactivate", () => {
+    const stake = PublicKey.unique();
+    const recipient = PublicKey.unique();
+    const authority = PublicKey.unique();
+    const withdrawTpl = stakeWithdrawInstruction(
+      stake,
+      recipient,
+      authority,
+      0n
+    );
+    expect(withdrawTpl.programId.equals(STAKE_PROGRAM_ID)).to.equal(true);
+    expect(inferStructuredCpiPatchTag(withdrawTpl)).to.equal("stakeWithdraw");
+
+    const deactivateTpl = stakeDeactivateInstruction(stake, authority);
+    expect(inferStructuredCpiPatchTag(deactivateTpl)).to.equal(
+      "stakeDeactivate"
+    );
+  });
+
+  it("structuredCpi builder infers stake withdraw patch tag", () => {
+    const stake = PublicKey.unique();
+    const recipient = PublicKey.unique();
+    const authority = PublicKey.unique();
+    const template = stakeWithdrawInstruction(
+      stake,
+      recipient,
+      authority,
+      1n
+    );
+    const built = structuredCpi(template, {
+      lamports: asValue({ index: 0 }),
+    }).build();
+    expect(built.cpi.kind).to.equal("structured");
+    const wire = encodeCpi(built.cpi);
+    expect(wire.subarray(3, 5)).to.deep.equal(Buffer.from([29, 0]));
   });
 });

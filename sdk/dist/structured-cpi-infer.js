@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.STAKE_PROGRAM_ID = void 0;
 exports.inferStructuredCpiPatchTag = inferStructuredCpiPatchTag;
 exports.isStructuredCpiPatch = isStructuredCpiPatch;
 exports.resolveStructuredCpiPatch = resolveStructuredCpiPatch;
@@ -34,6 +35,20 @@ const SYSTEM_IX = {
     transfer: 2,
     allocate: 8,
 };
+/** Native stake program (`Stake11111111111111111111111111111111111111`). */
+exports.STAKE_PROGRAM_ID = new web3_js_1.PublicKey("Stake11111111111111111111111111111111111111");
+/** Stake instruction variant (u32 LE at data[0..4], bincode). */
+const STAKE_IX = {
+    delegateStake: 2,
+    split: 3,
+    withdraw: 4,
+    deactivate: 5,
+};
+function readU32Le(data) {
+    if (data.length < 4)
+        return null;
+    return data.readUInt32LE(0);
+}
 function readSystemDiscriminator(data) {
     if (data.length < 4)
         return null;
@@ -118,6 +133,21 @@ function inferStructuredCpiPatchTag(template) {
     if (programId.equals(spl_token_1.TOKEN_PROGRAM_ID) ||
         programId.equals(spl_token_1.TOKEN_2022_PROGRAM_ID)) {
         return inferTokenFamily(programId, data);
+    }
+    if (programId.equals(exports.STAKE_PROGRAM_ID)) {
+        const variant = readU32Le(data);
+        switch (variant) {
+            case STAKE_IX.withdraw:
+                return "stakeWithdraw";
+            case STAKE_IX.split:
+                return "stakeSplit";
+            case STAKE_IX.deactivate:
+                return "stakeDeactivate";
+            case STAKE_IX.delegateStake:
+                return "stakeDelegateStake";
+            default:
+                return null;
+        }
     }
     return null;
 }

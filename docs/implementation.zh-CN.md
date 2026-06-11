@@ -17,6 +17,7 @@
 | `ifx_close_frame` | 关闭 Frame，回收 rent |
 | `ifx_let` | 按 `bindings` 顺序求值并 **append** 到 `tape` |
 | `ifx_assert` | 求值 `cond: Expr` 为 bool |
+| `ifx_assert_multi` | 顺序求值 `U8LenVec<Expr>`；首条 false 短路 revert |
 | `ifx_patched_cpi` | CPI；从 Frame tape patch 模板 `data`（`Cpi` + `RawCpiPatch`；`patches` 必须非空） |
 | `ifx_if_else` | 条件分支：每 arm 为 `Skip` / `Revert` / CPI 序列 | 对 `cond` 求值；执行 `then_arm` 或 `else_arm`（`IfElseArm`） |
 
@@ -83,7 +84,7 @@ Tape 上 `Pubkey`：优先 **`AccountKey`**（ALT 友好）；**`ConstPubkey`** 
 
 ## 4. `ifx_let`
 
-[`LetBinding`](./typed-let-bindings.zh-CN.md) 为 **单一 wire enum**（tag `0`–`28`）。链上 binding **按序 append**；wire 上无 per-binding 字节 offset 字段。
+[`LetBinding`](./typed-let-bindings.zh-CN.md) 为 **单一 wire enum**（tag `0`–`67`）。链上 binding **按序 append**；wire 上无 per-binding 字节 offset 字段。
 
 **链下：** 为每个 planned value 分配顺序 binding **index**；填入 `Expr::Value { index }`。
 
@@ -112,20 +113,21 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 
 ## 5. 表达式（`Expr`）
 
-扁平 enum：每个运算符一个 Borsh tag（`0`–`43`；`ConstPubkey` = 43）。详见英文 [implementation.md](./implementation.md) §5。
+扁平 enum：每个运算符一个 Borsh tag（**`0`–`51`**；`ConstPubkey` = 51；cast 族 18–28）。详见 `sdk/src/expr-variants.ts` 与英文 [implementation.md](./implementation.md) §5。
 
 ---
 
 ## 6. 条件执行
 
 - `ifx_assert(cond: Expr)` — 为 false 则 revert
+- `ifx_assert_multi(args: AssertMultiArgs)` — 首条 false 则 revert（`AssertFailedMulti`；index 在 return data）
 - `ifx_patched_cpi(arm: Cpi)` — 一条 **RawPatched** 或 **Structured** 步（须 apply patch）
 - `ifx_if_else(args: IfElseArgs)` — `cond` + 两侧 [`IfElseArm`]
 - **`IfElseArm` wire：** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] 步
 - **`Cpi` wire kind**（每步首字节）：**`0` Static** · **`1` RawPatched** · **`2` Structured**（见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）
   - **Static：** `[0][accounts_start][accounts_len][U16LenVec data]`
   - **RawPatched：** `[1][…][data][PatchList]` — 字节覆盖；DEX / 非 registry
-  - **Structured：** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **无 ix data 模板**；flat enum（variant tag **0–28** 在 Borsh blob 内）
+  - **Structured：** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **无 ix data 模板**；flat enum（variant tag **0–32** 在 Borsh blob 内）
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**
 
 ---
@@ -137,7 +139,7 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 ifx_create_frame
 
 # 业务 tx — 典型
-ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else → …
 
 # 拆分 — 仅同一已落地 Jito bundle：tx1 reset+let，tx2 let+…（无 reset）
 

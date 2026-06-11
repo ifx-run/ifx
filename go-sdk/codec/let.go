@@ -13,7 +13,7 @@ type LetArgs struct {
 	Bindings []binding.Node
 }
 
-// EncodeLetBinding serializes one LetBinding (tag 0..24).
+// EncodeLetBinding serializes one LetBinding (wire tags 0..67).
 func EncodeLetBinding(b binding.Node) ([]byte, error) {
 	switch v := b.(type) {
 	case binding.AccountDataSlice:

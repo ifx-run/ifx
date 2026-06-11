@@ -82,6 +82,20 @@ export declare class FrameScratch {
     letFrameGeneration(): ScratchValue<"u64">;
     /** `Frame.index_count` (bindings since last reset; no remaining account). */
     letFrameIndexCount(): ScratchValue<"u16">;
+    /** `remaining[i].is_signer` (runtime account meta). */
+    letAccountIsSigner(account: LetAccountInput): ScratchValue<"bool">;
+    /** `remaining[i].is_writable` (runtime account meta). */
+    letAccountIsWritable(account: LetAccountInput): ScratchValue<"bool">;
+    /** Stake `meta.authorized.staker` (`StakeStateV2`, stake program owner). */
+    letStakeAuthorizedStaker(account: LetAccountInput): ScratchValue<"pubkey">;
+    /** Stake `meta.authorized.withdrawer`. */
+    letStakeAuthorizedWithdrawer(account: LetAccountInput): ScratchValue<"pubkey">;
+    /** Stake `meta.lockup.unix_timestamp`. */
+    letStakeLockupUnixTimestamp(account: LetAccountInput): ScratchValue<"i64">;
+    /** Stake `meta.lockup.epoch`. */
+    letStakeLockupEpoch(account: LetAccountInput): ScratchValue<"u64">;
+    /** Stake `delegation.stake` (`Stake` state only). */
+    letStakeDelegationStake(account: LetAccountInput): ScratchValue<"u64">;
     letAccountDataSlice<T extends IfxTy>(account: LetAccountInput, expectedOwner: LetAccountInput, ty: T, dataOffset: number): ScratchValue<T>;
     /** `Clock::get()?.slot` (syscall; no remaining account). */
     clockSlot(): ScratchValue<"u64">;
@@ -111,6 +125,8 @@ export declare class FrameScratch {
     /** One `ifx_let` from a single {@link ScratchValue} or a {@link LetIxBuilder} batch. */
     ixLet(target: ScratchValue<IfxTy> | LetIxBuilder, opts?: IxOpts): TransactionInstruction;
     ixAssert(cond: Cond, opts?: IxOpts): TransactionInstruction;
+    /** Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure. */
+    ixAssertMulti(conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
     /** Patched CPI (`ifx_patched_cpi`). */
     ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
     /** Conditional CPI arms (`ifx_if_else`). */

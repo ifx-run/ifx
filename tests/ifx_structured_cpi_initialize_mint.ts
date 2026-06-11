@@ -1,5 +1,6 @@
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
+import { randomBytes } from "crypto";
 import { Keypair, SystemProgram, Transaction } from "@solana/web3.js";
 import {
   createInitializeMint2Instruction,
@@ -31,7 +32,7 @@ describe("ifx structured CPI initialize mint", () => {
   it("InitializeMint2 with Frame-bound decimals and mint authority", async () => {
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,
-      frameId: Buffer.alloc(32, 12),
+      frameId: randomBytes(32),
       authority: payer.publicKey,
       tapeLen: 512,
     });

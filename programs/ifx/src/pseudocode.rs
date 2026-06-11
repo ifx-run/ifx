@@ -205,8 +205,16 @@ fn fmt_expr(buf: &mut LineBuf, expr: &Expr) -> bool {
         Expr::Neg { operand } => buf.push_char(b'-') && fmt_expr(buf, operand),
         Expr::IsZero { operand } => buf.push_str("isZero(") && fmt_expr(buf, operand) && buf.push_char(b')'),
         Expr::NonZero { operand } => buf.push_str("nonZero(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsU8 { operand } => buf.push_str("asU8(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsU16 { operand } => buf.push_str("asU16(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsU32 { operand } => buf.push_str("asU32(") && fmt_expr(buf, operand) && buf.push_char(b')'),
         Expr::AsU64 { operand } => buf.push_str("asU64(") && fmt_expr(buf, operand) && buf.push_char(b')'),
         Expr::AsU128 { operand } => buf.push_str("asU128(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsI8 { operand } => buf.push_str("asI8(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsI16 { operand } => buf.push_str("asI16(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsI32 { operand } => buf.push_str("asI32(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsI64 { operand } => buf.push_str("asI64(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::AsI128 { operand } => buf.push_str("asI128(") && fmt_expr(buf, operand) && buf.push_char(b')'),
         Expr::Add { lhs, rhs } => bin_fmt(buf, "+", lhs, rhs),
         Expr::Sub { lhs, rhs } => bin_fmt(buf, "-", lhs, rhs),
         Expr::Mul { lhs, rhs } => bin_fmt(buf, "*", lhs, rhs),
@@ -387,6 +395,201 @@ fn fmt_binding_rhs(buf: &mut LineBuf, binding: &LetBinding) -> bool {
         }
         FrameGeneration => buf.push_str("frame.generation()"),
         FrameIndexCount => buf.push_str("frame.index_count()"),
+        AccountIsSigner { account_index } => {
+            buf.push_str("is_signer(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        AccountIsWritable { account_index } => {
+            buf.push_str("is_writable(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeDelegationStake { account_index } => {
+            buf.push_str("stake_delegation_stake(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeDelegationActivationEpoch { account_index } => {
+            buf.push_str("stake_activation_epoch(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeDelegationDeactivationEpoch { account_index } => {
+            buf.push_str("stake_deactivation_epoch(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeLockupUnixTimestamp { account_index } => {
+            buf.push_str("stake_lockup_unix(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeLockupEpoch { account_index } => {
+            buf.push_str("stake_lockup_epoch(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeAuthorizedStaker { account_index } => {
+            buf.push_str("stake_staker(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeAuthorizedWithdrawer { account_index } => {
+            buf.push_str("stake_withdrawer(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeDelegationVoter { account_index } => {
+            buf.push_str("stake_voter(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplMintIsInitialized { account_index } => {
+            buf.push_str("spl_mint_initialized(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplMintMintAuthority { account_index } => {
+            buf.push_str("spl_mint_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplMintFreezeAuthority { account_index } => {
+            buf.push_str("spl_mint_freeze_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022MintIsInitialized { account_index } => {
+            buf.push_str("spl_token_2022_mint_initialized(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022MintMintAuthority { account_index } => {
+            buf.push_str("spl_token_2022_mint_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022MintFreezeAuthority { account_index } => {
+            buf.push_str("spl_token_2022_mint_freeze_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        AccountProgramOwner { account_index } => {
+            buf.push_str("account_program_owner(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        AccountExecutable { account_index } => {
+            buf.push_str("account_executable(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        AccountRentEpoch { account_index } => {
+            buf.push_str("account_rent_epoch(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountMint { account_index } => {
+            buf.push_str("spl_token_mint(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountOwner { account_index } => {
+            buf.push_str("spl_token_owner(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountDelegate { account_index } => {
+            buf.push_str("spl_token_delegate(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountCloseAuthority { account_index } => {
+            buf.push_str("spl_token_close_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountIsNative { account_index } => {
+            buf.push_str("spl_token_is_native(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplTokenAccountOwnerIsDerived { account_index } => {
+            buf.push_str("spl_token_owner_is_derived(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountMint { account_index } => {
+            buf.push_str("spl_token_2022_mint(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountOwner { account_index } => {
+            buf.push_str("spl_token_2022_owner(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountDelegate { account_index } => {
+            buf.push_str("spl_token_2022_delegate(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountCloseAuthority { account_index } => {
+            buf.push_str("spl_token_2022_close_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountIsNative { account_index } => {
+            buf.push_str("spl_token_2022_is_native(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        SplToken2022AccountOwnerIsDerived { account_index } => {
+            buf.push_str("spl_token_2022_owner_is_derived(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeAccountState { account_index } => {
+            buf.push_str("stake_account_state(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeLockupCustodian { account_index } => {
+            buf.push_str("stake_lockup_custodian(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeRentExemptReserve { account_index } => {
+            buf.push_str("stake_rent_exempt_reserve(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeCreditsObserved { account_index } => {
+            buf.push_str("stake_credits_observed(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        StakeStakeFlags { account_index } => {
+            buf.push_str("stake_flags(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        UpgradeableProgramDataTag { account_index } => {
+            buf.push_str("upgradeable_program_data_tag(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        UpgradeableProgramDataUpgradeAuthority { account_index } => {
+            buf.push_str("upgradeable_upgrade_authority(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
+        UpgradeableProgramProgramDataAddress { account_index } => {
+            buf.push_str("upgradeable_programdata_address(acc[")
+                && buf.push_u64(u64::from(*account_index))
+                && buf.push_str("])")
+        }
     }
 }
 
@@ -436,6 +639,17 @@ pub fn log_let_batch(
 pub fn log_assert(cond: &Expr, ok: bool) {
     emit_line(|b| {
         b.push_str("assert!(")
+            && fmt_expr(b, cond)
+            && b.push_char(b')')
+            && b.push_str(if ok { "; // ok" } else { "; // fail" })
+    });
+}
+
+pub fn log_assert_multi(index: usize, cond: &Expr, ok: bool) {
+    emit_line(|b| {
+        b.push_str("assert_multi[")
+            && b.push_u64(index as u64)
+            && b.push_str("](")
             && fmt_expr(b, cond)
             && b.push_char(b')')
             && b.push_str(if ok { "; // ok" } else { "; // fail" })

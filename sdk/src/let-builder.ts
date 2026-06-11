@@ -155,6 +155,16 @@ export class LetIxBuilder {
     return this.push(this.scratch.plan(binding.frameIndexCount()));
   }
 
+  accountIsSigner(account: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(account);
+    return this.push(this.scratch.plan(binding.accountIsSigner(idx)));
+  }
+
+  accountIsWritable(account: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(account);
+    return this.push(this.scratch.plan(binding.accountIsWritable(idx)));
+  }
+
   accountDataSlice<T extends IfxTy>(
     account: LetAccountInput,
     expectedOwner: LetAccountInput,
@@ -284,6 +294,291 @@ export class LetIxBuilder {
       bindSplToken2022MintDefaultAccountState(
         this.scratch,
         this.accountIndex(mint)
+      )
+    );
+  }
+
+  /** Stake `meta.authorized.staker` (stake program owner, `StakeStateV2`). */
+  stakeAuthorizedStaker(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeAuthorizedStaker(0), idx)
+    );
+  }
+
+  stakeAuthorizedWithdrawer(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.stakeAuthorizedWithdrawer(0),
+        idx
+      )
+    );
+  }
+
+  stakeLockupUnixTimestamp(account: LetAccountInput): ScratchValue<"i64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.stakeLockupUnixTimestamp(0),
+        idx
+      )
+    );
+  }
+
+  stakeLockupEpoch(account: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeLockupEpoch(0), idx)
+    );
+  }
+
+  stakeDelegationStake(account: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeDelegationStake(0), idx)
+    );
+  }
+
+  splMintIsInitialized(mint: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splMintIsInitialized(0), idx)
+    );
+  }
+
+  splMintMintAuthority(mint: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splMintMintAuthority(0), idx)
+    );
+  }
+
+  splMintFreezeAuthority(mint: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splMintFreezeAuthority(0), idx)
+    );
+  }
+
+  splToken2022MintIsInitialized(mint: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022MintIsInitialized(0),
+        idx
+      )
+    );
+  }
+
+  splToken2022MintMintAuthority(mint: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022MintMintAuthority(0),
+        idx
+      )
+    );
+  }
+
+  splToken2022MintFreezeAuthority(mint: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(mint);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022MintFreezeAuthority(0),
+        idx
+      )
+    );
+  }
+
+  accountProgramOwner(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.accountProgramOwner(0), idx)
+    );
+  }
+
+  accountExecutable(account: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.accountExecutable(0), idx)
+    );
+  }
+
+  accountRentEpoch(account: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.accountRentEpoch(0), idx)
+    );
+  }
+
+  splTokenAccountMint(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splTokenAccountMint(0), idx)
+    );
+  }
+
+  splTokenAccountOwner(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splTokenAccountOwner(0), idx)
+    );
+  }
+
+  splTokenAccountDelegate(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splTokenAccountDelegate(0), idx)
+    );
+  }
+
+  splTokenAccountCloseAuthority(
+    tokenAccount: LetAccountInput
+  ): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splTokenAccountCloseAuthority(0),
+        idx
+      )
+    );
+  }
+
+  splTokenAccountIsNative(tokenAccount: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splTokenAccountIsNative(0), idx)
+    );
+  }
+
+  splTokenAccountOwnerIsDerived(tokenAccount: LetAccountInput): ScratchValue<"bool"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splTokenAccountOwnerIsDerived(0),
+        idx
+      )
+    );
+  }
+
+  splToken2022AccountMint(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splToken2022AccountMint(0), idx)
+    );
+  }
+
+  splToken2022AccountOwner(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splToken2022AccountOwner(0), idx)
+    );
+  }
+
+  splToken2022AccountDelegate(tokenAccount: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022AccountDelegate(0),
+        idx
+      )
+    );
+  }
+
+  splToken2022AccountCloseAuthority(
+    tokenAccount: LetAccountInput
+  ): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022AccountCloseAuthority(0),
+        idx
+      )
+    );
+  }
+
+  splToken2022AccountIsNative(tokenAccount: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.splToken2022AccountIsNative(0), idx)
+    );
+  }
+
+  splToken2022AccountOwnerIsDerived(
+    tokenAccount: LetAccountInput
+  ): ScratchValue<"bool"> {
+    const idx = this.accountIndex(tokenAccount);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.splToken2022AccountOwnerIsDerived(0),
+        idx
+      )
+    );
+  }
+
+  stakeAccountState(account: LetAccountInput): ScratchValue<"u8"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeAccountState(0), idx)
+    );
+  }
+
+  stakeLockupCustodian(account: LetAccountInput): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeLockupCustodian(0), idx)
+    );
+  }
+
+  stakeRentExemptReserve(account: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeRentExemptReserve(0), idx)
+    );
+  }
+
+  stakeCreditsObserved(account: LetAccountInput): ScratchValue<"u64"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeCreditsObserved(0), idx)
+    );
+  }
+
+  stakeStakeFlags(account: LetAccountInput): ScratchValue<"u8"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.stakeStakeFlags(0), idx)
+    );
+  }
+
+  upgradeableProgramDataTag(account: LetAccountInput): ScratchValue<"u32"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(binding.upgradeableProgramDataTag(0), idx)
+    );
+  }
+
+  upgradeableProgramDataUpgradeAuthority(
+    account: LetAccountInput
+  ): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.upgradeableProgramDataUpgradeAuthority(0),
+        idx
+      )
+    );
+  }
+
+  upgradeableProgramProgramDataAddress(
+    account: LetAccountInput
+  ): ScratchValue<"pubkey"> {
+    const idx = this.accountIndex(account);
+    return this.push(
+      this.scratch.planAtRemainingIndex(
+        binding.upgradeableProgramProgramDataAddress(0),
+        idx
       )
     );
   }

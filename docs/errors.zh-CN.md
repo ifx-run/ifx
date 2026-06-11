@@ -39,12 +39,16 @@ Anchor 将 [`ErrorCode`](../programs/ifx/src/error.rs) 各变体映射为 **`600
 | 6030 | `InvalidStructuredCpiProgram` | Structured CPI 的 program id 与 patch 不匹配 | remaining 中 program 与所选 `StructuredCpiPatch` variant 不符 |
 | 6031 | `InvalidInstructionData` | 指令数据无效 | 尾部字节或 CPI payload 无效 |
 
-| 6032 | `ResetNotTopLevel` | `ifx_reset_frame` 须顶层 | CPI 包装 reset |
-| 6033 | `CloseNotTopLevel` | `ifx_close_frame` 须顶层 | CPI 包装 close |
-| 6034 | `CreateNotTopLevel` | `ifx_create_frame` 须顶层 | CPI 包装 create |
-| 6035 | `UnauthorizedFrameWrite` | 写 Frame 须 authority 签名 | 私有 Frame 的 `reset` / `let` 无 on-curve authority 签名 |
+| 6032 | `StakeUnpackFailed` | stake 账户解包失败 | `StakeStateV2` layout 损坏 |
+| 6033 | `StakeStateMismatch` | stake 状态不提供该字段 | 如 `Initialized` 上读 delegation |
+| 6034 | `ResetNotTopLevel` | `ifx_reset_frame` 须顶层 | CPI 包装 reset |
+| 6035 | `CloseNotTopLevel` | `ifx_close_frame` 须顶层 | CPI 包装 close |
+| 6036 | `CreateNotTopLevel` | `ifx_create_frame` 须顶层 | CPI 包装 create |
+| 6037 | `UnauthorizedFrameWrite` | 写 Frame 须 authority 签名 | 私有 Frame 的 `reset` / `let` 无 on-curve authority 签名 |
+| 6038 | `SplMintOptionEmpty` | SPL 可选字段未设置 | 如 delegate / mint authority 为 None |
+| 6039 | `AssertFailedMulti` | `ifx_assert_multi` 断言失败 | return data 含失败下标 + 伪代码日志 |
 
-完整表至 6035。见 [frame-authority.zh-CN.md](./frame-authority.zh-CN.md) 与 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)。
+完整表至 6039。见 [frame-authority.zh-CN.md](./frame-authority.zh-CN.md) 与 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)。
 
 ### Frame append：两种独立上限
 

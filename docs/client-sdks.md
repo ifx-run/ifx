@@ -13,7 +13,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 | Priority | SDK | Status | Notes |
 |----------|-----|--------|-------|
 | **P0 — high** | **Go SDK** | ✅ | [`go-sdk/`](../go-sdk/README.md) — planner + readback + L0–L1 e2e; see [examples](../go-sdk/examples/README.md) |
-| **P1 — medium** | **Rust SDK** | ⏳ planned | `ifx-core` + `ifx-sdk`; see [rust-integration.md](./rust-integration.md) |
+| **P1 — medium** | **Rust SDK** | ✅ R1–R3 (minimal) | `ifx-core` + `ifx-sdk`; see [rust-integration.md](./rust-integration.md) |
 | — | TypeScript | ✅ shipped | `@ifx-run/sdk` |
 
 **Out of scope here:** on-chain CPI continues to use the `ifx` program crate (`features = ["cpi"]`).
@@ -23,7 +23,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 ## Shared principles (Go & Rust)
 
 1. **No RPC / wallet wrapper** — emit instructions and account metas only (same as TS).
-2. **Wire matches TS** — flat `Expr` Borsh tags **0–43**; `LetBinding` tags **0–28**; `Cpi` step kind **`0/1/2`**; `ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` use typed Anchor args (custom wire inside). Do not use Anchor’s recursive coders for deep `Expr`.
+2. **Wire matches TS** — flat `Expr` Borsh tags **0–51**; `LetBinding` tags **0–67**; `Cpi` step kind **`0/1/2`**; `ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` use typed Anchor args (custom wire inside). Do not use Anchor’s recursive coders for deep `Expr`.
 3. **Layout matches on-chain** — `plan_record_offsets`, `index_cap_for_tape_len`, packed tape `[ty:1][payload]`; off-chain planner should fail fast before submit.
 4. **Tests** — byte-level golden parity with `tests/sdk_expr_parity.ts`, `tests/sdk_let_binding_parity.ts`, `tests/sdk_if_else_codec.ts`, etc.
 5. **IDL** — ship bundled `idl/ifx.json` (pin program id to the same revision as npm).
@@ -68,7 +68,7 @@ go-sdk/                 # module github.com/ifx-run/ifx/go-sdk
 | Phase | Scope | Done when |
 |-------|--------|-----------|
 | **G1 — Wire** | constants, PDA, `encodeExpr` / `encodeLetArgs` / patch & if_else codec | bytes match TS parity tests | ✅ |
-| **G2 — IR** | `expr` builders, `LetBinding` helpers, Eval type infer | opcode 0–28 / Expr 0–43 samples | ✅ |
+| **G2 — IR** | `expr` builders, `LetBinding` helpers, Eval type infer | LetBinding 0–67 / Expr 0–51 samples | ✅ |
 | **G3 — Planner** | `FrameScratch`, `LetBuilder` (remaining dedup), `ix_*` | `scratch/*_test.go` | ✅ |
 | **G4 — Complete** | RawPatched + **Structured** CPI, if_else, Pubkey lets, L0–L1 e2e | `integration/*_test.go`, `structuredcpi/*_test.go` | ✅ |
 | **G5 — Docs** | Go SDK README, examples index | `go-sdk/README` | ✅ |
@@ -98,16 +98,29 @@ Off-chain crate: **`ifx-sdk`** (not `ifx-client`) — same layer as `@ifx-run/sd
 
 Pure Rust backends today path-depend on the program crate or reimplement codec ([rust-integration.md](./rust-integration.md)). Rust can **share** on-chain layout and type inference instead of a third copy.
 
-### Target architecture
+### Architecture (target)
 
 ```
-crates/ifx-core/          # extract from programs/ifx: types, constants, tape, frame_layout,
-                          # value_codec, infer_expr_ty, plan_record_offsets
-programs/ifx/             # depends on ifx-core; on-chain execute_let / CPI
-crates/ifx-sdk/           # FrameScratch, LetBuilder, ix_*, expr builders; solana-sdk
+crates/ifx-core/          # Shared: constants, wire types, tape layout, codecs (crates.io: ifx-core)
+programs/ifx/             # On-chain only: #[program], execute_let, invoke; depends on ifx-core (crates.io: ifx)
+rust-sdk/                 # Off-chain planner; package name ifx-sdk (crates.io: ifx-sdk)
 ```
 
-Short term: path-depend on `ifx` + `no-entrypoint` to prove the planner. Medium term: extract `ifx-core` so wallets do not pull the full Anchor program crate.
+**Dependency rule:** `ifx-core` ← `ifx` (program) and `ifx-core` ← `ifx-sdk`. Core never depends on Anchor account runtime or `solana-sdk` `Instruction` assembly.
+
+**Incremental `ifx-core` features** (zero-cost when disabled):
+
+| Feature | Contents |
+|---------|----------|
+| *(default)* | `constants` |
+| `wire` | `Cpi`, `StructuredCpiPatch`, `Expr`, `U8LenVec`, … |
+| `anchor-wire` | `LetBinding`, `LetArgs` (Anchor-compatible serialize during migration) |
+| `layout` | `frame_layout`, `plan_record_offsets`, `infer_expr_ty`, `value_codec` |
+| `structured-cpi` | `assemble_structured_cpi` ix data (SPL/System/Stake; no `invoke`) |
+
+**Stays in `programs/ifx` only:** `#[program]` handlers, `AccountInfo` / PDA init, `let_binding_exec`, `program::invoke`, `pseudocode`, `#[error_code]`.
+
+**Short term:** path-depend on `ifx` + `no-entrypoint` still works for CPI integrators. **Medium term:** wallets depend on `ifx-sdk` + `ifx-core`, not the full program crate.
 
 ### Reuse (do not rewrite)
 
@@ -126,9 +139,9 @@ Short term: path-depend on `ifx` + `no-entrypoint` to prove the planner. Medium 
 
 | Phase | Scope |
 |-------|--------|
-| **R1** | `ifx-core` extraction + golden vs TS |
-| **R2** | planner + `ix_let` / reset / assert |
-| **R3** | patched CPI, if_else, examples + integration tests (`ifx-sdk`) |
+| **R1** | `ifx-core` extraction + golden vs TS | ✅ wire + layout + `structured-cpi`; `frame_layout` deferred |
+| **R2** | planner + `ix_*` + `expr` | ✅ `FrameScratch`, `LetBuilder`, `let_*`, `ix_cpi` / `ix_if_else` / `ix_close`, parity tests |
+| **R3** | examples + integration tests (`ifx-sdk`) | ✅ minimal localnet + decode + docs; dust/orchestration planners backlog |
 
 ---
 

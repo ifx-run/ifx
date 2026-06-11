@@ -78,7 +78,7 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 
 ## 5. 数据加载
 
-链上通过 [`LetBinding`](./typed-let-bindings.zh-CN.md) enum（tag `0`–`28`）读取：
+链上通过 [`LetBinding`](./typed-let-bindings.zh-CN.md) enum（tag `0`–`67`）读取：
 
 | Tag | 变体 | 作用 |
 |-----|------|------|

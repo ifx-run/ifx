@@ -8,6 +8,11 @@ All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep 
 
 ## [Unreleased]
 
+### Added
+
+- **`StructuredCpiPatch` tags 29–32 (SP-5):** Stake `Withdraw` / `Split` / `Deactivate` / `DelegateStake` — `structuredCpiPatch.stakeWithdraw` / `stakeSplit` / `stakeDeactivate` / `stakeDelegateStake`; infer from native stake ix templates.
+- **Examples:** `stake-conditional-withdraw.ts` (`planStakeStructuredWithdrawTx`), `upgradeable-program-guard.ts`, `guardrail-two-account-lamports-diff.ts`.
+
 ## [0.4.0-devnet.0] - 2026-06-08
 
 ### Breaking

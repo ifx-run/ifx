@@ -12,16 +12,17 @@
 
 | 文档 | 内容 |
 |------|------|
-| [lighthouse-coverage.zh-CN.md](./lighthouse-coverage.zh-CN.md) | 调研、覆盖矩阵、R0–R4 域路线、非目标（Memory PDA） |
-| [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | **Cast / Binding / Patch 审计**；显式 **AsU8…AsI128**（tag 19–28） |
-| [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | Stake 域（当前最大 Binding 缺口） |
+| [lighthouse-coverage.zh-CN.md](./lighthouse-coverage.zh-CN.md) | 调研、覆盖矩阵、R0–R5 域路线、非目标（Memory PDA） |
+| [lighthouse-full-coverage.zh-CN.md](./lighthouse-full-coverage.zh-CN.md) | R5：Lighthouse 断言域 tag 45–67 |
+| [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | **Cast / Binding / Patch 审计**；显式 **AsU8…AsI128**（Expr tag 18–28） |
+| [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | Stake 域（tag 31–38、60–64） |
 
 **终点 A 验收（全部满足）：**
 
-- [ ] 覆盖矩阵：[lighthouse-coverage.zh-CN.md §4](./lighthouse-coverage.zh-CN.md) 无 ⏳（或 ⏳ 仅 R4 按需项）
-- [ ] IR-1：显式 **AsU8…AsI128**（10 变体，tag 连续块）；TS/Go golden 更新
-- [ ] IR-2：Account meta + Stake typed lets；guardrail / delta **示例**（composable，非 SDK 糖）
-- [ ] 每域至少 1 个 **超越** 示例（assert + Skip 或 patch）
+- [x] 覆盖矩阵：[lighthouse-coverage.zh-CN.md §4](./lighthouse-coverage.zh-CN.md) 无 ⏳（🟡 仅 `AccountDataSlice` layout cookbook 可选）
+- [x] IR-1：显式 **AsU8…AsI128**（Expr cast 族）；TS/Go golden 更新
+- [x] IR-2：Account meta + Stake + R5 typed lets；guardrail / delta **示例**
+- [x] 每域至少 1 个 **超越** 示例（assert + Skip 或 patch）— Stake / Upgradeable / Token / Merkle 见 `sdk/examples/`
 - [ ] 第三方审计 + mainnet 部署（grant / 发布主线，与终点 A 并行）
 
 ### 终点 B — Rust SDK
@@ -36,8 +37,8 @@
 
 **终点 B 验收：**
 
-- [ ] `ifx-core` 与 TS parity tests 字节一致
-- [ ] `ifx-sdk`：`FrameScratch`、`LetBuilder`、Structured/Raw CPI、`if_else`
+- [x] `ifx-core` 与 TS parity tests 字节一致（wire + layout + structured-cpi）
+- [x] `ifx-sdk`：`FrameScratch`、`LetBuilder`、`let_*`、`ix_cpi` / `ix_if_else` / `ix_close`、`expr` builder + parity 测试
 - [ ] 至少 L1 级 Rust 集成测试（Surfpool / anchor test 场景移植）
 
 **建议顺序：** 终点 A 的 **IR-1 → IR-2** 与审计并行 → **终点 B** → 终点 A 剩余 IR-3 / 域示例扫尾 → mainnet。
@@ -67,26 +68,29 @@
 | Personal AMM 展示（无专用 pool/DEX 程序的钱包池 swap） | ✅ | [personal-amm.zh-CN.md](./personal-amm.zh-CN.md)；示例 + 测试；可选报价服务待定 |
 | scratch PDA | ⏳ | v1 |
 
-## 进行中 — 终点 A 分解
+## 已交付 — 终点 A（扫尾项：审计 / mainnet）
 
 ### 域覆盖（Lighthouse 对照）
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| **R0** | 矩阵文档、guardrail / delta 示例 | 文档 ✅；示例 ⏳ |
-| **R1** | Account signer/writable `LetBinding` | ⏳ |
-| **R2** | Stake typed lets + 示例 + 测试 | ⏳ |
-| **R3** | Upgradeable loader、Merkle CPI 示例 | ⏳ |
-| **R4** | `ifx_assert_multi`（按需） | ⏳ |
+| **R0** | 矩阵文档、guardrail / delta 示例 | ✅ |
+| **R1** | Account signer/writable `LetBinding` | ✅ |
+| **R2** | Stake typed lets + 示例 + 测试 | ✅ |
+| **R3** | Upgradeable loader、Merkle CPI 示例 | ✅ |
+| **R4** | `ifx_assert_multi` | ✅ — [r4-assert-multi.zh-CN.md](./r4-assert-multi.zh-CN.md)（disc=5） |
+| **R5** | Lighthouse 断言域 tag 45–67 | ✅ — [lighthouse-full-coverage.zh-CN.md](./lighthouse-full-coverage.zh-CN.md) |
 
 ### IR 完备（wire 定稿）
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
 | **IR-0** | [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) | ✅ |
-| **IR-1** | 显式 AsU8…AsI128（tag 19–28）；golden 迁移 | ⏳ |
-| **IR-2** | LB-1/LB-2 + patch 与 Cast 组合 | ⏳ |
-| **IR-3** | Mint/loader 补全、Raw patch 文档 | ⏳ |
+| **IR-1** | 显式 AsU8…AsI128（Expr cast 族）；golden 迁移 | ✅ |
+| **IR-2** | LB-1/LB-2 + Stake lets + **SP-5** structured CPI | ✅ |
+| **IR-3** | Mint/loader 补全、Raw patch 文档 | ✅ |
+
+**扫尾（组织线，非 IR）：** 第三方审计 + mainnet 部署。
 
 **非目标：** Lighthouse Memory PDA、`lighthouse-compat` SDK 糖层。
 
@@ -98,9 +102,9 @@
 
 | 阶段 | 内容 | 状态 |
 |------|------|------|
-| **Rust R1** | `ifx-core` 抽取 + golden vs TS | ⏳ |
-| **Rust R2** | planner + `ix_let` / reset / assert | ⏳ |
-| **Rust R3** | patched / structured CPI、if_else、L1 e2e | ⏳ |
+| **Rust R1** | `ifx-core` 抽取 + golden vs TS | ✅ |
+| **Rust R2** | planner + `ix_*` + `expr` | ✅ |
+| **Rust R3** | 示例 + L1 集成测试 | ⏳ |
 
 ---
 
@@ -109,7 +113,7 @@
 | 优先级 | 能力 | 状态 | 说明 |
 |--------|------|------|------|
 | **P0** | **Go SDK** | ✅ | `go-sdk/` |
-| **P1** | **Rust SDK** | ⏳ | **里程碑终点 B** |
+| **P1** | **Rust SDK** | 🚧 | R1–R2 ✅；R3 集成测试待做 |
 
 ---
 

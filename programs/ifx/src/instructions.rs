@@ -5,6 +5,7 @@ pub mod structured_cpi;
 pub mod if_else;
 pub mod patched_cpi_ix;
 pub mod assert;
+pub mod assert_multi;
 pub mod close_frame;
 pub mod create_frame;
 pub mod reset_frame;

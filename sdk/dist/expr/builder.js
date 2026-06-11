@@ -19,6 +19,9 @@ function toOperand(x) {
     }
     return x;
 }
+function asCast(ty, key, operand) {
+    return (0, typed_1.taggedExpr)(ty, { [key]: { operand: toOperand(operand) } });
+}
 function bin(key, lhs, rhs) {
     const ty = inferBinaryTy(lhs, rhs);
     return (0, typed_1.taggedExpr)(ty, {
@@ -61,8 +64,16 @@ exports.expr = {
     neg: (operand) => (0, typed_1.taggedExpr)(exprTy(operand), { neg: { operand } }),
     isZero: (operand) => (0, typed_1.taggedExpr)("bool", { isZero: { operand: toOperand(operand) } }),
     nonZero: (operand) => (0, typed_1.taggedExpr)("bool", { nonZero: { operand: toOperand(operand) } }),
-    asU64: (operand) => (0, typed_1.taggedExpr)("u64", { asU64: { operand: toOperand(operand) } }),
-    asU128: (operand) => (0, typed_1.taggedExpr)("u128", { asU128: { operand: toOperand(operand) } }),
+    asU8: (operand) => asCast("u8", "asU8", operand),
+    asU16: (operand) => asCast("u16", "asU16", operand),
+    asU32: (operand) => asCast("u32", "asU32", operand),
+    asU64: (operand) => asCast("u64", "asU64", operand),
+    asU128: (operand) => asCast("u128", "asU128", operand),
+    asI8: (operand) => asCast("i8", "asI8", operand),
+    asI16: (operand) => asCast("i16", "asI16", operand),
+    asI32: (operand) => asCast("i32", "asI32", operand),
+    asI64: (operand) => asCast("i64", "asI64", operand),
+    asI128: (operand) => asCast("i128", "asI128", operand),
     add: (lhs, rhs) => bin("add", lhs, rhs),
     sub: (lhs, rhs) => bin("sub", lhs, rhs),
     mul: (lhs, rhs) => bin("mul", lhs, rhs),

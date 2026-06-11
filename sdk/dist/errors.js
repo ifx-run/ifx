@@ -18,6 +18,7 @@ exports.IFX_ERROR = {
     InvalidAuthority: 6003,
     InvalidTapeLen: 6004,
     AssertFailed: 6005,
+    AssertFailedMulti: 6039,
     IfElseRevert: 6006,
     InvalidAccountIndex: 6007,
     InvalidAccountRange: 6008,
@@ -44,10 +45,13 @@ exports.IFX_ERROR = {
     InvalidPatchedCpiPatches: 6029,
     InvalidStructuredCpiProgram: 6030,
     InvalidInstructionData: 6031,
-    ResetNotTopLevel: 6032,
-    CloseNotTopLevel: 6033,
-    CreateNotTopLevel: 6034,
-    UnauthorizedFrameWrite: 6035,
+    StakeUnpackFailed: 6032,
+    StakeStateMismatch: 6033,
+    ResetNotTopLevel: 6034,
+    CloseNotTopLevel: 6035,
+    CreateNotTopLevel: 6036,
+    UnauthorizedFrameWrite: 6037,
+    SplMintOptionEmpty: 6038,
 };
 const ERROR_NAME_BY_CODE = Object.fromEntries(Object.entries(exports.IFX_ERROR).map(([name, code]) => [code, name]));
 /** Resolve a numeric Anchor code to its Ifx error name, if known. */

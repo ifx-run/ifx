@@ -8,8 +8,6 @@ use crate::{
 };
 
 #[cfg(feature = "idl-build")]
-mod expr_idl;
-#[cfg(feature = "idl-build")]
 mod u8_len_vec_idl;
 #[cfg(feature = "idl-build")]
 mod u16_len_vec_idl;
@@ -24,8 +22,11 @@ pub mod frame_account;
 pub mod frame_authority;
 pub mod frame_error;
 pub mod frame_layout;
+pub mod layout_map;
 pub mod let_binding_exec;
 pub mod let_exec;
+pub mod stake_load;
+pub mod upgradeable_load;
 pub mod tape;
 pub mod types;
 pub mod u8_len_vec;

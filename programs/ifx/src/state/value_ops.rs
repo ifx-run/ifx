@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::error::ErrorCode;
 
 use super::types::ValueType;
-use super::value_codec::{decode_typed, encode_typed, TypedValue, ValueBytes};
+use super::value_codec::{decode_typed, encode_typed, TypedValue, TypedValueResultExt, ValueBytes};
 
 const BPS_DENOM: u64 = 10_000;
 
@@ -300,33 +300,108 @@ pub fn apply_or(lhs: &[u8], rhs: &[u8]) -> Result<ValueBytes> {
     encode_typed(ValueType::Bool, TypedValue::Bool(l || r))
 }
 
-pub fn apply_as_u64(src_ty: ValueType, operand: &[u8]) -> Result<ValueBytes> {
+pub fn apply_cast(dst: ValueType, src_ty: ValueType, operand: &[u8]) -> Result<ValueBytes> {
+    require!(
+        matches!(
+            dst,
+            ValueType::U8
+                | ValueType::U16
+                | ValueType::U32
+                | ValueType::U64
+                | ValueType::U128
+                | ValueType::I8
+                | ValueType::I16
+                | ValueType::I32
+                | ValueType::I64
+                | ValueType::I128
+        ),
+        ErrorCode::InvalidExprOperand
+    );
+    require!(
+        !matches!(
+            src_ty,
+            ValueType::Bool | ValueType::Pubkey | ValueType::F32 | ValueType::F64
+        ),
+        ErrorCode::InvalidExprOperand
+    );
     let v = decode_typed(src_ty, operand)?;
-    let out = match (src_ty, v) {
-        (ValueType::U8, TypedValue::U8(n)) => TypedValue::U64(u64::from(n)),
-        (ValueType::U16, TypedValue::U16(n)) => TypedValue::U64(u64::from(n)),
-        (ValueType::U32, TypedValue::U32(n)) => TypedValue::U64(u64::from(n)),
-        (ValueType::U64, TypedValue::U64(n)) => TypedValue::U64(n),
-        (ValueType::U128, TypedValue::U128(n)) => {
-            require!(n <= u128::from(u64::MAX), ErrorCode::CastOverflow);
-            TypedValue::U64(n as u64)
-        }
+    let out = match dst {
+        ValueType::U8 => TypedValue::U8(narrow_u128(cast_to_u128(src_ty, v)?, u8::MAX as u128)? as u8),
+        ValueType::U16 => TypedValue::U16(narrow_u128(cast_to_u128(src_ty, v)?, u16::MAX as u128)? as u16),
+        ValueType::U32 => TypedValue::U32(narrow_u128(cast_to_u128(src_ty, v)?, u32::MAX as u128)? as u32),
+        ValueType::U64 => TypedValue::U64(narrow_u128(cast_to_u128(src_ty, v)?, u64::MAX as u128)? as u64),
+        ValueType::U128 => TypedValue::U128(cast_to_u128(src_ty, v)?),
+        ValueType::I8 => TypedValue::I8(value_to_i128(src_ty, v)? as i8),
+        ValueType::I16 => TypedValue::I16(value_to_i128(src_ty, v)? as i16),
+        ValueType::I32 => TypedValue::I32(value_to_i128(src_ty, v)? as i32),
+        ValueType::I64 => TypedValue::I64(value_to_i128(src_ty, v)? as i64),
+        ValueType::I128 => TypedValue::I128(value_to_i128(src_ty, v)?),
         _ => return Err(ErrorCode::InvalidExprOperand.into()),
     };
-    encode_typed(ValueType::U64, out)
+    encode_typed(dst, out)
+}
+
+pub fn apply_as_u64(src_ty: ValueType, operand: &[u8]) -> Result<ValueBytes> {
+    apply_cast(ValueType::U64, src_ty, operand)
 }
 
 pub fn apply_as_u128(src_ty: ValueType, operand: &[u8]) -> Result<ValueBytes> {
-    let v = decode_typed(src_ty, operand)?;
-    let out = match (src_ty, v) {
-        (ValueType::U8, TypedValue::U8(n)) => TypedValue::U128(u128::from(n)),
-        (ValueType::U16, TypedValue::U16(n)) => TypedValue::U128(u128::from(n)),
-        (ValueType::U32, TypedValue::U32(n)) => TypedValue::U128(u128::from(n)),
-        (ValueType::U64, TypedValue::U64(n)) => TypedValue::U128(u128::from(n)),
-        (ValueType::U128, TypedValue::U128(n)) => TypedValue::U128(n),
-        _ => return Err(ErrorCode::InvalidExprOperand.into()),
-    };
-    encode_typed(ValueType::U128, out)
+    apply_cast(ValueType::U128, src_ty, operand)
+}
+
+fn narrow_u128(n: u128, max: u128) -> Result<u128> {
+    require!(n <= max, ErrorCode::CastOverflow);
+    Ok(n)
+}
+
+fn cast_to_u128(src_ty: ValueType, v: TypedValue) -> Result<u128> {
+    match (src_ty, v) {
+        (ValueType::U8, TypedValue::U8(n)) => Ok(u128::from(n)),
+        (ValueType::U16, TypedValue::U16(n)) => Ok(u128::from(n)),
+        (ValueType::U32, TypedValue::U32(n)) => Ok(u128::from(n)),
+        (ValueType::U64, TypedValue::U64(n)) => Ok(u128::from(n)),
+        (ValueType::U128, TypedValue::U128(n)) => Ok(n),
+        (ValueType::I8, TypedValue::I8(n)) => {
+            require!(n >= 0, ErrorCode::CastOverflow);
+            Ok(u128::from(n as u8))
+        }
+        (ValueType::I16, TypedValue::I16(n)) => {
+            require!(n >= 0, ErrorCode::CastOverflow);
+            Ok(u128::from(n as u16))
+        }
+        (ValueType::I32, TypedValue::I32(n)) => {
+            require!(n >= 0, ErrorCode::CastOverflow);
+            Ok(u128::from(n as u32))
+        }
+        (ValueType::I64, TypedValue::I64(n)) => {
+            require!(n >= 0, ErrorCode::CastOverflow);
+            Ok(u128::from(n as u64))
+        }
+        (ValueType::I128, TypedValue::I128(n)) => {
+            require!(n >= 0, ErrorCode::CastOverflow);
+            Ok(n as u128)
+        }
+        _ => Err(ErrorCode::InvalidExprOperand.into()),
+    }
+}
+
+fn value_to_i128(src_ty: ValueType, v: TypedValue) -> Result<i128> {
+    match (src_ty, v) {
+        (ValueType::U8, TypedValue::U8(n)) => Ok(i128::from(n)),
+        (ValueType::U16, TypedValue::U16(n)) => Ok(i128::from(n)),
+        (ValueType::U32, TypedValue::U32(n)) => Ok(i128::from(n)),
+        (ValueType::U64, TypedValue::U64(n)) => Ok(i128::from(n)),
+        (ValueType::U128, TypedValue::U128(n)) => {
+            require!(n <= i128::MAX as u128, ErrorCode::CastOverflow);
+            Ok(n as i128)
+        }
+        (ValueType::I8, TypedValue::I8(n)) => Ok(i128::from(n)),
+        (ValueType::I16, TypedValue::I16(n)) => Ok(i128::from(n)),
+        (ValueType::I32, TypedValue::I32(n)) => Ok(i128::from(n)),
+        (ValueType::I64, TypedValue::I64(n)) => Ok(i128::from(n)),
+        (ValueType::I128, TypedValue::I128(n)) => Ok(n),
+        _ => Err(ErrorCode::InvalidExprOperand.into()),
+    }
 }
 
 pub fn apply_mul_div_floor(ty: ValueType, a: &[u8], b: &[u8], c: &[u8]) -> Result<ValueBytes> {
@@ -415,7 +490,7 @@ pub fn apply_clamp(ty: ValueType, value: &[u8], lo: &[u8], hi: &[u8]) -> Result<
 }
 
 fn bps_denom_bytes() -> ValueBytes {
-    ValueBytes::encode_typed(ValueType::U64, TypedValue::U64(BPS_DENOM)).unwrap()
+    encode_typed(ValueType::U64, TypedValue::U64(BPS_DENOM)).unwrap()
 }
 
 fn compare_typed(ty: ValueType, op: CompareOp, l: TypedValue, r: TypedValue) -> Result<bool> {

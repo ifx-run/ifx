@@ -1,0 +1,49 @@
+[package]
+name = "ifx-core"
+version = "0.1.0"
+description = "Shared wire types, constants, tape layout, and codecs for Ifx"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/ifx-run/ifx"
+readme = "README.md"
+
+[lib]
+crate-type = ["lib"]
+
+[features]
+default = []
+# Phase 2+: wire enums (Cpi, StructuredCpiPatch, IfElseArm) — no Anchor.
+wire = ["dep:borsh"]
+# Anchor-compatible serialize for wire types used in instruction args (`IfElseArm`, …).
+anchor-wire = ["wire", "dep:anchor-lang"]
+# Hand-written IDL shapes for recursive / custom wire types.
+idl-build = ["wire", "anchor-wire", "dep:anchor-lang", "dep:serde_json", "anchor-lang/idl-build"]
+# Phase 4+: frame tape layout, value_codec, infer_expr_ty.
+layout = ["wire", "anchor-wire"]
+# Phase 5+: assemble_structured_cpi data (SPL/System/Stake); pulls token/stake crates.
+structured-cpi = [
+    "wire",
+    "layout",
+    "anchor-wire",
+    "dep:spl-token",
+    "dep:spl-token-2022",
+    "dep:solana-stake-interface",
+]
+
+[dependencies]
+anchor-lang = { workspace = true, optional = true }
+borsh = { version = "1.5", optional = true }
+serde_json = { version = "1.0", optional = true }
+spl-token = { workspace = true, optional = true }
+spl-token-2022 = { workspace = true, optional = true }
+solana-stake-interface = { workspace = true, optional = true }
+
+[dev-dependencies]
+anchor-lang = { workspace = true, features = ["derive"] }
+borsh = { version = "1.5", features = ["derive"] }
+spl-token = { workspace = true }
+spl-token-2022 = { workspace = true }
+solana-stake-interface = { workspace = true }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

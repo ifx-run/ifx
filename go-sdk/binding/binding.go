@@ -82,6 +82,128 @@ func FrameIndexCount() Node {
 	return Empty{Tag: constants.LetTagFrameIndexCount}
 }
 
+func AccountIsSigner(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountIsSigner, AccountIndex: accountIndex}
+}
+
+func AccountIsWritable(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountIsWritable, AccountIndex: accountIndex}
+}
+
+func StakeDelegationStake(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeDelegationStake, AccountIndex: accountIndex}
+}
+func StakeDelegationActivationEpoch(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeDelegationActivationEpoch, AccountIndex: accountIndex}
+}
+func StakeDelegationDeactivationEpoch(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeDelegationDeactivationEpoch, AccountIndex: accountIndex}
+}
+func StakeLockupUnixTimestamp(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeLockupUnixTimestamp, AccountIndex: accountIndex}
+}
+func StakeLockupEpoch(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeLockupEpoch, AccountIndex: accountIndex}
+}
+func StakeAuthorizedStaker(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeAuthorizedStaker, AccountIndex: accountIndex}
+}
+func StakeAuthorizedWithdrawer(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeAuthorizedWithdrawer, AccountIndex: accountIndex}
+}
+func StakeDelegationVoter(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeDelegationVoter, AccountIndex: accountIndex}
+}
+
+func SplMintIsInitialized(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplMintIsInitialized, AccountIndex: accountIndex}
+}
+func SplMintMintAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplMintMintAuthority, AccountIndex: accountIndex}
+}
+func SplMintFreezeAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplMintFreezeAuthority, AccountIndex: accountIndex}
+}
+func SplToken2022MintIsInitialized(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022MintIsInitialized, AccountIndex: accountIndex}
+}
+func SplToken2022MintMintAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022MintMintAuthority, AccountIndex: accountIndex}
+}
+func SplToken2022MintFreezeAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022MintFreezeAuthority, AccountIndex: accountIndex}
+}
+
+func AccountProgramOwner(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountProgramOwner, AccountIndex: accountIndex}
+}
+func AccountExecutable(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountExecutable, AccountIndex: accountIndex}
+}
+func AccountRentEpoch(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagAccountRentEpoch, AccountIndex: accountIndex}
+}
+func SplTokenAccountMint(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountMint, AccountIndex: accountIndex}
+}
+func SplTokenAccountOwner(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountOwner, AccountIndex: accountIndex}
+}
+func SplTokenAccountDelegate(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountDelegate, AccountIndex: accountIndex}
+}
+func SplTokenAccountCloseAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountCloseAuthority, AccountIndex: accountIndex}
+}
+func SplTokenAccountIsNative(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountIsNative, AccountIndex: accountIndex}
+}
+func SplTokenAccountOwnerIsDerived(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplTokenAccountOwnerIsDerived, AccountIndex: accountIndex}
+}
+func SplToken2022AccountMint(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountMint, AccountIndex: accountIndex}
+}
+func SplToken2022AccountOwner(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountOwner, AccountIndex: accountIndex}
+}
+func SplToken2022AccountDelegate(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountDelegate, AccountIndex: accountIndex}
+}
+func SplToken2022AccountCloseAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountCloseAuthority, AccountIndex: accountIndex}
+}
+func SplToken2022AccountIsNative(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountIsNative, AccountIndex: accountIndex}
+}
+func SplToken2022AccountOwnerIsDerived(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagSplToken2022AccountOwnerIsDerived, AccountIndex: accountIndex}
+}
+func StakeAccountState(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeAccountState, AccountIndex: accountIndex}
+}
+func StakeLockupCustodian(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeLockupCustodian, AccountIndex: accountIndex}
+}
+func StakeRentExemptReserve(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeRentExemptReserve, AccountIndex: accountIndex}
+}
+func StakeCreditsObserved(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeCreditsObserved, AccountIndex: accountIndex}
+}
+func StakeStakeFlags(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagStakeStakeFlags, AccountIndex: accountIndex}
+}
+func UpgradeableProgramDataTag(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagUpgradeableProgramDataTag, AccountIndex: accountIndex}
+}
+func UpgradeableProgramDataUpgradeAuthority(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagUpgradeableProgramDataUpgradeAuthority, AccountIndex: accountIndex}
+}
+func UpgradeableProgramProgramDataAddress(accountIndex uint8) Node {
+	return AccountIndex{Tag: constants.LetTagUpgradeableProgramProgramDataAddress, AccountIndex: accountIndex}
+}
+
 func EvalExpr(e expr.Node) Node { return Eval{Expr: e} }
 
 func SysvarClockSlot() Node {
@@ -148,7 +270,7 @@ func SplToken2022MintDefaultAccountState(accountIndex uint8) Node {
 	return AccountIndex{Tag: constants.LetTagSplToken2022MintDefaultAccountState, AccountIndex: accountIndex}
 }
 
-// Sample returns the minimal parity sample for wire tag 0..24 (tests/sdk_let_binding_parity.ts).
+// Sample returns the minimal parity sample for wire tag 0..67 (tests/sdk_let_binding_parity.ts).
 func Sample(tag int) Node {
 	switch tag {
 	case constants.LetTagAccountDataSlice:
@@ -203,16 +325,90 @@ func Sample(tag int) Node {
 		return SplToken2022MintDefaultAccountState(0)
 	case constants.LetTagAccountKey:
 		return AccountKey(0)
-    case constants.LetTagConstPubkey:
-		var b [32]byte
-		for i := range b {
-			b[i] = 7
-		}
-		return ConstPubkeyLiteral(b)
+	case constants.LetTagConstPubkey:
+		return ConstPubkeyLiteral([32]byte{})
 	case constants.LetTagFrameGeneration:
 		return FrameGeneration()
 	case constants.LetTagFrameIndexCount:
 		return FrameIndexCount()
+	case constants.LetTagAccountIsSigner:
+		return AccountIsSigner(0)
+	case constants.LetTagAccountIsWritable:
+		return AccountIsWritable(0)
+	case constants.LetTagStakeDelegationStake:
+		return StakeDelegationStake(0)
+	case constants.LetTagStakeDelegationActivationEpoch:
+		return StakeDelegationActivationEpoch(0)
+	case constants.LetTagStakeDelegationDeactivationEpoch:
+		return StakeDelegationDeactivationEpoch(0)
+	case constants.LetTagStakeLockupUnixTimestamp:
+		return StakeLockupUnixTimestamp(0)
+	case constants.LetTagStakeLockupEpoch:
+		return StakeLockupEpoch(0)
+	case constants.LetTagStakeAuthorizedStaker:
+		return StakeAuthorizedStaker(0)
+	case constants.LetTagStakeAuthorizedWithdrawer:
+		return StakeAuthorizedWithdrawer(0)
+	case constants.LetTagStakeDelegationVoter:
+		return StakeDelegationVoter(0)
+	case constants.LetTagSplMintIsInitialized:
+		return SplMintIsInitialized(0)
+	case constants.LetTagSplMintMintAuthority:
+		return SplMintMintAuthority(0)
+	case constants.LetTagSplMintFreezeAuthority:
+		return SplMintFreezeAuthority(0)
+	case constants.LetTagSplToken2022MintIsInitialized:
+		return SplToken2022MintIsInitialized(0)
+	case constants.LetTagSplToken2022MintMintAuthority:
+		return SplToken2022MintMintAuthority(0)
+	case constants.LetTagSplToken2022MintFreezeAuthority:
+		return SplToken2022MintFreezeAuthority(0)
+	case constants.LetTagAccountProgramOwner:
+		return AccountProgramOwner(0)
+	case constants.LetTagAccountExecutable:
+		return AccountExecutable(0)
+	case constants.LetTagAccountRentEpoch:
+		return AccountRentEpoch(0)
+	case constants.LetTagSplTokenAccountMint:
+		return SplTokenAccountMint(0)
+	case constants.LetTagSplTokenAccountOwner:
+		return SplTokenAccountOwner(0)
+	case constants.LetTagSplTokenAccountDelegate:
+		return SplTokenAccountDelegate(0)
+	case constants.LetTagSplTokenAccountCloseAuthority:
+		return SplTokenAccountCloseAuthority(0)
+	case constants.LetTagSplTokenAccountIsNative:
+		return SplTokenAccountIsNative(0)
+	case constants.LetTagSplTokenAccountOwnerIsDerived:
+		return SplTokenAccountOwnerIsDerived(0)
+	case constants.LetTagSplToken2022AccountMint:
+		return SplToken2022AccountMint(0)
+	case constants.LetTagSplToken2022AccountOwner:
+		return SplToken2022AccountOwner(0)
+	case constants.LetTagSplToken2022AccountDelegate:
+		return SplToken2022AccountDelegate(0)
+	case constants.LetTagSplToken2022AccountCloseAuthority:
+		return SplToken2022AccountCloseAuthority(0)
+	case constants.LetTagSplToken2022AccountIsNative:
+		return SplToken2022AccountIsNative(0)
+	case constants.LetTagSplToken2022AccountOwnerIsDerived:
+		return SplToken2022AccountOwnerIsDerived(0)
+	case constants.LetTagStakeAccountState:
+		return StakeAccountState(0)
+	case constants.LetTagStakeLockupCustodian:
+		return StakeLockupCustodian(0)
+	case constants.LetTagStakeRentExemptReserve:
+		return StakeRentExemptReserve(0)
+	case constants.LetTagStakeCreditsObserved:
+		return StakeCreditsObserved(0)
+	case constants.LetTagStakeStakeFlags:
+		return StakeStakeFlags(0)
+	case constants.LetTagUpgradeableProgramDataTag:
+		return UpgradeableProgramDataTag(0)
+	case constants.LetTagUpgradeableProgramDataUpgradeAuthority:
+		return UpgradeableProgramDataUpgradeAuthority(0)
+	case constants.LetTagUpgradeableProgramProgramDataAddress:
+		return UpgradeableProgramProgramDataAddress(0)
 	default:
 		panic("invalid let binding sample tag")
 	}

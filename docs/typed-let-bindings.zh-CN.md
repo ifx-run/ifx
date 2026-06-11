@@ -2,7 +2,7 @@
 
 # Typed `ifx_let` bindings
 
-[`LetBinding`](../programs/ifx/src/state/types.rs) 的 **wire enum**（tag `0`–`28`）。每个变体追加一条 frame 记录 **`[ty:1][payload:ty.size()]`**；类型由变体决定（slice / `Eval` 显式指定）。
+[`LetBinding`](../programs/ifx/src/state/types.rs) 的 **wire enum**（tag `0`–`67`）。每个变体追加一条 frame 记录 **`[ty:1][payload:ty.size()]`**；类型由变体决定（slice / `Eval` 显式指定）。
 
 SDK：[`@ifx-run/sdk`](../sdk/README.zh-CN.md) 的 `FrameScratch` / `letBuilder`。
 
@@ -137,7 +137,80 @@ SDK：`scratch.letFrameGeneration()`、`scratch.letFrameIndexCount()`（`letBuil
 
 ---
 
-## 账户元数据 — tag 24
+## 账户元数据 — tag 29–30
+
+| Tag | 变体 | 字段 | Frame 类型 | Wire 字段 |
+|-----|------|------|------------|-----------|
+| `29` | `AccountIsSigner` | `is_signer` | **Bool** | `account_index` |
+| `30` | `AccountIsWritable` | `is_writable` | **Bool** | `account_index` |
+
+链上读 `remaining[account_index]` 的 **运行时** meta（非 account data）。
+
+SDK：`letBuilder.accountIsSigner(account)`、`accountIsWritable(account)`。
+
+---
+
+## SPL Stake（`Stake11111111111111111111111111111111111111`）— tag 31–38
+
+链上：`owner == stake program`，`data.len() == 200`，Borsh 解包 `StakeStateV2`（允许尾部 padding）。
+
+| Tag | 变体 | 字段 | Frame 类型 | 状态要求 |
+|-----|------|------|------------|----------|
+| `31` | `StakeDelegationStake` | `delegation.stake` | U64 | `Stake` |
+| `32` | `StakeDelegationActivationEpoch` | `delegation.activation_epoch` | U64 | `Stake` |
+| `33` | `StakeDelegationDeactivationEpoch` | `delegation.deactivation_epoch` | U64 | `Stake` |
+| `34` | `StakeLockupUnixTimestamp` | `meta.lockup.unix_timestamp` | I64 | `Initialized` / `Stake` |
+| `35` | `StakeLockupEpoch` | `meta.lockup.epoch` | U64 | `Initialized` / `Stake` |
+| `36` | `StakeAuthorizedStaker` | `meta.authorized.staker` | Pubkey | `Initialized` / `Stake` |
+| `37` | `StakeAuthorizedWithdrawer` | `meta.authorized.withdrawer` | Pubkey | `Initialized` / `Stake` |
+| `38` | `StakeDelegationVoter` | `delegation.voter_pubkey` | Pubkey | `Stake` |
+
+delegation 字段在 `Initialized` 上返回 `StakeStateMismatch`（6033）。
+
+SDK：`letBuilder.stakeAuthorizedStaker(stakeAcc)` 等；示例 [`sdk/examples/stake-conditional-withdraw.ts`](../sdk/examples/stake-conditional-withdraw.ts)；测试 `tests/stake_typed_lets.ts`。
+
+---
+
+## SPL Mint 扩展 — tag 39–44
+
+经典 Token（tag 39–41）与 Token-2022 base mint（tag 42–44）：
+
+| Tag | 变体 | 字段 | Frame 类型 |
+|-----|------|------|------------|
+| `39` | `SplMintIsInitialized` | `is_initialized` | Bool |
+| `40` | `SplMintMintAuthority` | `mint_authority` (Some) | Pubkey |
+| `41` | `SplMintFreezeAuthority` | `freeze_authority` (Some) | Pubkey |
+| `42` | `SplToken2022MintIsInitialized` | base `is_initialized` | Bool |
+| `43` | `SplToken2022MintMintAuthority` | base `mint_authority` (Some) | Pubkey |
+| `44` | `SplToken2022MintFreezeAuthority` | base `freeze_authority` (Some) | Pubkey |
+
+`COption::None` → `SplMintOptionEmpty`（6038）。无 freeze authority 的 mint 请读 COption tag 字节（[`sdk/src/spl/layout.ts`](../sdk/src/spl/layout.ts) `SPL_MINT_LAYOUT`）或只用 `is_initialized` + supply/decimals。
+
+SDK：`letBuilder.splMintMintAuthority(mint)` 等；示例 [`mint-authority-guard.ts`](../sdk/examples/mint-authority-guard.ts)。
+
+---
+
+## Lighthouse 全绿 — tag 45–67（R5 / LB-5）
+
+规格见 [lighthouse-full-coverage.zh-CN.md](./lighthouse-full-coverage.zh-CN.md)。摘要：
+
+| Tag 段 | 域 | 变体 |
+|--------|-----|------|
+| 45–47 | AccountInfo | `AccountProgramOwner`, `AccountExecutable`, `AccountRentEpoch` |
+| 48–53 | SPL Token 账户 | mint/owner/delegate/close/is_native/**OwnerIsDerived** |
+| 54–59 | Token-2022 账户 | 与 48–53 对称 |
+| 60–64 | Stake | `StakeAccountState`, lockup custodian, rent_exempt_reserve, credits_observed, flags |
+| 65–67 | Upgradeable loader | ProgramData tag / upgrade_authority / programdata_address |
+
+空 `COption` / 空 `Option` → `SplMintOptionEmpty`（6038）。Stake-only 字段在 `Initialized` → `StakeStateMismatch`（6033）。
+
+SDK：`letBuilder.accountProgramOwner(acc)`、`splTokenAccountOwnerIsDerived(ata)`、`upgradeableProgramDataTag(programData)` 等；测试 [`tests/lighthouse_coverage_lets.ts`](../tests/lighthouse_coverage_lets.ts)。
+
+**下一 append-only tag：`68`。**
+
+---
+
+## 账户 data 长度 — tag 24
 
 | Tag | 变体 | 字段 | Frame 类型 | Wire 字段 |
 |-----|------|------|------------|-----------|
@@ -167,6 +240,11 @@ SDK：`scratch.letFrameGeneration()`、`scratch.letFrameIndexCount()`（`letBuil
 | `letConstPubkey(pk)` | `ConstPubkey` |
 | `frameGeneration()` | `FrameGeneration` |
 | `frameIndexCount()` | `FrameIndexCount` |
+| `accountIsSigner(account)` | `AccountIsSigner` |
+| `accountIsWritable(account)` | `AccountIsWritable` |
+| `stakeAuthorizedStaker(stake)` | `StakeAuthorizedStaker` |
+| `stakeLockupEpoch(stake)` | `StakeLockupEpoch` |
+| `stakeDelegationStake(stake)` | `StakeDelegationStake` |
 
 底层：`binding.*` + `scratch.plan` / `scratch.planAtRemainingIndex`（维护者 / 代码生成用）。
 
@@ -174,4 +252,4 @@ SDK：`scratch.letFrameGeneration()`、`scratch.letFrameIndexCount()`（`letBuil
 
 ## 新增 opcode
 
-Tag **只增不改**。下一个空闲 id：**29**。新变体须同步 program、SDK、IDL 与本文档。
+Tag **只增不改**。下一个空闲 id：**68**。新变体须同步 program、SDK、IDL 与本文档。

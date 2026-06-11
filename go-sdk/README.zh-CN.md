@@ -198,7 +198,7 @@ letIx, _ := b.BuildIx()
 
 账户缺少对应 extension → `Token2022ExtensionNotPresent`（6026）。未覆盖字段用 `AccountDataSlice(account, ownerProgram, ty, offset)`。
 
-**条件 CPI 的 SPL 指令：** `spltoken` 提供 BurnChecked、CloseAccount、HarvestWithheldTokensToMint 等。**官方** System/SPL ix 且字段来自 tape：用 `structuredcpi.StructuredCpi` + `StructuredCpiPatch`。其它 layout：`patchedcpi`（RawPatched）。
+**条件 CPI 的 SPL 指令：** `spltoken` 提供 BurnChecked、CloseAccount、HarvestWithheldTokensToMint 等。**官方** System / SPL / Token-2022 / **Stake** ix 且字段来自 tape：用 `structuredcpi.StructuredCpi` + `StructuredCpiPatch`（wire tag **0–32**）。其它 layout：`patchedcpi`（RawPatched）。
 
 ## Structured CPI
 

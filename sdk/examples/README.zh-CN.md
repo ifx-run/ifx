@@ -28,9 +28,21 @@
 
 运营方 helper：`personalDexAltAddresses`、`planPersonalDexFrame`。见 [docs/personal-amm.zh-CN.md §5.1](../../docs/personal-amm.zh-CN.md#51-pool-入驻与-address-lookup-table-alt)。
 
+## `guardrail-lamports-delta.ts` / `guardrail-two-account-lamports-diff.ts`
+
+Lighthouse §5.2 composable delta（无 Memory PDA）：单账户借记与双账户对称变化量 assert。
+
+## `mint-authority-guard.ts` / `upgradeable-program-guard.ts`
+
+绝对 assert（≈ Lighthouse AssertMint / upgradeable loader）；后者校验 program owner + ProgramData upgrade authority。
+
+## `stake-conditional-withdraw.ts`
+
+Stake typed lets + assert + `if_else` Skip；`planStakeStructuredWithdrawTx` 演示 **SP-5** `structuredCpiPatch.stakeWithdraw`。
+
 ## Structured CPI（参考）
 
-官方 System / SPL / Token-2022 指令 + tape 绑定字段 — 无独立 example 脚本。见 `tests/ifx_structured_cpi_initialize_mint.ts`（InitializeMint2 + `Pubkey` let）与 [structured-cpi-patches.zh-CN.md](../../docs/structured-cpi-patches.zh-CN.md)。
+官方 System / SPL / Token-2022 / **Stake** 指令 + tape 绑定字段。见 `tests/ifx_structured_cpi_initialize_mint.ts`、`tests/sdk_structured_cpi_codec.ts` 与 [structured-cpi-patches.zh-CN.md](../../docs/structured-cpi-patches.zh-CN.md)。
 
 ## 类型检查
 

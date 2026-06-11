@@ -15,7 +15,7 @@ Dynamic fields use [`Value`](../../programs/ifx/src/state/types.rs) (Frame bindi
 ```
 
 - **`accounts_start` / `accounts_len`:** slice into `remaining_accounts` (same as Static / RawPatched).
-- **`StructuredCpiPatch`:** full Borsh enum — first byte is variant tag **0–28** (see registry below); nested sub-enums and `Value` fields follow.
+- **`StructuredCpiPatch`:** full Borsh enum — first byte is variant tag **0–32** (see registry below); nested sub-enums and `Value` fields follow.
 - **`Value` on wire:** single byte = Frame binding index (no legacy `[0][index]` prefix).
 
 TS codec: **`encodeStructuredCpiPatch`** (includes variant tag). **`encodeStructuredCpiPatchPayload`** is deprecated (body only, pre-0.4 layout).
@@ -38,9 +38,9 @@ Full glossary: [glossary.md](./glossary.md) §4–5.
 | `1` | RawPatched | DEX / variable layouts / escape hatch |
 | `2` | Structured | `StructuredCpiPatch` (this doc) |
 
-Patch variant tags **0–28** match Borsh enum indices in `STRUCTURED_CPI_PATCH_WIRE` (SDK) — they are **not** a separate byte before the account slice.
+Patch variant tags **0–32** match Borsh enum indices in `STRUCTURED_CPI_PATCH_WIRE` (SDK) — they are **not** a separate byte before the account slice.
 
-## Variant registry (wire tags 0–28)
+## Variant registry (wire tags 0–32)
 
 SPL ix **discriminators** are the first byte of official instruction `data` (u8 enum). Token-2022 TransferFee extension uses its own program + discriminators.
 
@@ -75,6 +75,12 @@ SPL ix **discriminators** are the first byte of official instruction `data` (u8 
 | `26` | Token-2022 | `InitializeMultisig` | 2 | `m: Value` |
 | `27` | Token-2022 TransferFee | `TransferCheckedWithFee` | 1 | `AmountDecimalsFeePatch` |
 | `28` | Token-2022 TransferFee | `SetTransferFee` | 5 | `SetTransferFeePatch` |
+| `29` | Stake | `Withdraw` | 4 (bincode u32) | `lamports: Value` |
+| `30` | Stake | `Split` | 3 (bincode u32) | `lamports: Value` |
+| `31` | Stake | `Deactivate` | 5 (bincode u32) | — |
+| `32` | Stake | `DelegateStake` | 2 (bincode u32) | — |
+
+Stake ix `data` uses **bincode** `u32` variant + optional `u64` (not SPL’s single-byte discriminator).
 
 ### Nested payloads
 

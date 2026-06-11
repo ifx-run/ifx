@@ -2,11 +2,12 @@ use anchor_lang::prelude::*;
 
 use crate::{
     error::ErrorCode,
+    state::layout_map::map_layout_err,
     state::types::{Expr, ValueType},
     state::value_codec::{decode_bool, encode_typed, TypedValue, ValueBytes},
     state::value_ops::{
-        apply_and, apply_arith, apply_as_u64, apply_as_u128, apply_bps_mul_ceil,
-        apply_bps_mul_floor, apply_clamp, apply_compare, apply_div_ceil, apply_div_floor,
+        apply_and, apply_arith, apply_bps_mul_ceil,
+        apply_bps_mul_floor, apply_cast, apply_clamp, apply_compare, apply_div_ceil, apply_div_floor,
         apply_is_zero, apply_mul_div_ceil, apply_mul_div_floor, apply_neg, apply_non_zero,
         apply_not, apply_or, apply_saturating_sub, ArithOp, CompareOp,
     },
@@ -56,16 +57,16 @@ pub fn eval_expr(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Re
             let ty = infer_expr_ty(frame, operand)?;
             apply_non_zero(ty, &eval_expr(frame, ty, operand)?)
         }
-        Expr::AsU64 { operand } => {
-            require!(dst_ty == ValueType::U64, ErrorCode::ExprTypeMismatch);
-            let src = infer_expr_ty(frame, operand)?;
-            apply_as_u64(src, &eval_expr(frame, src, operand)?)
-        }
-        Expr::AsU128 { operand } => {
-            require!(dst_ty == ValueType::U128, ErrorCode::ExprTypeMismatch);
-            let src = infer_expr_ty(frame, operand)?;
-            apply_as_u128(src, &eval_expr(frame, src, operand)?)
-        }
+        Expr::AsU8 { operand } => eval_cast(frame, dst_ty, ValueType::U8, operand),
+        Expr::AsU16 { operand } => eval_cast(frame, dst_ty, ValueType::U16, operand),
+        Expr::AsU32 { operand } => eval_cast(frame, dst_ty, ValueType::U32, operand),
+        Expr::AsU64 { operand } => eval_cast(frame, dst_ty, ValueType::U64, operand),
+        Expr::AsU128 { operand } => eval_cast(frame, dst_ty, ValueType::U128, operand),
+        Expr::AsI8 { operand } => eval_cast(frame, dst_ty, ValueType::I8, operand),
+        Expr::AsI16 { operand } => eval_cast(frame, dst_ty, ValueType::I16, operand),
+        Expr::AsI32 { operand } => eval_cast(frame, dst_ty, ValueType::I32, operand),
+        Expr::AsI64 { operand } => eval_cast(frame, dst_ty, ValueType::I64, operand),
+        Expr::AsI128 { operand } => eval_cast(frame, dst_ty, ValueType::I128, operand),
         Expr::Add { lhs, rhs } => eval_arith(frame, dst_ty, ArithOp::Add, lhs, rhs),
         Expr::Sub { lhs, rhs } => eval_arith(frame, dst_ty, ArithOp::Sub, lhs, rhs),
         Expr::Mul { lhs, rhs } => eval_arith(frame, dst_ty, ArithOp::Mul, lhs, rhs),
@@ -163,6 +164,17 @@ pub fn eval_expr(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Re
     }
 }
 
+fn eval_cast(
+    frame: &impl FrameReader,
+    dst_ty: ValueType,
+    target: ValueType,
+    operand: &Expr,
+) -> Result<ValueBytes> {
+    require!(dst_ty == target, ErrorCode::ExprTypeMismatch);
+    let src = infer_expr_ty(frame, operand)?;
+    apply_cast(target, src, &eval_expr(frame, src, operand)?)
+}
+
 fn eval_arith(
     frame: &impl FrameReader,
     dst_ty: ValueType,
@@ -218,58 +230,20 @@ fn infer_ternary_ty(frame: &impl FrameReader, a: &Expr, b: &Expr, c: &Expr) -> R
 
 /// Static type of an expression subtree (for comparisons and consistency checks).
 pub fn infer_expr_ty(frame: &impl FrameReader, expr: &Expr) -> Result<ValueType> {
-    match expr {
-        Expr::Value(v) => frame.read_value_type(v.index),
-        Expr::ConstBool(_) => Ok(ValueType::Bool),
-        Expr::ConstU8(_) => Ok(ValueType::U8),
-        Expr::ConstU16(_) => Ok(ValueType::U16),
-        Expr::ConstU32(_) => Ok(ValueType::U32),
-        Expr::ConstU64(_) => Ok(ValueType::U64),
-        Expr::ConstU128(_) => Ok(ValueType::U128),
-        Expr::ConstI8(_) => Ok(ValueType::I8),
-        Expr::ConstI16(_) => Ok(ValueType::I16),
-        Expr::ConstI32(_) => Ok(ValueType::I32),
-        Expr::ConstI64(_) => Ok(ValueType::I64),
-        Expr::ConstI128(_) => Ok(ValueType::I128),
-        Expr::ConstF32(_) => Ok(ValueType::F32),
-        Expr::ConstF64(_) => Ok(ValueType::F64),
-        Expr::Not { .. }
-        | Expr::IsZero { .. }
-        | Expr::NonZero { .. }
-        | Expr::Eq { .. }
-        | Expr::Ne { .. }
-        | Expr::Gt { .. }
-        | Expr::Ge { .. }
-        | Expr::Lt { .. }
-        | Expr::Le { .. }
-        | Expr::And { .. }
-        | Expr::Or { .. } => Ok(ValueType::Bool),
-        Expr::Neg { operand } => {
-            let t = infer_expr_ty(frame, operand)?;
-            require!(t.supports_neg(), ErrorCode::UnsupportedUnaryOp);
-            Ok(t)
+    struct FrameCtx<'a, F: FrameReader>(&'a F);
+
+    impl<'a, F: FrameReader> ifx_core::layout::ExprTypeContext for FrameCtx<'a, F> {
+        fn binding_value_type(
+            &self,
+            index: u8,
+        ) -> std::result::Result<ValueType, ifx_core::layout::LayoutError> {
+            self.0
+                .read_value_type(index)
+                .map_err(|_| ifx_core::layout::LayoutError::InvalidValueIndex)
         }
-        Expr::AsU64 { .. } => Ok(ValueType::U64),
-        Expr::AsU128 { .. } => Ok(ValueType::U128),
-        Expr::Add { lhs, .. }
-        | Expr::Sub { lhs, .. }
-        | Expr::Mul { lhs, .. }
-        | Expr::Div { lhs, .. }
-        | Expr::DivFloor { lhs, .. }
-        | Expr::DivCeil { lhs, .. }
-        | Expr::Min { lhs, .. }
-        | Expr::Max { lhs, .. }
-        | Expr::SaturatingSub { lhs, .. } => {
-            let t = infer_expr_ty(frame, lhs)?;
-            require!(t.supports_arithmetic(), ErrorCode::UnsupportedBinaryOp);
-            Ok(t)
-        }
-        Expr::BpsMulFloor { .. } | Expr::BpsMulCeil { .. } => Ok(ValueType::U64),
-        Expr::MulDivFloor { a, .. } | Expr::MulDivCeil { a, .. } => infer_expr_ty(frame, a),
-        Expr::Clamp { value, .. } => infer_expr_ty(frame, value),
-        Expr::Select { then_expr, else_expr, .. } => infer_binary_ty(frame, then_expr, else_expr),
-        Expr::ConstPubkey(_) => Ok(ValueType::Pubkey),
     }
+
+    ifx_core::layout::infer_expr_ty(&FrameCtx(frame), expr).map_err(map_layout_err)
 }
 
 pub fn get_remaining<'info>(

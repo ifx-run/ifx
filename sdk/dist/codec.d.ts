@@ -1,5 +1,5 @@
 import { type PatchList } from "./patch-list";
-import type { Cpi } from "./types";
+import type { Cpi, Expr } from "./types";
 export { LET_BINDING_VARIANT } from "./let-binding-variants";
 export { EXPR_TAG, EXPR_VARIANT, EXPR_VARIANT_COUNT } from "./expr-variants";
 export { IF_ELSE_ARM, ifElseArmStepTag, } from "./if-else-arm";
@@ -25,6 +25,9 @@ export declare function encodeU16LenBytes(data: Buffer | Uint8Array): Buffer;
 export declare function encodeExpr(expr: AnyExpr): Buffer;
 export declare function encodeLetBinding(binding: AnyRecord): Buffer;
 export declare function encodeLetArgs(args: AnyRecord): Buffer;
+export declare function encodeAssertMultiArgs(args: {
+    conds: readonly Expr[];
+}): Buffer;
 export declare function encodeRawCpiPatch(patch: AnyRecord): Buffer;
 /** @deprecated Use {@link encodeRawCpiPatch} */
 export declare const encodeCpiPatch: typeof encodeRawCpiPatch;

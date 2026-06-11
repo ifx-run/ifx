@@ -30,6 +30,7 @@ import type { CpiWireBuildResult } from "./cpi";
 import type { IfElseArgs } from "./types";
 import {
   buildIxAssert,
+  buildIxAssertMulti,
   buildIxLet,
   buildIxResetFrame,
   createIxCloseFrame,
@@ -272,6 +273,45 @@ export class FrameScratch {
     return this.plan(binding.frameIndexCount());
   }
 
+  /** `remaining[i].is_signer` (runtime account meta). */
+  letAccountIsSigner(account: LetAccountInput): ScratchValue<"bool"> {
+    return this.plan(binding.accountIsSigner(0), [toLetAccountMeta(account)]);
+  }
+
+  /** `remaining[i].is_writable` (runtime account meta). */
+  letAccountIsWritable(account: LetAccountInput): ScratchValue<"bool"> {
+    return this.plan(binding.accountIsWritable(0), [toLetAccountMeta(account)]);
+  }
+
+  /** Stake `meta.authorized.staker` (`StakeStateV2`, stake program owner). */
+  letStakeAuthorizedStaker(account: LetAccountInput): ScratchValue<"pubkey"> {
+    return this.plan(binding.stakeAuthorizedStaker(0), [toLetAccountMeta(account)]);
+  }
+
+  /** Stake `meta.authorized.withdrawer`. */
+  letStakeAuthorizedWithdrawer(account: LetAccountInput): ScratchValue<"pubkey"> {
+    return this.plan(binding.stakeAuthorizedWithdrawer(0), [
+      toLetAccountMeta(account),
+    ]);
+  }
+
+  /** Stake `meta.lockup.unix_timestamp`. */
+  letStakeLockupUnixTimestamp(account: LetAccountInput): ScratchValue<"i64"> {
+    return this.plan(binding.stakeLockupUnixTimestamp(0), [
+      toLetAccountMeta(account),
+    ]);
+  }
+
+  /** Stake `meta.lockup.epoch`. */
+  letStakeLockupEpoch(account: LetAccountInput): ScratchValue<"u64"> {
+    return this.plan(binding.stakeLockupEpoch(0), [toLetAccountMeta(account)]);
+  }
+
+  /** Stake `delegation.stake` (`Stake` state only). */
+  letStakeDelegationStake(account: LetAccountInput): ScratchValue<"u64"> {
+    return this.plan(binding.stakeDelegationStake(0), [toLetAccountMeta(account)]);
+  }
+
   letAccountDataSlice<T extends IfxTy>(
     account: LetAccountInput,
     expectedOwner: LetAccountInput,
@@ -424,6 +464,11 @@ export class FrameScratch {
 
   ixAssert(cond: Cond, opts?: IxOpts): TransactionInstruction {
     return buildIxAssert(this.frame, cond, this.mergeIxOpts(opts));
+  }
+
+  /** Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure. */
+  ixAssertMulti(conds: readonly Cond[], opts?: IxOpts): TransactionInstruction {
+    return buildIxAssertMulti(this.frame, conds, this.mergeIxOpts(opts));
   }
 
   /** Patched CPI (`ifx_patched_cpi`). */

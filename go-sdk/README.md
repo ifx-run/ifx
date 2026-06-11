@@ -90,7 +90,7 @@ Public Frame check after decode (tests / debug only): `frameauthority.IsPublicFr
 
 Use `LetBuilder` or `FrameScratch` let helpers — pass accounts; remaining indices are assigned and deduped. Missing Token-2022 extension → `Token2022ExtensionNotPresent` (6026). Custom fields: `AccountDataSlice`.
 
-For conditional CPI, `spltoken` includes BurnChecked, CloseAccount, HarvestWithheldTokensToMint. **Official** System/SPL ix with tape-bound fields: `structuredcpi.StructuredCpi` + `StructuredCpiPatch`. Other layouts: `patchedcpi` (RawPatched).
+For conditional CPI, `spltoken` includes BurnChecked, CloseAccount, HarvestWithheldTokensToMint. **Official** System / SPL / Token-2022 / **Stake** ix with tape-bound fields: `structuredcpi.StructuredCpi` + `StructuredCpiPatch` (wire tags **0–32**). Other layouts: `patchedcpi` (RawPatched).
 
 ## Structured CPI
 

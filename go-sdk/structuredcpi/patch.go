@@ -291,6 +291,16 @@ func EncodePatchPayload(wireTag uint8, payload interface{}) ([]byte, error) {
 			return nil, fmt.Errorf("patch tag %d expects SetTransferFeePatch", wireTag)
 		}
 		return encodeSetTransferFee(p)
+	case constants.StructuredPatchStakeWithdraw,
+		constants.StructuredPatchStakeSplit:
+		v, ok := payload.(FrameValue)
+		if !ok {
+			return nil, fmt.Errorf("patch tag %d expects FrameValue", wireTag)
+		}
+		return EncodeSingleValuePayload(v), nil
+	case constants.StructuredPatchStakeDeactivate,
+		constants.StructuredPatchStakeDelegateStake:
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported structured patch wire tag %d", wireTag)
 	}

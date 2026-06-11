@@ -1,7 +1,7 @@
 /**
  * Wire tag order for on-chain [`LetBinding`](../../programs/ifx/src/state/types.rs).
  *
- * **Must match the Rust enum declaration exactly** (tags `0`–`28`). When adding a
+ * **Must match the Rust enum declaration exactly** (tags `0`–`67`). When adding a
  * variant: append here, extend `binding`, `codec` switch, program match arms, IDL, docs.
  */
 export const LET_BINDING_VARIANT = [
@@ -34,6 +34,45 @@ export const LET_BINDING_VARIANT = [
   "constPubkey",
   "frameGeneration",
   "frameIndexCount",
+  "accountIsSigner",
+  "accountIsWritable",
+  "stakeDelegationStake",
+  "stakeDelegationActivationEpoch",
+  "stakeDelegationDeactivationEpoch",
+  "stakeLockupUnixTimestamp",
+  "stakeLockupEpoch",
+  "stakeAuthorizedStaker",
+  "stakeAuthorizedWithdrawer",
+  "stakeDelegationVoter",
+  "splMintIsInitialized",
+  "splMintMintAuthority",
+  "splMintFreezeAuthority",
+  "splToken2022MintIsInitialized",
+  "splToken2022MintMintAuthority",
+  "splToken2022MintFreezeAuthority",
+  "accountProgramOwner",
+  "accountExecutable",
+  "accountRentEpoch",
+  "splTokenAccountMint",
+  "splTokenAccountOwner",
+  "splTokenAccountDelegate",
+  "splTokenAccountCloseAuthority",
+  "splTokenAccountIsNative",
+  "splTokenAccountOwnerIsDerived",
+  "splToken2022AccountMint",
+  "splToken2022AccountOwner",
+  "splToken2022AccountDelegate",
+  "splToken2022AccountCloseAuthority",
+  "splToken2022AccountIsNative",
+  "splToken2022AccountOwnerIsDerived",
+  "stakeAccountState",
+  "stakeLockupCustodian",
+  "stakeRentExemptReserve",
+  "stakeCreditsObserved",
+  "stakeStakeFlags",
+  "upgradeableProgramDataTag",
+  "upgradeableProgramDataUpgradeAuthority",
+  "upgradeableProgramProgramDataAddress",
 ] as const;
 
 export type LetBindingVariantKey = (typeof LET_BINDING_VARIANT)[number];

@@ -125,16 +125,16 @@ MemoryWrite(用户 lamports) → Transfer 1 SOL → AssertAccountDelta(Δ == -1e
 | Lamports | AssertAccountInfo | ✅ `AccountLamports` | ✅ 保持 | |
 | Clock / Rent sysvar | AssertSysvarClock 等 | ✅ tag 3–8 | ✅ 保持 | |
 | Account data 任意字节 | AssertAccountData | ✅ `AccountDataSlice` | 🟡 | 需 **layout 文档**；调用方负责 offset |
-| Account owner / pubkey | AssertAccountInfo | ✅ `AccountKey` + `Expr` 比较 | ✅ | |
-| **Account signer / writable** | AssertAccountInfo | ❌ | ⏳ **R1** | 新 `LetBinding` 读 runtime meta |
-| **Stake 账户** | AssertStakeAccount | ❌ | ⏳ **R2** | typed let + 域文档 + 示例 |
-| **Upgradeable loader** | 专用 assert | ❌ | ⏳ **R3** | 低优先级；或 slice + 文档 |
-| **Merkle verify_leaf** | CPI 封装 | ❌ | ⏳ **R3** | Structured/static CPI 示例，非新 opcode |
-| **绝对断言 fail** | Assert\* | ✅ `ifx_assert` | 🟡 | 缺 **guardrail 示例集** |
-| **Delta / 变化量** | Memory + AssertAccountDelta | 🟡 见 §4.3 | 🟡 **文档 + 示例** | **不加 Memory**；不加 SDK 糖 |
-| 两账户字段差 | AssertAccountDelta | 🟡 两次 let + `Expr` | 🟡 示例 | |
-| Multi-assert 单 ix | Assert\*Multi | ❌ | ⏳ **R4** | 仅在有 CU 实测需求时 |
-| TokenAccountOwnerIsDerived 等 | 专用 | ❌ | ⏳ **R3** | 评估是否 generic `Expr` 即可 |
+| **Account owner / pubkey** | AssertAccountInfo | ✅ `AccountKey` + tag **45–47** | ✅ | |
+| **Account signer / writable** | AssertAccountInfo | ✅ tag 29–30 | ✅ **R1** | `AccountIsSigner` / `AccountIsWritable` |
+| **Stake 账户** | AssertStakeAccount | ✅ tag 31–38, **60–64** | ✅ **R2+R5** | typed let + 域文档 + 测试 |
+| **Upgradeable loader** | 专用 assert | ✅ tag **65–67** | ✅ **R5** | [domains/upgradeable-loader.zh-CN.md](./domains/upgradeable-loader.zh-CN.md) |
+| **Merkle verify_leaf** | CPI 封装 | 🟡 static CPI 示例 | ✅ **R3** | [`merkle-verify-leaf-static-cpi.ts`](../sdk/examples/merkle-verify-leaf-static-cpi.ts) |
+| **绝对断言 fail** | Assert\* | ✅ `ifx_assert` | ✅ | guardrail 示例 [`guardrail-token-balance.ts`](../sdk/examples/guardrail-token-balance.ts) |
+| **Delta / 变化量** | Memory + AssertAccountDelta | ✅ 见 §4.3 | ✅ | [`guardrail-lamports-delta.ts`](../sdk/examples/guardrail-lamports-delta.ts) |
+| 两账户字段差 | AssertAccountDelta | ✅ 两次 let + `Expr` | ✅ | [`guardrail-two-account-lamports-diff.ts`](../sdk/examples/guardrail-two-account-lamports-diff.ts) |
+| Multi-assert 单 ix | Assert\*Multi | ✅ | — | `ifx_assert_multi` |
+| TokenAccountOwnerIsDerived 等 | 专用 | ✅ tag **53 / 59** | ✅ **R5** | [`tests/lighthouse_coverage_lets.ts`](../tests/lighthouse_coverage_lets.ts) |
 | **Skip 可选步骤** | ❌ | ✅ `ifx_if_else` | ✅ | Ifx 差异化 |
 | **Patch CPI data** | ❌ | ✅ patched / structured CPI | ✅ | |
 
@@ -211,10 +211,10 @@ Lighthouse 的一等公民支持说明 **stake 是真实需求面**；维护者�
 | ID | 交付物 | 状态 |
 |----|--------|------|
 | R0.1 | 本文档 + 英文版 | ✅ |
-| R0.2 | `sdk/examples/guardrail-lamports-delta.ts`（§5.2 delta 模式） | ⏳ |
-| R0.3 | `sdk/examples/guardrail-token-balance.ts`（绝对 assert） | ⏳ |
+| R0.2 | `sdk/examples/guardrail-lamports-delta.ts`（§5.2 delta 模式） | ✅ |
+| R0.3 | `sdk/examples/guardrail-token-balance.ts`（绝对 assert） | ✅ |
 | R0.4 | `docs/domains/stake.zh-CN.md` 调研草稿 | ✅ |
-| R0.5 | README 链到本文；grant「Relationship to Lighthouse」段落 | ⏳ |
+| R0.5 | README 链到本文；grant「Relationship to Lighthouse」段落 | ✅ |
 
 ### R1 — Account meta 与 assert 人机工程
 
@@ -238,20 +238,20 @@ Lighthouse 的一等公民支持说明 **stake 是真实需求面**；维护者�
 
 | ID | 交付物 | 说明 |
 |----|--------|------|
-| R3.1 | Upgradeable loader：slice 文档或 typed let | 低优先级 |
-| R3.2 | Merkle：`verify_leaf` static/structured CPI 示例 | 不新增强指令 |
-| R3.3 | `TokenAccountOwnerIsDerived`：评估 generic 比较 vs 专用 binding | 待 R1 后决策 |
+| R3.1 | Upgradeable loader typed let（tag 65–67） | ✅ R5 |
+| R3.2 | Merkle：`verify_leaf` static/structured CPI 示例 | ✅ |
+| R3.3 | `TokenAccountOwnerIsDerived` | ✅ tag **53 / 59**（R5） | 见 §11 |
 
 ### R4 — 仅在有集成方 / CU 证据时
 
 | ID | 交付物 | 触发条件 |
 |----|--------|----------|
-| R4.1 | `ifx_assert_multi`（单向量 cond + indexed 错误） | 钱包/后端反馈 tx 体积或 CU 瓶颈 |
+| R4.1 | `ifx_assert_multi`（`U8LenVec<Expr>` + indexed 失败） | ✅ — [r4-assert-multi.zh-CN.md](./r4-assert-multi.zh-CN.md)；disc=5 |
 | R4.2 | Lighthouse Memory 等价物 | **当前决策：不做**；除非 SSA delta 模式被证明不足 |
 
 ### 与 [roadmap.zh-CN.md](./roadmap.zh-CN.md) 的关系
 
-- **终点 A** 覆盖本文 R0–R4 + [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) IR-1–IR-3
+- **终点 A** 覆盖本文 R0–R5 + [ir-completeness.zh-CN.md](./ir-completeness.zh-CN.md) IR-1–IR-3 + SP-5
 - **终点 B** = Rust SDK（IR-1 后启动 golden）
 - 每新增 typed let opcode 须同步 **审计范围** — 在 [program-security.zh-CN.md](./program-security.zh-CN.md) 登记。
 
@@ -292,8 +292,27 @@ Lighthouse 的一等公民支持说明 **stake 是真实需求面**；维护者�
 
 ---
 
+## 11. R3.3 / R5 — TokenAccountOwnerIsDerived
+
+Lighthouse 专用断言：ATA 的 `key` 是否为 `owner + mint` 派生的 PDA。Ifx **R5** 提供链上 typed let：
+
+| Tag | 变体 | 程序 |
+|-----|------|------|
+| 53 | `SplTokenAccountOwnerIsDerived` | SPL Token |
+| 59 | `SplToken2022AccountOwnerIsDerived` | Token-2022 |
+
+```text
+ifx_let(derived ← splTokenAccountOwnerIsDerived(ata))
+→ ifx_assert(derived)
+```
+
+**可组合替代（无专用 opcode 时）：** `splTokenAccountOwner` + 链下 PDA 推导 + `ifx_assert(eq(...))`。集成测试：[`tests/lighthouse_coverage_lets.ts`](../tests/lighthouse_coverage_lets.ts)。
+
+---
+
 ## 变更记录
 
 | 日期 | 说明 |
 |------|------|
 | 2026-06-08 | 初版：调研、矩阵、可组合 delta 立场、R0–R4 roadmap |
+| 2026-06-08 | R5 文档同步：矩阵全 ✅、§11 OwnerIsDerived tag 53/59 |

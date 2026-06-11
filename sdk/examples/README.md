@@ -28,9 +28,21 @@ Conditional WSOL wrap in **one business tx**: `let` → idempotent ATA create �
 
 Pool operator helpers: `personalDexAltAddresses`, `planPersonalDexFrame`. See [docs/personal-amm.md §5.1](../../docs/personal-amm.md#51-pool-onboarding-and-address-lookup-table-alt).
 
-## `structured-cpi` (reference)
+## `guardrail-lamports-delta.ts` / `guardrail-two-account-lamports-diff.ts`
 
-Official System / SPL / Token-2022 ix with tape-bound fields — **not** a standalone example script. See `tests/ifx_structured_cpi_initialize_mint.ts` (InitializeMint2 + `Pubkey` let) and [structured-cpi-patches.md](../../docs/structured-cpi-patches.md).
+Lighthouse §5.2 composable delta (no Memory PDA): single-account debit and symmetric two-account lamports change asserts.
+
+## `mint-authority-guard.ts` / `upgradeable-program-guard.ts`
+
+Absolute asserts (≈ Lighthouse AssertMint / upgradeable loader); latter checks program owner + ProgramData upgrade authority.
+
+## `stake-conditional-withdraw.ts`
+
+Stake typed lets + assert + `if_else` Skip; `planStakeStructuredWithdrawTx` demonstrates **SP-5** `structuredCpiPatch.stakeWithdraw`.
+
+## Structured CPI (reference)
+
+Official System / SPL / Token-2022 / **Stake** ix with tape-bound fields. See `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/sdk_structured_cpi_codec.ts`, and [structured-cpi-patches.md](../../docs/structured-cpi-patches.md).
 
 ## Typecheck
 

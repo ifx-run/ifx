@@ -78,7 +78,7 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 
 ## 5. Data loading
 
-On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–`28`):
+On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–`67`):
 
 | Tag | Variant | Role |
 |-----|---------|------|

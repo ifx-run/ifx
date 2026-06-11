@@ -2,171 +2,114 @@ English | [中文](./typed-let-bindings.zh-CN.md)
 
 # Typed `ifx_let` bindings
 
-Wire format for [`LetBinding`](../programs/ifx/src/state/types.rs): a **single enum** (tags `0`–`28`). Each variant appends one frame record **`[ty:1][payload:ty.size()]`**; the type is implied by the variant (or explicit for slices / `Eval`).
+Wire format for [`LetBinding`](../programs/ifx/src/state/types.rs): a **single enum** (tags `0`–`67`). Each variant appends one frame record **`[ty:1][payload:ty.size()]`**; the type is implied by the variant (or explicit for slices / `Eval`).
 
 SDK helpers: [`@ifx-run/sdk`](../sdk/README.md) `FrameScratch` / `letBuilder`.
 
 ---
 
-## Generic bindings (tags 0–2)
+## Generic bindings (tags 0–2, 24)
 
 | Tag | Variant | Frame type | Wire fields |
 |-----|---------|------------|-------------|
 | `0` | `AccountDataSlice` | Caller `ty` | `ty`, `account_index`, `offset`, `expected_program_owner` |
-| `1` | `AccountLamports` | **U64** (fixed) | `account_index` |
+| `1` | `AccountLamports` | **U64** | `account_index` |
+| `24` | `AccountDataLen` | **U32** | `account_index` |
 | `2` | `Eval` | Inferred from `expr` | `expr: Expr` |
 
-### `AccountDataSlice`
-
-Owner-checked raw read: `remaining[account_index].owner` must equal `remaining[expected_program_owner].key()`. No layout unpack — caller supplies `ty` and byte `offset`. Use typed SPL / sysvar opcodes when possible.
-
-### `AccountLamports`
-
-Always **8-byte LE u64** from `remaining[account_index].lamports`.
-
-### `Eval`
-
-Evaluates `expr` over prior frame values; storage type is inferred (on-chain `infer_expr_ty`, SDK `inferIfxTyFromExpr`).
-
-**Note:** CPI `set_return_data` is not readable from a separate top-level `ifx_let` instruction. For post-CPI dynamic values, read an account field (e.g. token `amount`) or plan `Eval` over prior frame values in the same batch.
+`AccountDataSlice`: owner-checked raw read — `remaining[account_index].owner` must equal `remaining[expected_program_owner].key()`.
 
 ---
 
 ## Sysvar — tags 3–8
 
-On-chain via **`Clock::get()`** / **`Rent::get()`** syscalls — **no `remaining` account** required.
-
-### Clock (tags 3–7)
-
-| Tag | Variant | Field | Frame type |
-|-----|---------|-------|------------|
-| `3` | `SysvarClockSlot` | `slot` | U64 |
-| `4` | `SysvarClockEpochStartTimestamp` | `epoch_start_timestamp` | I64 |
-| `5` | `SysvarClockEpoch` | `epoch` | U64 |
-| `6` | `SysvarClockLeaderScheduleEpoch` | `leader_schedule_epoch` | U64 |
-| `7` | `SysvarClockUnixTimestamp` | `unix_timestamp` | I64 |
-
-### Rent (tag 8)
-
-| Tag | Variant | Field / method | Frame type | Wire fields |
-|-----|---------|----------------|------------|-------------|
-| `8` | `SysvarRentMinimumBalance` | `minimum_balance(data_len)` | U64 | `data_len: u32` |
-
-Deprecated Rent fields (`lamports_per_byte_year`, `exemption_threshold`, `burn_percent`) are intentionally omitted — use `minimum_balance(data_len)` for rent-exempt thresholds.
-
-SDK: `clockUnixTimestamp()`, `rentMinimumBalance(165)`, etc. (see `sdk/src/sysvar/`).
+Clock tags 3–7 (`SysvarClockSlot` … `SysvarClockUnixTimestamp`); Rent tag 8 (`SysvarRentMinimumBalance { data_len }`). No `remaining` accounts.
 
 ---
 
-## SPL Token (`spl_token::ID`) — tags 9–13
+## SPL Token — tags 9–13
 
-On-chain: `owner == spl_token::ID`, fixed account sizes, official unpack.
-
-| Tag | Variant | Field | Frame type |
-|-----|---------|-------|------------|
-| `9` | `SplTokenAccountAmount` | `amount` | U64 |
-| `10` | `SplTokenAccountDelegatedAmount` | `delegated_amount` | U64 |
-| `11` | `SplTokenAccountState` | `state` | U8 |
-| `12` | `SplMintSupply` | `supply` | U64 |
-| `13` | `SplMintDecimals` | `decimals` | U8 |
-
-SDK: `splTokenAmount`, `splMintDecimals`, etc. (see `sdk/src/spl/`).
+`SplTokenAccountAmount`, `DelegatedAmount`, `State`; `SplMintSupply`, `Decimals`. Owner `spl_token::ID`.
 
 ---
 
-## SPL Token-2022 (`spl_token_2022::ID`) — tags 14–23
+## SPL Token-2022 — tags 14–23
 
-Separate opcodes from SPL Token — different owner and unpack path (`StateWithExtensions`). Within one `ifx_let` batch, parsed base/extension **field values** are cached per `account_index` (short borrow per cache miss; no full account-data heap copy).
-
-### Base layout (tags 14–18)
-
-| Tag | Variant | Field | Frame type |
-|-----|---------|-------|------------|
-| `14` | `SplToken2022AccountAmount` | `amount` | U64 |
-| `15` | `SplToken2022AccountDelegatedAmount` | `delegated_amount` | U64 |
-| `16` | `SplToken2022AccountState` | `state` | U8 |
-| `17` | `SplToken2022MintSupply` | `supply` | U64 |
-| `18` | `SplToken2022MintDecimals` | `decimals` | U8 |
-
-### Extensions (tags 19–23)
-
-| Tag | Variant | Field | Frame type |
-|-----|---------|-------|------------|
-| `19` | `SplToken2022AccountTransferFeeWithheld` | `withheld_amount` | U64 |
-| `20` | `SplToken2022MintTransferFeeBasisPoints` | current `transfer_fee_basis_points` | U16 |
-| `21` | `SplToken2022MintTransferFeeMaximum` | current `maximum_fee` | U64 |
-| `22` | `SplToken2022MintWithheldAmount` | `withheld_amount` (mint) | U64 |
-| `23` | `SplToken2022MintDefaultAccountState` | `state` | U8 |
-
-Missing extension → `Token2022ExtensionNotPresent`.
+Base layout 14–18; extension fields 19–23. Missing extension → `Token2022ExtensionNotPresent`.
 
 ---
 
 ## Pubkey — tags 25–26
 
-Frame type **`Pubkey`** (`ValueType` tag `13`, 32-byte raw key). Comparisons: `Eq` / `Ne` only.
+| Tag | Variant | Source | Frame type |
+|-----|---------|--------|------------|
+| `25` | `AccountKey` | `remaining[i].key` | Pubkey |
+| `26` | `ConstPubkey` | ix-data literal | Pubkey |
 
-| Tag | Variant | Source | Frame type | Wire fields |
-|-----|---------|--------|------------|-------------|
-| `25` | `AccountKey` | `remaining[account_index].key` | **Pubkey** | `account_index` |
-| `26` | `ConstPubkey` | ix-data literal | **Pubkey** | `bytes: [u8; 32]` |
-
-Prefer **`AccountKey`** (ALT-friendly, no 32 B in ix data). **`ConstPubkey`** is allowed when you accept wire cost.
-
-SDK: `scratch.letAccountKey(account)` — `PublicKey` or `AccountMeta` (only the pubkey is used; signer/writable flags are ignored). Also `scratch.letConstPubkey(pk)`, `expr.pubkey(pk)`.
-
-Structured CPI (`InitializeMint`): mint authority via `PubkeyValue::FromFrame` / `Literal`; freeze via `FreezeAuthPatch` (`None` / `SomeValue` / `SomeLiteral`). See [structured-cpi-patches.md](./structured-cpi-patches.md).
+Prefer **`AccountKey`** (ALT-friendly). SDK: `letAccountKey(account)`.
 
 ---
 
 ## Frame metadata — tags 27–28
 
-| Tag | Variant | Source | Frame type | Wire fields |
-|-----|---------|--------|------------|-------------|
-| `27` | `FrameGeneration` | `Frame.generation` | **U64** | _(none)_ |
-| `28` | `FrameIndexCount` | `Frame.index_count` | **U16** | _(none)_ |
-
-`generation` starts at `0` on create and `wrapping_add(1)` on each `ifx_reset_frame`. No `remaining` account.
-
-SDK: `scratch.letFrameGeneration()`, `scratch.letFrameIndexCount()` (also `letBuilder.frameGeneration()` / `frameIndexCount()`).
+`FrameGeneration` (U64), `FrameIndexCount` (U16).
 
 ---
 
-## Account metadata — tag 24
+## Account metadata — tags 29–30
 
-| Tag | Variant | Field | Frame type | Wire fields |
-|-----|---------|-------|------------|-------------|
-| `24` | `AccountDataLen` | `data_len()` | **U32** | `account_index` |
-
-On-chain `remaining[account_index].data_len()` — byte length of account data (any owner). Complements `AccountDataSlice` when you only need length (e.g. compare to a known layout size or reason about Token-2022 extensions).
+`AccountIsSigner`, `AccountIsWritable` (Bool).
 
 ---
 
-## SDK mapping
+## SPL Stake — tags 31–38
 
-Prefer **`LetIxBuilder`** — pass `AccountMeta` / pubkey for account-scoped loads; sysvar loads need no account.
+Delegation fields require **`Stake`** state; meta fields work on **`Initialized`** / **`Stake`**. Wrong state → `StakeStateMismatch` (6033).
+
+---
+
+## SPL Mint — tags 39–44
+
+Classic mint 39–41; Token-2022 base mint 42–44. Empty `COption` on authority fields → `SplMintOptionEmpty` (6038).
+
+---
+
+## Lighthouse full coverage (R5) — tags 45–67
+
+See [lighthouse-full-coverage.md](./lighthouse-full-coverage.md) for field tables.
+
+| Tag range | Domain |
+|-----------|--------|
+| 45–47 | AccountInfo: `AccountProgramOwner`, `AccountExecutable`, `AccountRentEpoch` |
+| 48–53 | SPL Token account (+ `SplTokenAccountOwnerIsDerived`) |
+| 54–59 | Token-2022 account (symmetric) |
+| 60–64 | Stake: state, custodian, rent_exempt_reserve, credits_observed, flags |
+| 65–67 | Upgradeable loader: ProgramData tag, upgrade authority, programdata address |
+
+Tests: [`tests/lighthouse_coverage_lets.ts`](../tests/lighthouse_coverage_lets.ts).
+
+**Next append-only tag: `68`.**
+
+---
+
+## SDK mapping (selected)
 
 | `letBuilder` method | `LetBinding` variant |
 |---------------------|----------------------|
 | `lamports(account)` | `AccountLamports` |
 | `dataLen(account)` | `AccountDataLen` |
-| `clockUnixTimestamp()` | `SysvarClockUnixTimestamp` |
-| `clockSlot()` | `SysvarClockSlot` |
-| `rentMinimumBalance(dataLen)` | `SysvarRentMinimumBalance` |
-| `splTokenAmount(account)` | `SplTokenAccountAmount` |
-| `splTokenAccountState(account)` | `SplTokenAccountState` |
-| `splToken2022Amount(account)` | `SplToken2022AccountAmount` |
-| `letEval(expr)` | `Eval { expr }` |
-| `accountDataSlice(...)` | `AccountDataSlice` |
 | `letAccountKey(account)` | `AccountKey` |
-| `letConstPubkey(pk)` | `ConstPubkey` |
-| `frameGeneration()` | `FrameGeneration` |
-| `frameIndexCount()` | `FrameIndexCount` |
+| `accountProgramOwner(account)` | `AccountProgramOwner` |
+| `accountIsSigner(account)` | `AccountIsSigner` |
+| `splTokenAmount(account)` | `SplTokenAccountAmount` |
+| `splTokenAccountOwnerIsDerived(ata)` | `SplTokenAccountOwnerIsDerived` |
+| `stakeAuthorizedStaker(stake)` | `StakeAuthorizedStaker` |
+| `upgradeableProgramDataTag(programData)` | `UpgradeableProgramDataTag` |
 
-Low-level: `binding.*` + `scratch.plan` / `scratch.planAtRemainingIndex` (maintainers / codegen only).
+Low-level: `binding.*` + `scratch.planAtRemainingIndex`.
 
 ---
 
 ## Adding opcodes
 
-Tags are **append-only**. Next free id: **29**. New variants require program + SDK + IDL + this doc update.
+Tags are **append-only**. Next free id: **68**. New variants require program + SDK + IDL + both typed-let-bindings docs.

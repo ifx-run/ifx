@@ -107,19 +107,20 @@ Legend: **✅ shipped** · **🟡 composable (needs docs/examples)** · **⏳ pl
 
 | Domain | Lighthouse | Ifx today | Target | Notes |
 |--------|------------|-----------|--------|-------|
-| SPL Token / Mint | AssertToken* | ✅ tags 9–18 | ✅ | [typed-let-bindings.md](./typed-let-bindings.md) |
+| SPL Token / Mint | AssertToken* | ✅ tags 9–18, 39–44 | ✅ | [typed-let-bindings.md](./typed-let-bindings.md) |
 | Lamports | AssertAccountInfo | ✅ `AccountLamports` | ✅ | |
 | Clock / Rent | AssertSysvar* | ✅ tags 3–8 | ✅ | |
 | Arbitrary account data | AssertAccountData | ✅ `AccountDataSlice` | 🟡 | Layout docs |
-| Pubkey / owner | AssertAccountInfo | ✅ `AccountKey` + `Expr` | ✅ | |
-| **Signer / writable meta** | AssertAccountInfo | ❌ | ⏳ **R1** | New `LetBinding` |
-| **Stake** | AssertStakeAccount | ❌ | ⏳ **R2** | Typed lets + domain doc |
-| Upgradeable loader | Dedicated | ❌ | ⏳ **R3** | Low priority |
-| Merkle verify_leaf | CPI wrap | ❌ | ⏳ **R3** | Example only |
-| Absolute fail assert | Assert\* | ✅ `ifx_assert` | 🟡 | Example set |
-| **Delta / change** | Memory + Delta | 🟡 §5.2 | 🟡 docs + examples | **No Memory; no SDK sugar** |
-| Two-account field diff | AssertAccountDelta | 🟡 two lets + `Expr` | 🟡 examples | |
-| Multi-assert per ix | Assert\*Multi | ❌ | ⏳ **R4** | If CU proven |
+| **Account owner / pubkey** | AssertAccountInfo | ✅ `AccountKey` + tags **45–47** | ✅ | |
+| **Signer / writable meta** | AssertAccountInfo | ✅ tag 29–30 | ✅ **R1** | `AccountIsSigner` / `AccountIsWritable` |
+| **Stake** | AssertStakeAccount | ✅ tag 31–38, **60–64** | ✅ **R2+R5** | [domain doc](./domains/stake.md) |
+| **Upgradeable loader** | Dedicated | ✅ tag **65–67** | ✅ **R5** | [upgradeable-loader.md](./domains/upgradeable-loader.md) |
+| Merkle verify_leaf | CPI wrap | 🟡 static CPI example | ✅ **R3** | [`merkle-verify-leaf-static-cpi.ts`](../sdk/examples/merkle-verify-leaf-static-cpi.ts) |
+| Absolute fail assert | Assert\* | ✅ `ifx_assert` | ✅ | [guardrail-token-balance.ts](../sdk/examples/guardrail-token-balance.ts) |
+| **Delta / change** | Memory + Delta | ✅ §5.2 | ✅ | [guardrail-lamports-delta.ts](../sdk/examples/guardrail-lamports-delta.ts) |
+| Two-account field diff | AssertAccountDelta | ✅ two lets + `Expr` | ✅ | [`guardrail-two-account-lamports-diff.ts`](../sdk/examples/guardrail-two-account-lamports-diff.ts) |
+| Multi-assert per ix | Assert\*Multi | ✅ | — | `ifx_assert_multi` |
+| TokenAccountOwnerIsDerived | Dedicated | ✅ tag **53 / 59** | ✅ **R5** | [`lighthouse_coverage_lets.ts`](../tests/lighthouse_coverage_lets.ts) |
 | **Skip optional steps** | ❌ | ✅ | ✅ | Ifx differentiator |
 | **Patch CPI** | ❌ | ✅ | ✅ | |
 
@@ -160,7 +161,7 @@ Domain docs (e.g. Stake) must list **assert** and **Skip/CPI** paths.
 
 ## 6. Domain probe: Stake
 
-See [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) (Chinese draft).
+See [domains/stake.md](./domains/stake.md) · [domains/stake.zh-CN.md](./domains/stake.zh-CN.md).
 
 ---
 
@@ -171,10 +172,10 @@ See [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) (Chinese draft).
 | ID | Deliverable | Status |
 |----|-------------|--------|
 | R0.1 | This doc + Chinese version | ✅ |
-| R0.2 | `sdk/examples/guardrail-lamports-delta.ts` | ⏳ |
-| R0.3 | `sdk/examples/guardrail-token-balance.ts` | ⏳ |
-| R0.4 | `docs/domains/stake.zh-CN.md` | ⏳ |
-| R0.5 | README link; grant “Relationship to Lighthouse” | ⏳ |
+| R0.2 | `sdk/examples/guardrail-lamports-delta.ts` | ✅ |
+| R0.3 | `sdk/examples/guardrail-token-balance.ts` | ✅ |
+| R0.4 | `docs/domains/stake.zh-CN.md` | ✅ |
+| R0.5 | README link; grant “Relationship to Lighthouse” | ✅ |
 
 ### R1 — Account meta
 
@@ -191,9 +192,15 @@ Typed lets, example, tests, typed-let-bindings tags 29+.
 
 ### R3 — Niche (upgradeable loader, Merkle CPI example, derived-owner eval)
 
+| ID | Deliverable | Status |
+|----|-------------|--------|
+| R3.1 | Upgradeable loader typed lets (tags 65–67) | ✅ R5 |
+| R3.2 | Merkle `verify_leaf` static CPI example | ✅ |
+| R3.3 | `TokenAccountOwnerIsDerived` (tags 53 / 59) | ✅ R5 |
+
 ### R4 — On demand only
 
-`ifx_assert_multi` if integrators prove CU/tx-size pain. **No Memory equivalent** unless SSA delta pattern fails in production.
+Design: [r4-assert-multi.md](./r4-assert-multi.md) — measured tx-size savings, CU estimates, **pre-mainnet disc=5** (after `ifx_assert`). **No Memory equivalent** unless SSA delta pattern fails in production.
 
 ---
 
@@ -229,3 +236,4 @@ For each 🟡/⏳ row: expressible in tests, documented, composable (new opcode 
 | Date | Note |
 |------|------|
 | 2026-06-08 | Initial: survey, matrix, composable delta stance, R0–R4 |
+| 2026-06-08 | R5 doc sync: matrix aligned with tags 45–67; upgradeable / OwnerIsDerived ✅ |

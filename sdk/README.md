@@ -249,7 +249,7 @@ Omitted `programId` targets devnet (`DEFAULT_IFX_PROGRAM_ID`). Localnet / custom
 
 ## Examples
 
-Repo [`examples/`](./examples/) (not published to npm): L0 `minimal-frame.ts` · L1 `dust-destroy-token2022.ts` (patched + static CPI) · structured CPI: `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/sdk_structured_cpi_codec.ts`.
+Repo [`examples/`](./examples/) (not published to npm): L0 `minimal-frame.ts` · guardrail `guardrail-lamports-delta.ts` / `guardrail-token-balance.ts` · L1 `dust-destroy-token2022.ts` (patched + static CPI) · structured CPI: `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/sdk_structured_cpi_codec.ts`.
 
 Go client: [`go-sdk/README.md`](../go-sdk/README.md).
 

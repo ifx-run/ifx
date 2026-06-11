@@ -20,8 +20,9 @@ const (
 	IxDiscResetFrame  = 2
 	IxDiscLet         = 3
 	IxDiscAssert      = 4
-	IxDiscPatchedCpi  = 5
-	IxDiscIfElse      = 6
+	IxDiscAssertMulti = 5
+	IxDiscPatchedCpi  = 6
+	IxDiscIfElse      = 7
 )
 
 var (

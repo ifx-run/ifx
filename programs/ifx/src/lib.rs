@@ -6,17 +6,21 @@
 //!   planning and instruction encoding.
 //! - **On-chain CPI:** depend on this crate with `features = ["cpi"]`.
 //! - **Wire types:** [`Expr`](state::types::Expr) serializes with **Borsh** (flat enum,
-//!   tags 0–43). Do not encode `Expr` with Anchor's recursive instruction coder.
+//!   tags 0–51). Do not encode `Expr` with Anchor's recursive instruction coder.
 //!
 //! See `docs/rust-integration.md`, `docs/implementation.md`, and `docs/errors.md`.
 
 #![allow(clippy::diverging_sub_expression)] // Anchor `#[program]` expander
 
-pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod pseudocode;
 pub mod state;
+
+/// Re-export shared constants from [`ifx_core`] (also available as `ifx_core::constants`).
+pub mod constants {
+    pub use ifx_core::constants::*;
+}
 
 use anchor_lang::prelude::*;
 
@@ -109,6 +113,19 @@ pub mod ifx {
     #[instruction(discriminator = [IX_DISC_ASSERT])]
     pub fn ifx_assert<'info>(ctx: Context<'info, Assert<'info>>, cond: Expr) -> Result<()> {
         assert::handler(ctx, cond)
+    }
+
+    /// Require every entry in `args.conds` to evaluate to `true`; short-circuit on first failure
+    /// with [`ErrorCode::AssertFailedMulti`] (failing index in return data + pseudocode logs).
+    ///
+    /// `conds` is a [`U8LenVec`] of [`Expr`] over values already in `Frame::tape` (via prior
+    /// [`ifx_let`]). At least one condition is required.
+    #[instruction(discriminator = [IX_DISC_ASSERT_MULTI])]
+    pub fn ifx_assert_multi<'info>(
+        ctx: Context<'info, Assert<'info>>,
+        args: AssertMultiArgs,
+    ) -> Result<()> {
+        assert_multi::handler(ctx, args)
     }
 
     /// Unconditional patched CPI into an existing program.

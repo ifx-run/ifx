@@ -36,10 +36,16 @@ const (
 	StructuredPatchToken2022InitializeMultisig        // (26) InitializeMultisig — dynamic m
 	StructuredPatchToken2022TransferCheckedWithFee    // (27) TransferCheckedWithFee — AmountDecimalsFeePatch
 	StructuredPatchToken2022SetTransferFee            // (28) SetTransferFee — SetTransferFeePatch
+
+	// Stake Program
+	StructuredPatchStakeWithdraw      // (29) Withdraw — dynamic lamports
+	StructuredPatchStakeSplit           // (30) Split — dynamic lamports
+	StructuredPatchStakeDeactivate      // (31) Deactivate — unit
+	StructuredPatchStakeDelegateStake   // (32) DelegateStake — unit
 )
 
 // StructuredCpiPatchCount is the number of StructuredCpiPatch wire variants.
-const StructuredCpiPatchCount = 29
+const StructuredCpiPatchCount = 33
 
 // Cpi wire step kind (matches on-chain Cpi tag).
 const (

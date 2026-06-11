@@ -7,6 +7,9 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/constants"
 )
 
+// StakeProgramID is the native stake program.
+var StakeProgramID = solana.MustPublicKeyFromBase58("Stake11111111111111111111111111111111111111")
+
 // InferWireTag returns structured patch wire tag from an official instruction template.
 func InferWireTag(programID solana.PublicKey, data []byte) (uint8, bool) {
 	if len(data) == 0 {
@@ -27,6 +30,24 @@ func InferWireTag(programID solana.PublicKey, data []byte) (uint8, bool) {
 		}
 		return 0, false
 	}
+	if programID.Equals(StakeProgramID) {
+		if len(data) < 4 {
+			return 0, false
+		}
+		variant := uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16 | uint32(data[3])<<24
+		switch variant {
+		case 2:
+			return constants.StructuredPatchStakeDelegateStake, true
+		case 3:
+			return constants.StructuredPatchStakeSplit, true
+		case 4:
+			return constants.StructuredPatchStakeWithdraw, true
+		case 5:
+			return constants.StructuredPatchStakeDeactivate, true
+		}
+		return 0, false
+	}
+
 	tokenProg := token.ProgramID
 	token2022 := solana.MustPublicKeyFromBase58("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
 	if !programID.Equals(tokenProg) && !programID.Equals(token2022) {

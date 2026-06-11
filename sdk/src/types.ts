@@ -6,7 +6,12 @@ import type { Ifx } from "./idl/ifx";
 export type ValueType = IdlTypes<Ifx>["valueType"];
 export type Expr = IdlTypes<Ifx>["expr"];
 export type LetBinding = IdlTypes<Ifx>["letBinding"];
-export type RawCpiPatch = IdlTypes<Ifx>["rawCpiPatch"];
+
+/** Frame binding index (IDL `Value`; not inferred when Anchor `RecursiveDepth4` truncates). */
+export type Value = { index: number };
+
+/** Raw patched CPI byte overlay (IDL `RawCpiPatch`). */
+export type RawCpiPatch = { dataOffset: number; source: Value };
 
 /** @deprecated Use {@link RawCpiPatch} */
 export type CpiPatch = RawCpiPatch;
@@ -21,6 +26,10 @@ type IdlLetArgs = IdlTypes<Ifx>["letArgs"];
 
 export type LetArgs = Omit<IdlLetArgs, "bindings"> & {
   bindings: U8LenVec<LetBinding>;
+};
+
+export type AssertMultiArgs = {
+  conds: U8LenVec<Expr>;
 };
 
 export type CpiStatic = {
@@ -66,8 +75,6 @@ export type IfElseArgs = Omit<IdlIfElseArgs, "thenArm" | "elseArm"> & {
   thenArm: IfElseArm;
   elseArm: IfElseArm;
 };
-
-export type Value = IdlTypes<Ifx>["value"];
 
 export function cpiRequiresPatchApply(cpi: Cpi): boolean {
   switch (cpi.kind) {

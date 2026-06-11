@@ -32,7 +32,8 @@ export declare const IX_DISC_CLOSE_FRAME = 1;
 export declare const IX_DISC_RESET_FRAME = 2;
 export declare const IX_DISC_LET = 3;
 export declare const IX_DISC_ASSERT = 4;
-export declare const IX_DISC_PATCHED_CPI = 5;
-export declare const IX_DISC_IF_ELSE = 6;
+export declare const IX_DISC_ASSERT_MULTI = 5;
+export declare const IX_DISC_PATCHED_CPI = 6;
+export declare const IX_DISC_IF_ELSE = 7;
 /** 1-byte `Frame` account type discriminator. */
 export declare const ACCOUNT_DISC_FRAME = 6;

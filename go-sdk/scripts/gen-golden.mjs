@@ -6,6 +6,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { PublicKey } from "@solana/web3.js";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { encodeExpr, encodeLetBinding } = await import(
@@ -60,10 +61,26 @@ function sampleExpr(key) {
       return expr.isZero(U64);
     case "nonZero":
       return expr.nonZero(U64);
+    case "asU8":
+      return expr.asU8(expr.u32(1000));
+    case "asU16":
+      return expr.asU16(expr.u32(1000));
+    case "asU32":
+      return expr.asU32(U64);
     case "asU64":
       return expr.asU64(U128);
     case "asU128":
       return expr.asU128(U64);
+    case "asI8":
+      return expr.asI8(expr.i32(-3));
+    case "asI16":
+      return expr.asI16(expr.i32(-3));
+    case "asI32":
+      return expr.asI32(expr.i64(-3));
+    case "asI64":
+      return expr.asI64(expr.i64(-3));
+    case "asI128":
+      return expr.asI128(expr.i64(-3));
     case "add":
       return expr.add(U64, U64);
     case "sub":
@@ -110,6 +127,8 @@ function sampleExpr(key) {
       return expr.clamp(U64, U64, U64);
     case "select":
       return expr.select(BOOL, U64, U64);
+    case "constPubkey":
+      return expr.pubkey(PublicKey.default);
     default:
       throw new Error(`missing sample for ${key}`);
   }
@@ -167,6 +186,92 @@ function sampleBinding(key) {
       return binding.splToken2022MintWithheldAmount(0);
     case "splToken2022MintDefaultAccountState":
       return binding.splToken2022MintDefaultAccountState(0);
+    case "accountKey":
+      return binding.accountKey(0);
+    case "constPubkey":
+      return binding.constPubkey(PublicKey.default.toBuffer());
+    case "frameGeneration":
+      return binding.frameGeneration();
+    case "frameIndexCount":
+      return binding.frameIndexCount();
+    case "accountIsSigner":
+      return binding.accountIsSigner(0);
+    case "accountIsWritable":
+      return binding.accountIsWritable(0);
+    case "stakeDelegationStake":
+      return binding.stakeDelegationStake(0);
+    case "stakeDelegationActivationEpoch":
+      return binding.stakeDelegationActivationEpoch(0);
+    case "stakeDelegationDeactivationEpoch":
+      return binding.stakeDelegationDeactivationEpoch(0);
+    case "stakeLockupUnixTimestamp":
+      return binding.stakeLockupUnixTimestamp(0);
+    case "stakeLockupEpoch":
+      return binding.stakeLockupEpoch(0);
+    case "stakeAuthorizedStaker":
+      return binding.stakeAuthorizedStaker(0);
+    case "stakeAuthorizedWithdrawer":
+      return binding.stakeAuthorizedWithdrawer(0);
+    case "stakeDelegationVoter":
+      return binding.stakeDelegationVoter(0);
+    case "splMintIsInitialized":
+      return binding.splMintIsInitialized(0);
+    case "splMintMintAuthority":
+      return binding.splMintMintAuthority(0);
+    case "splMintFreezeAuthority":
+      return binding.splMintFreezeAuthority(0);
+    case "splToken2022MintIsInitialized":
+      return binding.splToken2022MintIsInitialized(0);
+    case "splToken2022MintMintAuthority":
+      return binding.splToken2022MintMintAuthority(0);
+    case "splToken2022MintFreezeAuthority":
+      return binding.splToken2022MintFreezeAuthority(0);
+    case "accountProgramOwner":
+      return binding.accountProgramOwner(0);
+    case "accountExecutable":
+      return binding.accountExecutable(0);
+    case "accountRentEpoch":
+      return binding.accountRentEpoch(0);
+    case "splTokenAccountMint":
+      return binding.splTokenAccountMint(0);
+    case "splTokenAccountOwner":
+      return binding.splTokenAccountOwner(0);
+    case "splTokenAccountDelegate":
+      return binding.splTokenAccountDelegate(0);
+    case "splTokenAccountCloseAuthority":
+      return binding.splTokenAccountCloseAuthority(0);
+    case "splTokenAccountIsNative":
+      return binding.splTokenAccountIsNative(0);
+    case "splTokenAccountOwnerIsDerived":
+      return binding.splTokenAccountOwnerIsDerived(0);
+    case "splToken2022AccountMint":
+      return binding.splToken2022AccountMint(0);
+    case "splToken2022AccountOwner":
+      return binding.splToken2022AccountOwner(0);
+    case "splToken2022AccountDelegate":
+      return binding.splToken2022AccountDelegate(0);
+    case "splToken2022AccountCloseAuthority":
+      return binding.splToken2022AccountCloseAuthority(0);
+    case "splToken2022AccountIsNative":
+      return binding.splToken2022AccountIsNative(0);
+    case "splToken2022AccountOwnerIsDerived":
+      return binding.splToken2022AccountOwnerIsDerived(0);
+    case "stakeAccountState":
+      return binding.stakeAccountState(0);
+    case "stakeLockupCustodian":
+      return binding.stakeLockupCustodian(0);
+    case "stakeRentExemptReserve":
+      return binding.stakeRentExemptReserve(0);
+    case "stakeCreditsObserved":
+      return binding.stakeCreditsObserved(0);
+    case "stakeStakeFlags":
+      return binding.stakeStakeFlags(0);
+    case "upgradeableProgramDataTag":
+      return binding.upgradeableProgramDataTag(0);
+    case "upgradeableProgramDataUpgradeAuthority":
+      return binding.upgradeableProgramDataUpgradeAuthority(0);
+    case "upgradeableProgramProgramDataAddress":
+      return binding.upgradeableProgramProgramDataAddress(0);
     default:
       throw new Error(`missing sample for ${key}`);
   }
