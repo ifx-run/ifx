@@ -40,7 +40,7 @@ describe("public frame authority", () => {
     const { ixCreate, frame } = FrameScratch.planPublicFrame({
       payer,
       frameId,
-      tapeLen: 256,
+      tapeLen: 512,
     });
     const authority = new PublicKey(
       ixCreate.data.subarray(1 + 32, 1 + 32 + 32)

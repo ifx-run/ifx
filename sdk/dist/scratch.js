@@ -287,7 +287,11 @@ class FrameScratch {
     ixAssert(cond, opts) {
         return (0, ix_1.buildIxAssert)(this.frame, cond, this.mergeIxOpts(opts));
     }
-    /** Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure. */
+    /**
+     * Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure.
+     * Prefer **3–10** conditions per ix ({@link RECOMMENDED_ASSERT_MULTI_MAX}); wire max
+     * {@link MAX_ASSERT_MULTI_CONDS}.
+     */
     ixAssertMulti(conds, opts) {
         return (0, ix_1.buildIxAssertMulti)(this.frame, conds, this.mergeIxOpts(opts));
     }

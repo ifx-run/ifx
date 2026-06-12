@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
 
 import {
+  DEFAULT_TAPE_LEN,
   expr,
   FrameScratch,
   IFX_LOCALNET_PROGRAM_ID,
@@ -39,7 +40,7 @@ async function main(): Promise<void> {
   anchor.setProvider(provider);
 
   const payer = provider.wallet.publicKey;
-  const tapeLen = 256;
+  const tapeLen = DEFAULT_TAPE_LEN;
   const frameId = randomBytes(32);
 
   const { scratch, ixCreate, frame, frameBump } = FrameScratch.planPublicFrame({

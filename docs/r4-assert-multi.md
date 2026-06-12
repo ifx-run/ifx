@@ -64,3 +64,15 @@ Freeze before mainnet; if external integrators hardcode discs, fall back to appe
 
 Ship if: tx-size pressure, indexed failures, or CU profile justify it.  
 Skip if: few guards; `expr.and` + single assert is enough.
+
+---
+
+## 6. Integration guidance (SDK)
+
+| Constant | Value | Notes |
+|----------|-------|-------|
+| `MAX_ASSERT_MULTI_CONDS` | 255 | wire `U8LenVec` limit |
+| `RECOMMENDED_ASSERT_MULTI_MIN` | 3 | below this, prefer a single `ifx_assert` |
+| `RECOMMENDED_ASSERT_MULTI_MAX` | 10 | **suggested per-ix cap** — no on-chain CU limit; profile when higher |
+
+The program does **not** cap CU by cond count. SDK **warns** above 10 and **rejects encoding** above 255.

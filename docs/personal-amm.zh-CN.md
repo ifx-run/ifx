@@ -341,7 +341,7 @@ Swap tx **不需要** Whirlpool / Raydium / Jupiter pool program。
 
 ### 9.3 Frame / tape
 
-- 单次 swap 在默认 `tape_len = 256`（packed tape，index_cap 128）内足够
+- 单次 swap 在默认 `tape_len = 512`（packed tape，index_cap 256）内足够
 - binding 多时用 SDK cursor 模拟规划 — 见 [implementation.zh-CN.md](./implementation.zh-CN.md)
 
 ---

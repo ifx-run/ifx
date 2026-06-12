@@ -116,6 +116,18 @@ AssertMultiArgs { conds: U8LenVec<Expr> }   // max 255；≥1 条；失败 → A
 
 ---
 
+## 6. 集成指引（SDK）
+
+| 常量 | 值 | 说明 |
+|------|-----|------|
+| `MAX_ASSERT_MULTI_CONDS` | 255 | wire `U8LenVec` 上限 |
+| `RECOMMENDED_ASSERT_MULTI_MIN` | 3 | 值得合并成 multi 的下限（&lt;3 用单条 `ifx_assert` 即可） |
+| `RECOMMENDED_ASSERT_MULTI_MAX` | 10 | **每条 ix 建议上限** — 无链上 CU cap，超出需自行 profile |
+
+链上 **不** 限制 cond 条数对应的 CU；SDK 在超过 10 条时 `console.warn`（TS）/ `eprintln!`（Rust），超过 255 条 **拒绝编码**。
+
+---
+
 ## 变更记录
 
 | 日期 | 说明 |

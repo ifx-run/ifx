@@ -57,6 +57,11 @@ function createIxCreateFrame(params) {
     }
     if (params.frameId.length !== 32)
         throw new Error("frameId must be 32 bytes");
+    if (params.tapeLen > constants_1.RECOMMENDED_TAPE_LEN_MAX) {
+        console.warn(`[ifx] create_frame tapeLen=${params.tapeLen} exceeds recommended ` +
+            `${constants_1.RECOMMENDED_TAPE_LEN_MAX} — higher Frame rent and let/reset CU; prefer ` +
+            `${constants_1.RECOMMENDED_TAPE_LEN_MAX} or less unless profiled`);
+    }
     const [frame] = (0, layout_1.framePda)(params.payer, params.frameId, programId);
     const args = Buffer.alloc(32 + 32 + 4);
     Buffer.from(params.frameId).copy(args, 0);
@@ -122,10 +127,23 @@ function buildIxAssert(frame, cond, opts = {}) {
         data: Buffer.concat([exports.IX_DISCRIMINATOR.ifxAssert, (0, codec_1.encodeExpr)((0, cond_1.toCond)(cond))]),
     });
 }
-/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+/**
+ * Build `ifx_assert_multi` — at least one condition; short-circuits on first failure.
+ *
+ * Wire allows up to {@link MAX_ASSERT_MULTI_CONDS} conditions; prefer
+ * **3–10** per ix to limit tx CU (no on-chain cap). Split larger guard lists across
+ * multiple ix or use N× {@link buildIxAssert}.
+ */
 function buildIxAssertMulti(frame, conds, opts = {}) {
     if (conds.length === 0) {
         throw new Error("ifx_assert_multi requires at least one condition");
+    }
+    if (conds.length > constants_1.MAX_ASSERT_MULTI_CONDS) {
+        throw new Error(`ifx_assert_multi supports at most ${constants_1.MAX_ASSERT_MULTI_CONDS} conditions (got ${conds.length})`);
+    }
+    if (conds.length > constants_1.RECOMMENDED_ASSERT_MULTI_MAX) {
+        console.warn(`[ifx] ifx_assert_multi: ${conds.length} conditions exceeds recommended ` +
+            `${constants_1.RECOMMENDED_ASSERT_MULTI_MAX} per ix — split guards or expect higher tx CU`);
     }
     const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
     return new web3_js_1.TransactionInstruction({

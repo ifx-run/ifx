@@ -6,7 +6,7 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::error::ScratchError;
 
-/// Result of a CPI builder for [`FrameScratch::ix_cpi`].
+/// Result of a CPI builder for [`FrameScratch::ix_cpi`](crate::scratch::FrameScratch::ix_cpi).
 #[derive(Clone, Debug)]
 pub struct CpiWireBuildResult {
     pub cpi: Cpi,

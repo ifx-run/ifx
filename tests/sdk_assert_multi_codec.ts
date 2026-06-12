@@ -25,4 +25,12 @@ describe("sdk assert_multi codec", () => {
     const frame = PublicKey.unique();
     expect(() => buildIxAssertMulti(frame, [])).to.throw(/at least one/i);
   });
+
+  it("rejects more than MAX_ASSERT_MULTI_CONDS off-chain", () => {
+    const frame = PublicKey.unique();
+    const guards = Array.from({ length: 256 }, () =>
+      expr.eq(expr.u64(1n), expr.u64(1n))
+    );
+    expect(() => buildIxAssertMulti(frame, guards)).to.throw(/at most 255/i);
+  });
 });

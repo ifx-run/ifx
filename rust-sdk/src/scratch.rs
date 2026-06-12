@@ -282,7 +282,7 @@ mod tests {
             payer,
             frame_id: &frame_id,
             authority: Pubkey::default(),
-            tape_len: 256,
+            tape_len: 512,
             program_id: Some(IFX_LOCALNET_PROGRAM_ID),
         })
         .unwrap();
@@ -298,7 +298,7 @@ mod tests {
         let user = Pubkey::new_unique();
         let mut s = FrameScratch::new(
             frame,
-            Some(256),
+            Some(512),
             Some(IFX_LOCALNET_PROGRAM_ID),
             on_curve_authority(),
         );
@@ -315,7 +315,7 @@ mod tests {
         let frame = Pubkey::new_unique();
         let mut s = FrameScratch::new(
             frame,
-            Some(256),
+            Some(512),
             Some(IFX_LOCALNET_PROGRAM_ID),
             on_curve_authority(),
         );
@@ -329,7 +329,7 @@ mod tests {
         let user = Pubkey::new_unique();
         let mut s = FrameScratch::new(
             frame,
-            Some(256),
+            Some(512),
             Some(IFX_LOCALNET_PROGRAM_ID),
             on_curve_authority(),
         );
@@ -347,7 +347,7 @@ mod tests {
         let frame = Pubkey::new_unique();
         let mut s = FrameScratch::new(
             frame,
-            Some(256),
+            Some(512),
             Some(IFX_LOCALNET_PROGRAM_ID),
             on_curve_authority(),
         );
@@ -365,7 +365,7 @@ mod tests {
         let token_acc = Pubkey::new_unique();
         let mut s = FrameScratch::new(
             frame,
-            Some(256),
+            Some(512),
             Some(IFX_LOCALNET_PROGRAM_ID),
             on_curve_authority(),
         );

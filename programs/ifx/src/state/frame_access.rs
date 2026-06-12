@@ -23,7 +23,7 @@ pub struct FrameMut<'a> {
     layout: FrameLayout,
 }
 
-/// Tape read API shared by [`Frame`], [`FrameRef`], and [`FrameMut`].
+/// Tape read API shared by [`Frame`](crate::state::Frame), [`FrameRef`], and [`FrameMut`].
 pub trait FrameReader {
     fn index_count(&self) -> Result<u16>;
     fn generation(&self) -> Result<u64>;
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn reset_clears_session_fields_only() {
-        let tape_len = 256u32;
+        let tape_len = 512u32;
         let mut wire = serialize_frame(&empty_frame(tape_len));
         let tape_before = {
             let layout = FrameLayout::parse(&wire).unwrap();
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn read_out_of_range_returns_error_with_site() {
-        let tape_len = 256u32;
+        let tape_len = 512u32;
         let wire = serialize_frame(&empty_frame(tape_len));
         let view = FrameRef::from_parsed(&wire).unwrap();
         let err = view.read_bytes_inner(0, ValueType::U64).unwrap_err();
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn layout_mismatch_rejected_with_site() {
-        let tape_len = 256u32;
+        let tape_len = 512u32;
         let mut wire = serialize_frame(&empty_frame(tape_len));
         let mut bad = FrameLayout::parse(&wire).unwrap();
         bad.tape_len += 1;

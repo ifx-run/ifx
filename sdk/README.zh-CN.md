@@ -32,9 +32,9 @@ npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { FrameScratch } from "@ifx-run/sdk";
+import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
-const tapeLen = 256; // 链上 MAX_FRAME_TAPE_LEN 上限
+const tapeLen = DEFAULT_TAPE_LEN; // 512；链上最大 MAX_FRAME_TAPE_LEN；典型 256–8192
 const frameId = randomBytes(32); // 持久化 frameId + tapeLen（配置、DB 等）
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
@@ -45,7 +45,7 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）。`reset` / `let` **无需额外 signer**；无人能 `ifx_close_frame` 回收 rent — swap / ATA glue 的零成本默认路径。链上读取后可用 `isPublicFrameAuthority(decoded.authority, frame)` 校验。
+**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）— **公开 scratch**，任何人可写。适合 devnet / 无状态 glue；**生产业务 Frame 请用下方 `planNewFrame` + on-curve `authority`**。`reset` / `let` 无需额外 signer；无人能 `close` 回收 rent。
 
 **Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）。同进程复用 Tx 1 的 `scratch`；跨任务重建见 [`examples/minimal-frame.ts`](./examples/minimal-frame.ts)：
 
@@ -113,7 +113,9 @@ tx.add(letBuilder.buildIx());
 
 每条 binding 写入 **`[ty:1][payload:ty.size()]`** 到 `Frame::tape`；wire 引用 **`Value.index`**（binding 序号，`u8`）。链下类型在 `ScratchValue`；`planRecordOffsets`（`tape-layout.ts`）须与链上 `plan_record_offsets` 一致。
 
-创建时：`tapeLen` 最大 **65_535**；`indexCap = min(256, floor(tapeLen / 2))`。append 失败：**`IndexCapReached`** 与 **`TapeOutOfBounds`** — 见 [errors.zh-CN.md](../docs/errors.zh-CN.md)。
+创建时：`tapeLen` 链上最大 **65_535**；**推荐 `DEFAULT_TAPE_LEN`（512）**，复杂编排一般不超过 **`RECOMMENDED_TAPE_LEN_MAX`（8192）** — 更大 Frame 租金与 `let`/`reset` CU 更高（见 [frame-cu-optimization.zh-CN.md](../docs/frame-cu-optimization.zh-CN.md)）。`indexCap = min(256, floor(tapeLen / 2))`。append 失败：**`IndexCapReached`** 与 **`TapeOutOfBounds`** — 见 [errors.zh-CN.md](../docs/errors.zh-CN.md)。
+
+**`ifx_assert_multi`：** wire 最多 **255** 条 cond（`MAX_ASSERT_MULTI_CONDS`）；**建议每条 ix 合并 3–10 条** guard（`RECOMMENDED_ASSERT_MULTI_MAX`），避免整笔 tx CU 过高；更多 guard 拆成多条 multi 或 N× `ifx_assert` — 见 [r4-assert-multi.zh-CN.md](../docs/r4-assert-multi.zh-CN.md)。
 
 **无 `extend_frame` / `shrink_frame`：** 创建时一次性分配 `tapeLen` + 固定 `payload_at`；`new FrameScratch(framePk, tapeLen)` 做链下校验。
 
@@ -124,8 +126,8 @@ tx.add(letBuilder.buildIx());
 - **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
-- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`publicFrameAuthority`）；公共 scratch，写操作无额外 signer。
-- **`FrameScratch.planNewFrame(...)`**：私有 / 可关闭 Frame；on-curve `authority`（如 bot 热钱包）签 `reset`/`let`。
+- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`publicFrameAuthority`）；**公开 scratch**（任何人可 `reset`/`let`，不可 `close`）。适合 devnet 试跑与无状态 glue；**生产业务 Frame 请用 `planNewFrame` + on-curve `authority`** — 见 [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md)。
+- **`FrameScratch.planNewFrame(...)`**：**生产推荐** — 私有 / 可关闭 Frame；on-curve `authority`（如 bot 热钱包）签 `reset`/`let`/`close`。
 - **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；公共 Frame 传 `publicFrameAuthority(payer, frameId)`。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
@@ -251,7 +253,7 @@ ifElseArgs(flag, arm.cpi(built.cpi));
 
 仓库内 [`examples/`](./examples/)（不随 npm 发布）：L0 `minimal-frame.ts` · guardrail `guardrail-lamports-delta.ts` / `guardrail-token-balance.ts` · L1 `dust-destroy-token2022.ts`（patched + static CPI）。
 
-Go 客户端：[`go-sdk/README.zh-CN.md`](../go-sdk/README.zh-CN.md)。
+其它客户端：[Go SDK](../go-sdk/README.zh-CN.md) · [Rust SDK](../rust-sdk/README.zh-CN.md)（`ifx-sdk`）。
 
 ## 维护者
 

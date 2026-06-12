@@ -38,7 +38,7 @@ describe("two-hop token swap (ifx orchestration)", () => {
       payer: payer.publicKey,
       frameId,
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const createFrameTx = new Transaction().add(ixCreate);

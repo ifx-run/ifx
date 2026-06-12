@@ -17,7 +17,7 @@ func TestPlanPublicFrameSetsFrameAuthority(t *testing.T) {
 	plan, err := PlanPublicFrame(PlanNewFrameParams{
 		Payer:     payer,
 		FrameID:   frameID,
-		TapeLen:   256,
+		TapeLen:   512,
 		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {
@@ -43,7 +43,7 @@ func TestPlanPublicFrameSetsFrameAuthority(t *testing.T) {
 func TestLetLamportsRemainingIndex(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
 	user := solana.NewWallet().PublicKey()
-	s := NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
+	s := NewFrameScratch(frame, intPtr(512), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
 
 	sv, err := s.LetLamports(user)
 	if err != nil {
@@ -66,7 +66,7 @@ func TestLetLamportsRemainingIndex(t *testing.T) {
 
 func TestLetConstU64EmptyRemaining(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
-	s := NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
+	s := NewFrameScratch(frame, intPtr(512), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
 	sv, err := s.LetConstU64(42)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func TestLetConstU64EmptyRemaining(t *testing.T) {
 func TestLetBuilderDedupesAccounts(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
 	user := solana.NewWallet().PublicKey()
-	s := NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
+	s := NewFrameScratch(frame, intPtr(512), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
 	b := s.LetBuilder()
 	if _, err := b.Lamports(user); err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestLetBuilderDedupesAccounts(t *testing.T) {
 
 func TestMinimalBusinessWire(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
-	s := NewFrameScratch(frame, intPtr(256), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
+	s := NewFrameScratch(frame, intPtr(512), constants.LocalnetProgramID, solana.NewWallet().PublicKey())
 	s.IxReset()
 	one, err := s.LetConstU64(1)
 	if err != nil {

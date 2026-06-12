@@ -145,7 +145,7 @@ Localnet integration (Surfpool / `anchor test` validator; skips when RPC unavail
 ```bash
 export ANCHOR_PROVIDER_URL=http://127.0.0.1:8899
 export ANCHOR_WALLET=~/.config/solana/id.json
-cargo test -p ifx-sdk --test localnet_minimal -- --nocapture
+cargo test -p ifx-sdk --test localnet -- --nocapture
 ```
 
 Or from repo root: `npm run rust:test` / `npm run rust:test:integration`.

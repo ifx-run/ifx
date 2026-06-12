@@ -24,7 +24,7 @@ pub enum LetBinding {
     AccountLamports { account_index: u8 },
     /// Evaluate `expr` and append to frame tape.
     ///
-    /// Storage type is inferred on-chain via [`infer_expr_ty`]
+    /// Storage type is inferred on-chain via [`infer_expr_ty`](crate::layout::infer_expr_ty)
     /// (same rules as `@ifx-run/sdk` `inferIfxTyFromExpr`). SDK `letEval` infers off-chain for layout.
     Eval {
         expr: Expr,
@@ -164,7 +164,7 @@ pub enum LetBinding {
 impl LetBinding {
     /// Frame tape type for bindings with a fixed wire type.
     ///
-    /// For [`LetBinding::Eval`], use [`infer_expr_ty`].
+    /// For [`LetBinding::Eval`], use [`infer_expr_ty`](crate::layout::infer_expr_ty).
     pub fn value_type(&self) -> ValueType {
         use LetBinding::*;
         use ValueType::*;

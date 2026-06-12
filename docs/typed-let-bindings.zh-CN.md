@@ -4,7 +4,7 @@
 
 [`LetBinding`](../programs/ifx/src/state/types.rs) 的 **wire enum**（tag `0`–`67`）。每个变体追加一条 frame 记录 **`[ty:1][payload:ty.size()]`**；类型由变体决定（slice / `Eval` 显式指定）。
 
-SDK：[`@ifx-run/sdk`](../sdk/README.zh-CN.md) 的 `FrameScratch` / `letBuilder`。
+SDK：[`@ifx-run/sdk`](../sdk/README.zh-CN.md) / [`ifx-sdk`](../rust-sdk/README.zh-CN.md) / [`go-sdk`](../go-sdk/README.zh-CN.md) — `FrameScratch` / `letBuilder`（Go/Rust 为 `LetBuilder`）。
 
 ---
 

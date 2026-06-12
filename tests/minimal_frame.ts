@@ -20,7 +20,7 @@ describe("minimal frame (L0 example)", () => {
 
   it("planMinimalFrameBusinessTx: reset → let u64(1) → assert non-zero", async () => {
     const frameId = randomBytes(32);
-    const tapeLen = 256;
+    const tapeLen = 512;
     const { scratch, ixCreate } = FrameScratch.planPublicFrame({
       payer: payer.publicKey,
       frameId,

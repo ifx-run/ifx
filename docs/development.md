@@ -24,6 +24,8 @@ For **maintainers of the Ifx program, SDK, and tests**. To integrate Ifx into yo
 
 ```text
 programs/ifx/     # Anchor program source
+crates/ifx-core/  # Shared wire / layout (program + ifx-sdk)
+rust-sdk/         # ifx-sdk crate (off-chain planner)
 go-sdk/           # Go client (gagliardetto/solana-go)
 sdk/              # @ifx-run/sdk
 idl/              # Anchor-generated IDL (custom IdlBuild for Expr to avoid stack overflow)
@@ -98,6 +100,11 @@ npm test
 
 # Keep local Surfpool running after tests (stdout prints [local tx] Solscan links)
 npm run test:detach
+
+# Go / Rust SDK (Surfpool on :8899 for integration)
+npm run go:test
+npm run rust:test
+npm run rust:test:integration
 
 # If Surfpool stalls: see Anchor.toml `[surfpool] block_production_mode = "clock"`, or legacy:
 # anchor test --validator legacy

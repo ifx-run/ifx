@@ -35,7 +35,13 @@ export declare function isIxOpts(value: unknown): value is IxOpts;
 export declare function buildIxLet(frame: PublicKey, authority: PublicKey, args: LetArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
 export declare const buildIxResetFrame: typeof createIxResetFrame;
 export declare function buildIxAssert(frame: PublicKey, cond: Cond, opts?: IxOpts): TransactionInstruction;
-/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+/**
+ * Build `ifx_assert_multi` — at least one condition; short-circuits on first failure.
+ *
+ * Wire allows up to {@link MAX_ASSERT_MULTI_CONDS} conditions; prefer
+ * **3–10** per ix to limit tx CU (no on-chain cap). Split larger guard lists across
+ * multiple ix or use N× {@link buildIxAssert}.
+ */
 export declare function buildIxAssertMulti(frame: PublicKey, conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
 export declare function createIxCpi(frame: PublicKey, built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;

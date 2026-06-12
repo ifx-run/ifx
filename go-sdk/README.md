@@ -155,4 +155,4 @@ Localnet: `ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 go test ./integration/... -
 
 ## Other languages
 
-TypeScript client: [`@ifx-run/sdk`](../sdk/README.md). Same on-chain wire. See repo [`docs/`](../docs/) for orchestration patterns.
+TypeScript: [`@ifx-run/sdk`](../sdk/README.md). Rust: [`ifx-sdk`](../rust-sdk/README.md). Same on-chain wire. See repo [`docs/`](../docs/) for orchestration patterns.

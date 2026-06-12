@@ -16,7 +16,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 | **P1 — medium** | **Rust SDK** | ✅ R1–R3 (minimal) | `ifx-core` + `ifx-sdk`; see [rust-integration.md](./rust-integration.md) |
 | — | TypeScript | ✅ shipped | `@ifx-run/sdk` |
 
-**Out of scope here:** on-chain CPI continues to use the `ifx` program crate (`features = ["cpi"]`).
+**Out of scope here:** the on-chain `ifx` program crate is for maintainers / forks; integrators plan txs off-chain and do not CPI-wrap Ifx inside their own programs.
 
 ---
 
@@ -86,13 +86,13 @@ go-sdk/                 # module github.com/ifx-run/ifx/go-sdk
 
 ### Naming
 
-Off-chain crate: **`ifx-sdk`** (not `ifx-client`) — same layer as `@ifx-run/sdk` and the Go SDK: instructions and wire only; **no** RPC, Connection, or wallet wrapper.
+Off-chain crate: **`ifx-sdk`** (not `ifx-client`) — same layer as `@ifx-run/sdk`, the Go SDK, and Rust `ifx-sdk`: instructions and wire only; **no** RPC, Connection, or wallet wrapper.
 
 | Crate | Role |
 |-------|------|
 | **`ifx-core`** | Shared on-chain types, constants, tape layout, value codec, inference |
 | **`ifx-sdk`** | `FrameScratch`, `LetBuilder`, `ix_*`, `expr` builders; `solana-sdk` `Instruction`s |
-| **`ifx`** (program) | On-chain program + `features = ["cpi"]`; depends on `ifx-core` |
+| **`ifx`** (program) | Deployed on-chain program; depends on `ifx-core` (maintainers / forks — not an integrator path dep) |
 
 ### Why
 

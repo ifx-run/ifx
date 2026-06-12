@@ -13,10 +13,10 @@
 | 优先级 | SDK | 状态 | 说明 |
 |--------|-----|------|------|
 | **P0 — 高** | **Go SDK** | ✅ | `go-sdk/` — 与 TS 对齐的 planner + readback + errors + L1 dust |
-| **P1 — 中** | **Rust SDK** | ⏳ 规划中 | `ifx-core` + `ifx-sdk`；见 [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
+| **P1 — 中** | **Rust SDK** | ✅ R1–R3（minimal） | `ifx-core` + `ifx-sdk`；见 [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
 | — | TypeScript | ✅ 已交付 | `@ifx-run/sdk` |
 
-**不在本页范围：** 链上 CPI 仍用 `ifx` program crate（`features = ["cpi"]`），不另做 on-chain SDK。
+**不在本页范围：** 链上 `ifx` program crate 供维护 / fork；集成方链下组 tx，不把 Ifx CPI 包进自有合约。
 
 ---
 
@@ -87,13 +87,13 @@ go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
 
 ### 命名
 
-链下 crate 叫 **`ifx-sdk`**（不是 `ifx-client`）：与 `@ifx-run/sdk` / Go SDK 同一层 — 只产出指令与 wire，**不**包装 RPC、Connection 或钱包。Connection 是集成方的事。
+链下 crate 叫 **`ifx-sdk`**（不是 `ifx-client`）：与 `@ifx-run/sdk`、Go SDK、Rust `ifx-sdk` 同一层 — 只产出指令与 wire，**不**包装 RPC、Connection 或钱包。Connection 是集成方的事。
 
 | Crate | 职责 |
 |-------|------|
 | **`ifx-core`** | 与链上共用的 types、constants、tape layout、value codec、类型推断 |
 | **`ifx-sdk`** | `FrameScratch`、`LetBuilder`、`ix_*`、`expr` builder；依赖 `solana-sdk` 组 `Instruction` |
-| **`ifx`**（program） | 链上 program + `features = ["cpi"]`；依赖 `ifx-core` |
+| **`ifx`**（program） | 已部署链上 program；依赖 `ifx-core`（维护 / fork，非集成方 path 依赖） |
 
 ### 动机
 
@@ -143,7 +143,7 @@ rust-sdk/                 # 链下 planner；package 名 ifx-sdk（crates.io: if
 |------|------|
 | **R1** | `ifx-core` 抽取 + golden vs TS | ✅ wire + layout + `structured-cpi`；`frame_layout` 暂缓 |
 | **R2** | planner + `ix_*` + `expr` | ✅ `FrameScratch`、`LetBuilder`、`let_*`、`ix_cpi` / `ix_if_else` / `ix_close`、parity 测试 |
-| **R3** | 示例与集成测试（`ifx-sdk`） | ⏳ |
+| **R3** | 示例与集成测试（`ifx-sdk`） | ✅ minimal localnet + 文档；dust/orchestration planner 待补 |
 
 ---
 

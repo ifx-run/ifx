@@ -16,8 +16,11 @@ import {
   IX_DISC_PATCHED_CPI,
   IX_DISC_LET,
   IX_DISC_RESET_FRAME,
+  MAX_ASSERT_MULTI_CONDS,
   MAX_FRAME_TAPE_LEN,
   MIN_TAPE_LEN,
+  RECOMMENDED_ASSERT_MULTI_MAX,
+  RECOMMENDED_TAPE_LEN_MAX,
 } from "./constants";
 import {
   encodeCpi,
@@ -94,6 +97,13 @@ export function createIxCreateFrame(
     );
   }
   if (params.frameId.length !== 32) throw new Error("frameId must be 32 bytes");
+  if (params.tapeLen > RECOMMENDED_TAPE_LEN_MAX) {
+    console.warn(
+      `[ifx] create_frame tapeLen=${params.tapeLen} exceeds recommended ` +
+        `${RECOMMENDED_TAPE_LEN_MAX} — higher Frame rent and let/reset CU; prefer ` +
+        `${RECOMMENDED_TAPE_LEN_MAX} or less unless profiled`
+    );
+  }
   const [frame] = framePda(params.payer, params.frameId, programId);
   const args = Buffer.alloc(32 + 32 + 4);
   Buffer.from(params.frameId).copy(args, 0);
@@ -189,7 +199,13 @@ export function buildIxAssert(
   });
 }
 
-/** Build `ifx_assert_multi` — at least one condition; short-circuits on first failure. */
+/**
+ * Build `ifx_assert_multi` — at least one condition; short-circuits on first failure.
+ *
+ * Wire allows up to {@link MAX_ASSERT_MULTI_CONDS} conditions; prefer
+ * **3–10** per ix to limit tx CU (no on-chain cap). Split larger guard lists across
+ * multiple ix or use N× {@link buildIxAssert}.
+ */
 export function buildIxAssertMulti(
   frame: PublicKey,
   conds: readonly Cond[],
@@ -197,6 +213,17 @@ export function buildIxAssertMulti(
 ): TransactionInstruction {
   if (conds.length === 0) {
     throw new Error("ifx_assert_multi requires at least one condition");
+  }
+  if (conds.length > MAX_ASSERT_MULTI_CONDS) {
+    throw new Error(
+      `ifx_assert_multi supports at most ${MAX_ASSERT_MULTI_CONDS} conditions (got ${conds.length})`
+    );
+  }
+  if (conds.length > RECOMMENDED_ASSERT_MULTI_MAX) {
+    console.warn(
+      `[ifx] ifx_assert_multi: ${conds.length} conditions exceeds recommended ` +
+        `${RECOMMENDED_ASSERT_MULTI_MAX} per ix — split guards or expect higher tx CU`
+    );
   }
   const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
   return new TransactionInstruction({

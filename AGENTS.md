@@ -11,4 +11,4 @@ Supporting files:
 - [anti-patterns.md](.cursor/skills/ifx-orchestration/anti-patterns.md) — review checklist
 - [docs/bundles.md](docs/bundles.md) — Jito bundle semantics (Ifx does not implement bundling)
 
-Canonical code: `sdk/examples/` and `tests/`. Do not hand-encode `Expr`.
+Canonical code: `sdk/examples/` and `tests/` (TypeScript); `go-sdk/examples/` and `go-sdk/integration/` (Go); `rust-sdk/tests/` planners (Rust). Do not hand-encode `Expr`.

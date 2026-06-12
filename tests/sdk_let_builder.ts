@@ -9,7 +9,7 @@ import { framePda } from "../sdk/src/layout";
 import { FrameScratch } from "../sdk/src/scratch";
 import { Ty } from "../sdk/src/ty";
 
-function publicFrameScratch(tapeLen = 256): {
+function publicFrameScratch(tapeLen = 512): {
   scratch: FrameScratch;
   frame: PublicKey;
 } {
@@ -33,7 +33,7 @@ describe("sdk LetIxBuilder", () => {
     const user = Keypair.generate().publicKey;
     const ata = Keypair.generate().publicKey;
     const frame = Keypair.generate().publicKey;
-    const scratch = new FrameScratch(frame, 256);
+    const scratch = new FrameScratch(frame, 512);
     const builder = scratch.letBuilder();
 
     builder.lamports(user);
@@ -49,7 +49,7 @@ describe("sdk LetIxBuilder", () => {
   it("merges writable flag when the same account is registered twice", () => {
     const user = Keypair.generate().publicKey;
     const frame = Keypair.generate().publicKey;
-    const builder = new FrameScratch(frame, 256).letBuilder();
+    const builder = new FrameScratch(frame, 512).letBuilder();
 
     builder.lamports({ pubkey: user, isSigner: false, isWritable: false });
     builder.lamports({ pubkey: user, isSigner: false, isWritable: true });
@@ -62,7 +62,7 @@ describe("sdk LetIxBuilder", () => {
   it("assigns the same account index to multiple loads", () => {
     const token = Keypair.generate().publicKey;
     const frame = Keypair.generate().publicKey;
-    const builder = new FrameScratch(frame, 256).letBuilder();
+    const builder = new FrameScratch(frame, 512).letBuilder();
 
     const tokenAmount = builder.splTokenAmount(token);
     const delegatedAmount = builder.splTokenDelegatedAmount(token);
@@ -77,7 +77,7 @@ describe("sdk LetIxBuilder", () => {
   it("assigns the same account index to multiple Token-2022 loads", () => {
     const token = Keypair.generate().publicKey;
     const frame = Keypair.generate().publicKey;
-    const builder = new FrameScratch(frame, 256).letBuilder();
+    const builder = new FrameScratch(frame, 512).letBuilder();
 
     builder.splToken2022Amount(token);
     builder.splToken2022TransferFeeWithheld(token);
@@ -90,7 +90,7 @@ describe("sdk LetIxBuilder", () => {
 
   it("sysvar bindings need no remaining accounts", () => {
     const frame = Keypair.generate().publicKey;
-    const builder = new FrameScratch(frame, 256).letBuilder();
+    const builder = new FrameScratch(frame, 512).letBuilder();
 
     builder.clockSlot();
     builder.clockUnixTimestamp();
@@ -120,7 +120,7 @@ describe("sdk LetIxBuilder", () => {
     expect(frameAuthorityRequiresSigner(authority)).to.be.true;
     const scratch = new FrameScratch(
       frame,
-      256,
+      512,
       0,
       0,
       DEFAULT_IFX_PROGRAM_ID,

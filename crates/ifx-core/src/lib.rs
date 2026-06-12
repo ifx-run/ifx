@@ -1,21 +1,34 @@
-//! Shared Ifx wire constants, types, layout, and codecs.
+//! Shared Ifx wire constants, types, tape layout, and codecs.
 //!
-//! Used by the on-chain [`ifx`](../../programs/ifx) program and the off-chain
-//! [`ifx-sdk`](../../rust-sdk) crate. Single source of truth for bytes on the wire.
+//! Used by the on-chain `ifx` program and the off-chain `ifx-sdk` crate — single source of
+//! truth for instruction discriminators, `Expr` wire tags, Frame tape layout, and
+//! structured CPI payloads.
 //!
-//! # Crate features (incremental extraction)
+//! Enable features incrementally (`wire`, `anchor-wire`, `layout`, `structured-cpi`); see
+//! crate `Cargo.toml` for the full matrix.
 //!
-//! | Feature | Contents |
-//! |---------|----------|
-//! | *(default)* | `constants` only |
-//! | `wire` | `Cpi`, `StructuredCpiPatch`, `Expr`, containers |
-//! | `anchor-wire` | `LetBinding`, `LetArgs`, … (Anchor-compatible until fully Borsh) |
-//! | `layout` | Frame tape layout, `plan_record_offsets`, `infer_expr_ty` |
-//! | `structured-cpi` | Official-program ix data assembly (no `invoke`) |
+//! # Example
 //!
-//! # Publishing
+//! Shared limits (no feature flags required):
 //!
-//! Crates.io: **`ifx-core`**, **`ifx-sdk`**, **`ifx`** (program, `features = ["cpi"]`).
+//! ```
+//! use ifx_core::{
+//!     index_cap_for_tape_len, DEFAULT_TAPE_LEN, MAX_ASSERT_MULTI_CONDS, MAX_FRAME_TAPE_LEN,
+//!     RECOMMENDED_ASSERT_MULTI_MAX, RECOMMENDED_TAPE_LEN_MAX, RECOMMENDED_TAPE_LEN_MIN,
+//! };
+//!
+//! assert_eq!(DEFAULT_TAPE_LEN, 512);
+//! assert!(RECOMMENDED_TAPE_LEN_MIN <= DEFAULT_TAPE_LEN);
+//! assert!(DEFAULT_TAPE_LEN <= RECOMMENDED_TAPE_LEN_MAX);
+//! assert!(RECOMMENDED_TAPE_LEN_MAX <= MAX_FRAME_TAPE_LEN);
+//! assert_eq!(index_cap_for_tape_len(DEFAULT_TAPE_LEN), 256);
+//! assert_eq!(MAX_ASSERT_MULTI_CONDS, 255);
+//! assert!(RECOMMENDED_ASSERT_MULTI_MAX <= MAX_ASSERT_MULTI_CONDS);
+//! ```
+//!
+//! Wire types (`Expr`, `Cpi`, …) require the **`wire`** feature — see `Cargo.toml`.
+//!
+//! Repository: <https://github.com/ifx-run/ifx/tree/main/crates/ifx-core>.
 
 #![deny(unsafe_code)]
 

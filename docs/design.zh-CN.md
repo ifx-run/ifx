@@ -112,7 +112,7 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 
 ## 7. SDK 与可解释性
 
-开发者体验见 [`@ifx-run/sdk`](../sdk/README.zh-CN.md)：
+开发者体验见 [`@ifx-run/sdk`](../sdk/README.zh-CN.md)、[`go-sdk`](../go-sdk/README.zh-CN.md) 与 [`ifx-sdk`](../rust-sdk/README.zh-CN.md)（同层 planner）：
 
 ```ts
 // 概念 API

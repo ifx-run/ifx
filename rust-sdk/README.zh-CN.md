@@ -145,7 +145,7 @@ Localnet 集成（Surfpool / `anchor test` 验证器；无 RPC 时自动 skip）
 ```bash
 export ANCHOR_PROVIDER_URL=http://127.0.0.1:8899
 export ANCHOR_WALLET=~/.config/solana/id.json
-cargo test -p ifx-sdk --test localnet_minimal -- --nocapture
+cargo test -p ifx-sdk --test localnet -- --nocapture
 ```
 
 或在仓库根目录：`npm run rust:test` / `npm run rust:test:integration`。

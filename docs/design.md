@@ -112,7 +112,7 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
 
 ## 7. SDK & interpretability
 
-Developer experience ships in [`@ifx-run/sdk`](../sdk/README.md):
+Developer experience ships in [`@ifx-run/sdk`](../sdk/README.md), [`go-sdk`](../go-sdk/README.md), and [`ifx-sdk`](../rust-sdk/README.md) (same planner layer):
 
 ```ts
 // Conceptual API

@@ -2,15 +2,15 @@
 
 use super::value::Value;
 
- /// Flat expression tree: one wire tag per operator (no nested `Unary`/`Binary` shells).
- ///
- /// Variant order is the Borsh discriminant (0–51). See `docs/implementation.md` §5.
- ///
- /// Uses `borsh` derives (not `#[derive(AnchorSerialize)]`) so we can supply a
- /// non-recursive [`IdlBuild`] impl under `idl-build` without stack overflow.
+/// Flat expression tree: one wire tag per operator (no nested `Unary`/`Binary` shells).
+///
+/// Variant order is the Borsh discriminant (0–51). See `docs/implementation.md` §5.
+///
+/// Uses `borsh` derives (not `#[derive(AnchorSerialize)]`) so we can supply a
+/// non-recursive `IdlBuild` impl under `idl-build` without stack overflow.
 #[derive(borsh::BorshSerialize, borsh::BorshDeserialize, Clone, Debug)]
 pub enum Expr {
-    /// Prior binding at `index`. **→ stored [`ValueType`].**
+    /// Prior binding at `index`. **→ stored [`ValueType`](super::value_type::ValueType).**
     Value(Value),
     /// Literal. **→ `Bool`.**
     ConstBool(bool),

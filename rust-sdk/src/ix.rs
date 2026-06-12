@@ -10,6 +10,7 @@ use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use crate::constants::{
     DEFAULT_IFX_PROGRAM_ID, IX_DISC_ASSERT, IX_DISC_ASSERT_MULTI, IX_DISC_CLOSE_FRAME,
     IX_DISC_CREATE_FRAME, IX_DISC_IF_ELSE, IX_DISC_LET, IX_DISC_PATCHED_CPI, IX_DISC_RESET_FRAME,
+    MAX_ASSERT_MULTI_CONDS, RECOMMENDED_ASSERT_MULTI_MAX,
 };
 use crate::cpi::encode_cpi;
 use crate::error::ScratchError;
@@ -128,6 +129,24 @@ pub fn build_ix_assert_multi(
     args: &AssertMultiArgs,
     opts: IxOpts,
 ) -> Result<Instruction, ScratchError> {
+    let n = args.conds.len();
+    if n == 0 {
+        return Err(ScratchError::Encode(
+            "ifx_assert_multi requires at least one condition".into(),
+        ));
+    }
+    if n > MAX_ASSERT_MULTI_CONDS as usize {
+        return Err(ScratchError::Encode(format!(
+            "ifx_assert_multi supports at most {} conditions (got {n})",
+            MAX_ASSERT_MULTI_CONDS
+        )));
+    }
+    if n > RECOMMENDED_ASSERT_MULTI_MAX as usize {
+        eprintln!(
+            "[ifx] ifx_assert_multi: {n} conditions exceeds recommended \
+             {RECOMMENDED_ASSERT_MULTI_MAX} per ix — split guards or expect higher tx CU"
+        );
+    }
     let program_id = program_id(opts);
     let mut body = Vec::new();
     args.serialize(&mut body)

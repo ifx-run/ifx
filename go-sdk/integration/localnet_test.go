@@ -194,7 +194,7 @@ func TestMinimalFrameLocalnet(t *testing.T) {
 		Payer:          wallet.PublicKey(),
 		FrameID:        frameID,
 		Authority: wallet.PublicKey(),
-		TapeLen:        256,
+		TapeLen:   512,
 		ProgramID:      constants.LocalnetProgramID,
 	})
 	if err != nil {

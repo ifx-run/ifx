@@ -30,8 +30,8 @@ import {
   sendAndConfirm,
 } from "./helpers";
 
-/** Clearly separated account sizes (~569 B / ~4.7 KB / ~8.8 KB; all under 10 KiB init cap). */
-const TAPE_SIZES = [256, 4096, 8192] as const;
+/** Clearly separated account sizes (~0.8 KB / ~4.7 KB / ~8.8 KB tape tiers; all under 10 KiB init cap). */
+const TAPE_SIZES = [512, 4096, 8192] as const;
 
 type TapeSize = (typeof TAPE_SIZES)[number];
 
@@ -200,7 +200,7 @@ describe("frame CU benchmark", () => {
       expect(row.reset).to.be.lessThan(2_500);
       expect(row.let).to.be.lessThan(3_500);
     }
-    const small = rows.find((r) => r.tapeLen === 256)!;
+    const small = rows.find((r) => r.tapeLen === 512)!;
     const large = rows.find((r) => r.tapeLen === 8192)!;
     expect(large.reset - small.reset).to.be.lessThan(100);
     expect(large.let - small.let).to.be.lessThan(100);

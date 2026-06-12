@@ -24,6 +24,8 @@
 
 ```text
 programs/ifx/     # Anchor program 源码
+crates/ifx-core/  # 共享 wire / layout（program + ifx-sdk）
+rust-sdk/         # ifx-sdk crate（链下 planner）
 go-sdk/           # Go 客户端（gagliardetto/solana-go）
 sdk/              # @ifx-run/sdk
 idl/              # Anchor 生成的 IDL（Expr 通过自定义 IdlBuild 避免栈溢出）
@@ -96,6 +98,11 @@ npm test
 
 # 测试结束后保留本地 Surfpool，便于用 Solscan 回顾交易（stdout 会打印 [local tx] 链接）
 npm run test:detach
+
+# Go / Rust SDK（集成测试需 Surfpool :8899）
+npm run go:test
+npm run rust:test
+npm run rust:test:integration
 
 # 若 Surfpool 卡住：见 Anchor.toml `[surfpool] block_production_mode = "clock"`，或退回 legacy：
 # anchor test --validator legacy

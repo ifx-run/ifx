@@ -53,7 +53,7 @@ describe("personal AMM swap (program-free wallet pool)", () => {
       payer: payer.publicKey,
       frameId,
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const createFrameTx = new Transaction().add(ixCreate);

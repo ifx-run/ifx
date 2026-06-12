@@ -34,7 +34,7 @@ fn minimal_frame_localnet() {
         payer: wallet.pubkey(),
         frame_id: &frame_id,
         authority: wallet.pubkey(),
-        tape_len: 256,
+        tape_len: 512,
         program_id: Some(IFX_LOCALNET_PROGRAM_ID),
     })
     .expect("plan_new_frame");
@@ -89,7 +89,7 @@ fn close_empty_ata_localnet() {
         payer: wallet.pubkey(),
         frame_id: &frame_id,
         authority: wallet.pubkey(),
-        tape_len: 256,
+        tape_len: 512,
         program_id: Some(IFX_LOCALNET_PROGRAM_ID),
     })
     .expect("plan_new_frame");
@@ -150,7 +150,7 @@ fn close_empty_ata_skips_when_balance_nonzero() {
         payer: wallet.pubkey(),
         frame_id: &frame_id,
         authority: wallet.pubkey(),
-        tape_len: 256,
+        tape_len: 512,
         program_id: Some(IFX_LOCALNET_PROGRAM_ID),
     })
     .expect("plan_new_frame");
@@ -222,7 +222,7 @@ fn sponsored_buy_localnet() {
         payer: sponsor.pubkey(),
         frame_id: &frame_id,
         authority: sponsor.pubkey(),
-        tape_len: 256,
+        tape_len: 512,
         program_id: Some(IFX_LOCALNET_PROGRAM_ID),
     })
     .expect("plan_new_frame");

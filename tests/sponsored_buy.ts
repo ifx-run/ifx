@@ -75,7 +75,7 @@ describe("sponsored buy (ifx orchestration)", () => {
       payer: sponsor.publicKey,
       frameId,
       authority: sponsor.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const createFrameTx = new Transaction().add(ixCreate);
@@ -277,7 +277,7 @@ describe("sponsored buy (ifx orchestration)", () => {
       payer: sponsor.publicKey,
       frameId,
       authority: sponsor.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const createFrameTx = new Transaction().add(ixCreate);

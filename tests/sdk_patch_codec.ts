@@ -9,7 +9,7 @@ describe("sdk patch codec", () => {
   const frame = Keypair.generate().publicKey;
 
   it("encodes data_offset u16 LE + Value.index u8", () => {
-    const scratch = new FrameScratch(frame, 256);
+    const scratch = new FrameScratch(frame, 512);
     const lamports = scratch.letConstU64(1);
     const buf = encodeRawCpiPatch(rawCpiPatch(4, lamports));
     expect(buf).to.deep.equal(

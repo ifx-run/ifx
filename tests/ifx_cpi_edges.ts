@@ -24,7 +24,7 @@ describe("ifx CPI edges (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -65,7 +65,7 @@ describe("ifx CPI edges (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -110,7 +110,7 @@ describe("ifx CPI edges (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -146,7 +146,7 @@ describe("ifx CPI edges (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();

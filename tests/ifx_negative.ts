@@ -46,7 +46,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const nestedLetIx = buildIxLet(
@@ -82,7 +82,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const nestedLetIx = buildIxLet(
@@ -118,7 +118,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -144,7 +144,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const forwardRef: Expr = { value: { value: { index: 1 } } };
@@ -172,7 +172,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await sendAndConfirm(
@@ -250,7 +250,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const missing: Expr = { value: { value: { index: 0 } } };
@@ -274,7 +274,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -314,7 +314,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -346,7 +346,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const recipient = Keypair.generate();
@@ -379,7 +379,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -405,7 +405,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -437,7 +437,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -463,7 +463,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -498,7 +498,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -524,7 +524,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -565,7 +565,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -597,7 +597,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -623,7 +623,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     await expectIfxTxFail(
@@ -660,7 +660,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const nestedReset = createIxResetFrame(
@@ -689,7 +689,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const stranger = Keypair.generate();
@@ -720,7 +720,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const letWithoutAuthority = new TransactionInstruction({
@@ -749,7 +749,7 @@ describe("ifx negative (on-chain errors)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const amount = scratch.letEval(expr.u64(1));

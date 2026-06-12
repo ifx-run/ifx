@@ -24,7 +24,7 @@ describe("ifx_assert_multi", () => {
       payer: provider.wallet.publicKey,
       frameId,
       authority: provider.wallet.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
 
@@ -46,7 +46,7 @@ describe("ifx_assert_multi", () => {
       payer: provider.wallet.publicKey,
       frameId,
       authority: provider.wallet.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
 
@@ -74,7 +74,7 @@ describe("ifx_assert_multi", () => {
       payer: provider.wallet.publicKey,
       frameId,
       authority: provider.wallet.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
 

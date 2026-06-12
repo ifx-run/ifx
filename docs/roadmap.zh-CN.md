@@ -39,7 +39,7 @@
 
 - [x] `ifx-core` 与 TS parity tests 字节一致（wire + layout + structured-cpi）
 - [x] `ifx-sdk`：`FrameScratch`、`LetBuilder`、`let_*`、`ix_cpi` / `ix_if_else` / `ix_close`、`expr` builder + parity 测试
-- [ ] 至少 L1 级 Rust 集成测试（Surfpool / anchor test 场景移植）
+- [x] 至少 L1 级 Rust 集成测试（`rust-sdk/tests/localnet.rs`：minimal、close-empty-ATA、sponsored buy）
 
 **建议顺序：** 终点 A 的 **IR-1 → IR-2** 与审计并行 → **终点 B** → 终点 A 剩余 IR-3 / 域示例扫尾 → mainnet。
 
@@ -66,7 +66,6 @@
 | `AccountDataSlice` owner 校验（`expected_program_owner`） | ✅ | Tag `0`；layout 仍由调用方负责 |
 | Frame tape（index + `payload_at`、更大 tape） | ✅ | [frame-memory-index.zh-CN.md](./frame-memory-index.zh-CN.md) |
 | Personal AMM 展示（无专用 pool/DEX 程序的钱包池 swap） | ✅ | [personal-amm.zh-CN.md](./personal-amm.zh-CN.md)；示例 + 测试；可选报价服务待定 |
-| scratch PDA | ⏳ | v1 |
 
 ## 已交付 — 终点 A（扫尾项：审计 / mainnet）
 
@@ -104,7 +103,7 @@
 |------|------|------|
 | **Rust R1** | `ifx-core` 抽取 + golden vs TS | ✅ |
 | **Rust R2** | planner + `ix_*` + `expr` | ✅ |
-| **Rust R3** | 示例 + L1 集成测试 | ⏳ |
+| **Rust R3** | 示例 + L1 集成测试 | ✅ minimal localnet；dust/orchestration planner 待补 |
 
 ---
 
@@ -113,7 +112,7 @@
 | 优先级 | 能力 | 状态 | 说明 |
 |--------|------|------|------|
 | **P0** | **Go SDK** | ✅ | `go-sdk/` |
-| **P1** | **Rust SDK** | 🚧 | R1–R2 ✅；R3 集成测试待做 |
+| **P1** | **Rust SDK** | ✅ | `ifx-core` + `ifx-sdk`（R1–R3 minimal localnet） |
 
 ---
 

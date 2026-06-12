@@ -32,7 +32,7 @@ func TestOrchestrationLocalnet(t *testing.T) {
 		Payer:          payer,
 		FrameID:        frameID,
 		Authority: payer,
-		TapeLen:        256,
+		TapeLen:   512,
 		ProgramID:      constants.LocalnetProgramID,
 	})
 	if err != nil {

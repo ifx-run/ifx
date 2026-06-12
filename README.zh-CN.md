@@ -25,7 +25,7 @@ Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没�
 1. **为每个流程写一个包装合约** — 胶水逻辑往往不大，却要反复部署、审计、升级。
 2. **完全在链下组 tx** — 签名前用 RPC 拉链上状态当依据，按「当时认为成立」的假设拼 instruction。问题在于：假设可能在签字与上链之间失效；更关键的是，**同一笔 tx 里靠前的 ix 执行完后，后面的 ix 仍无法根据实际结果分支**，只能写死无条件路径。典型失败：swap 之后想关 ATA 省 rent，链下假设余额为 0 却拼了无条件的 `closeAccount`，链上余额非 0 时 **整笔 tx revert**，swap 的成果一并作废。
 
-**Ifx 提供第三条路：** 一个 **可复用的链上编排合约**。链下用 [TypeScript SDK](./sdk/) 或 [Go SDK](./go-sdk/) 描述数据流（读哪些账户、算什么、满足条件时 CPI 谁、否则 **Skip**）；**交易执行过程中**，Ifx 在同一 tx 内用固定、可枚举的指令完成 **`ifx_let` 读链上状态 → 运算 / `ifx_assert` → `ifx_if_else` 条件 CPI 或 Skip**，直接调用 System、SPL、DEX 等已有 program — **不必为每种小胶水再部署包装合约**，也 **不必赌 RPC 快照与交易中途的实际状态一致**。
+**Ifx 提供第三条路：** 一个 **可复用的链上编排合约**。链下用 [TypeScript SDK](./sdk/)、[Go SDK](./go-sdk/) 或 [Rust SDK](./rust-sdk/) 描述数据流（读哪些账户、算什么、满足条件时 CPI 谁、否则 **Skip**）；**交易执行过程中**，Ifx 在同一 tx 内用固定、可枚举的指令完成 **`ifx_let` 读链上状态 → 运算 / `ifx_assert` → `ifx_if_else` 条件 CPI 或 Skip**，直接调用 System、SPL、DEX 等已有 program — **不必为每种小胶水再部署包装合约**，也 **不必赌 RPC 快照与交易中途的实际状态一致**。
 
 |                              | **Ifx**                        | 纯客户端组 tx                   |
 |------------------------------|--------------------------------|----------------------------|
@@ -34,7 +34,7 @@ Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没�
 | 同一 tx 里**靠前 ix 之后**再读余额      | `ifx_let` 读到 ix 后的状态           | 签名时拿不到；上链后也无法据此 **Skip** |
 | 余额可能 ≠ 0 时的可选 `closeAccount` | **`ifx_if_else` → Skip**，tx 继续 | 无条件 close **整笔 tx revert** |
 
-**Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go SDK** 编码数据流；**Ifx 合约** 在链上执行分支与 CPI。
+**Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go / Rust SDK** 编码数据流；**Ifx 合约** 在链上执行分支与 CPI。
 
 ### 典型需求
 
@@ -69,6 +69,7 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 | **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)（2026-06-09，commit `11be96e`）；**未上 mainnet** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate（[`README`](./rust-sdk/README.zh-CN.md)） |
 | **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
 | **Program（localnet / 仓库默认）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
 | **Program（devnet）** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` — [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) |
@@ -83,7 +84,7 @@ Go（[`solana-go`](https://github.com/gagliardetto/solana-go)）：
 go get github.com/ifx-run/ifx/go-sdk
 ```
 
-或克隆本仓库后 `cd sdk && npm run build`（TS）/ `npm run go:test`（Go 集成测试，需 Surfpool）。
+或克隆本仓库后 `cd sdk && npm run build`（TS）/ `npm run go:test` 或 `npm run rust:test`（Go/Rust 集成测试，需 Surfpool）。
 
 ---
 
@@ -94,10 +95,10 @@ go get github.com/ifx-run/ifx/go-sdk
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, FrameScratch } from "@ifx-run/sdk";
+import { expr, FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 // Tx 1 — 每个 frame_id 一次（单独开通 tx）
-const tapeLen = 256;
+const tapeLen = DEFAULT_TAPE_LEN;
 const frameId = randomBytes(32); // 持久化，供后续任务用
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
@@ -125,19 +126,19 @@ export ANCHOR_WALLET=~/.config/solana/id.json
 npx ts-node -r tsconfig-paths/register sdk/examples/minimal-frame.ts
 ```
 
-示例：[`sdk/examples/`](./sdk/examples/) · [`go-sdk/examples/`](./go-sdk/examples/) · [Go SDK 文档](./go-sdk/README.zh-CN.md)
+示例：[`sdk/examples/`](./sdk/examples/) · [`go-sdk/examples/`](./go-sdk/examples/) · [`rust-sdk/examples/`](./rust-sdk/examples/) · [客户端 SDK 索引](./docs/client-sdks.zh-CN.md)
 
 ### 在 devnet 上试
 
 Provider 指向 devnet — 省略 `programId` 即使用 `DEFAULT_IFX_PROGRAM_ID`（devnet）：
 
 ```ts
-import { FrameScratch } from "@ifx-run/sdk";
+import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  tapeLen: 256,
+  tapeLen: DEFAULT_TAPE_LEN,
 });
 
 // 业务 tx — scratch.authority 为 Frame PDA（无需 authority 签名）
@@ -368,6 +369,14 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 ## 上线前须知
 
+**主网 / 生产集成建议**
+
+| 主题 | 建议 |
+|------|------|
+| **Frame `authority`** | **业务 Frame** 用 `planNewFrame` + **on-curve `authority`**（bot / relayer 签 `reset`/`let`/`close`）。**off-curve / Frame PDA**（`planPublicFrame`）= **公开 scratch**，任何人可写 — 仅适合无状态 glue 或 devnet 试跑。见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)。 |
+| **`tapeLen`** | 链上最大 65_535；SDK 默认 **`DEFAULT_TAPE_LEN` = 512**，典型 tx 不超过 **`RECOMMENDED_TAPE_LEN_MAX` = 8192**（更大 Frame 租金与 CU 更高）。 |
+| **`ifx_assert_multi`** | wire 最多 255 条；**每条 ix 建议合并 3–10 条** guard，避免整笔 tx CU 过高。 |
+
 - **Program ID：** npm `@ifx-run/sdk` 默认 devnet（`ifxdR1…`）。仓库 `npm test` 显式使用 localnet。主网未部署 — [sdk/README.zh-CN.md](./sdk/README.zh-CN.md)。
 - **Rent：** 创建 Frame PDA 需 rent（随 `tape_len` 增长；默认上限 256 字节）。不用时 `ifx_close_frame` 回收。
 - **顶层 `ifx_let`：** 同条 ix 内绑定不能前后依赖 — 拆成多条 `ifx_let` 或用 `letBuilder()` 分批。见 [docs/typed-let-bindings.zh-CN.md](./docs/typed-let-bindings.zh-CN.md)。
@@ -387,7 +396,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **dust 为什么要三个 `if_else`？** burn / harvest / close **条件不同** → 三个 `if_else` 按序。只有 CPI 改动了后续条件依赖的字段时才再 `let`（dust 流程复用首次 `amount` / `withheld`）。同一条件多步 → 一个 `arm.cpis([...])`。
 
-**需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md) 或 **[Go SDK](./go-sdk/README.zh-CN.md)**；链上 CPI 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
+**需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md)、**[Go SDK](./go-sdk/README.zh-CN.md)** 或 **[Rust SDK](./rust-sdk/README.zh-CN.md)**（`ifx-sdk`）；链上 CPI 进 Ifx 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
 
 **能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对合约 ID，勿在 devnet 使用真实资产。
 
@@ -403,7 +412,8 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 |------------|---|
 | [sdk/README.zh-CN.md](./sdk/README.zh-CN.md) | TypeScript API、`FrameScratch`、`expr`、CPI |
 | [go-sdk/README.zh-CN.md](./go-sdk/README.zh-CN.md) | Go API（同层 planner；不包装 RPC / 钱包） |
-| [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md) | Anchor / Rust CPI |
+| [rust-sdk/README.zh-CN.md](./rust-sdk/README.zh-CN.md) | Rust API（`ifx-sdk`；同层 planner；不包装 RPC / 钱包） |
+| [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md) | Rust CPI + 链下 `ifx-sdk` |
 | [docs/design.zh-CN.md](./docs/design.zh-CN.md) | SSA 与设计动机 |
 | [docs/README.zh-CN.md](./docs/README.zh-CN.md) | 完整文档索引 |
 | [audits/README.zh-CN.md](./audits/README.zh-CN.md) | 安全评估（版本化） |

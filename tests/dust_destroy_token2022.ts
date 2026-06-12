@@ -204,7 +204,7 @@ describe("dust destroy token2022 (L1 example)", () => {
       payer: payer.publicKey,
       frameId,
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const createFrameTx = new Transaction().add(ixCreate);

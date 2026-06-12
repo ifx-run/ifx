@@ -1,14 +1,24 @@
-//! On-chain executor for Ifx: Frame scratch tape, expressions, and conditional CPI.
+//! On-chain Ifx program — Frame scratch tape, [`Expr`] evaluation, assertions, and conditional CPI.
 //!
-//! # Integration
+//! **Off-chain** transaction building: use `ifx-sdk`, `@ifx-run/sdk`, or `go-sdk`.
+//! Integrators place Ifx instructions at **transaction top level** — not via CPI from other programs.
 //!
-//! - **Off-chain transaction building:** use [`@ifx-run/sdk`](../../sdk/README.md) for layout
-//!   planning and instruction encoding.
-//! - **On-chain CPI:** depend on this crate with `features = ["cpi"]`.
-//! - **Wire types:** [`Expr`](state::types::Expr) serializes with **Borsh** (flat enum,
-//!   tags 0–51). Do not encode `Expr` with Anchor's recursive instruction coder.
+//! # Example
 //!
-//! See `docs/rust-integration.md`, `docs/implementation.md`, and `docs/errors.md`.
+//! Most callers **assemble** Ifx instructions off-chain (`ifx-sdk`) and interleave them with
+//! swap / settlement logic in one transaction. A common pattern:
+//!
+//! ```text
+//! ifx_reset_frame
+//!   → ifx_let(spl_token_amount(ata))     // read balance after earlier ix
+//!   → … your swap / transfer ix …
+//!   → ifx_if_else(amount == 0, CloseAccount CPI, Skip)
+//! ```
+//!
+//! On-chain entrypoints: `ifx_let`, `ifx_assert`, `ifx_if_else`, `ifx_patched_cpi`.
+//! See repo `docs/rust-integration.md` for integration (off-chain SDK, top-level ix).
+//!
+//! Repository: <https://github.com/ifx-run/ifx/tree/main/programs/ifx>.
 
 #![allow(clippy::diverging_sub_expression)] // Anchor `#[program]` expander
 
@@ -105,7 +115,7 @@ pub mod ifx {
         let_op::handler(ctx, args)
     }
 
-    /// Require `cond` to evaluate to `true`; otherwise revert with [`ErrorCode::AssertFailed`].
+    /// Require `cond` to evaluate to `true`; otherwise revert with [`ErrorCode::AssertFailed`](crate::error::ErrorCode::AssertFailed).
     ///
     /// `cond` is an [`Expr`] over values already in `Frame::tape` (via prior
     /// [`ifx_let`]) or nested compare/arithmetic. Use for global guards that must
@@ -116,7 +126,7 @@ pub mod ifx {
     }
 
     /// Require every entry in `args.conds` to evaluate to `true`; short-circuit on first failure
-    /// with [`ErrorCode::AssertFailedMulti`] (failing index in return data + pseudocode logs).
+    /// with [`ErrorCode::AssertFailedMulti`](crate::error::ErrorCode::AssertFailedMulti) (failing index in return data + pseudocode logs).
     ///
     /// `conds` is a [`U8LenVec`] of [`Expr`] over values already in `Frame::tape` (via prior
     /// [`ifx_let`]). At least one condition is required.

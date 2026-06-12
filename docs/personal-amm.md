@@ -341,7 +341,7 @@ See [debugging.md](./debugging.md) for full log grammar.
 
 ### 9.3 Frame / tape
 
-- One swap fits comfortably in default `tape_len = 256` (packed tape, index_cap 128)
+- One swap fits comfortably in default `tape_len = 512` (packed tape, index_cap 256)
 - Many bindings → plan with SDK cursor simulation; see [implementation.md](./implementation.md)
 
 ---

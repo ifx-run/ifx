@@ -10,11 +10,11 @@ How to use Ifx from **Rust** projects: on-chain CPI, off-chain transaction build
 
 | Role | Recommended path |
 |------|------------------|
-| **App / bot / wallet (off-chain)** | **`ifx-sdk`** (`rust-sdk/`) or [`@ifx-run/sdk`](../sdk/README.md) / [`go-sdk`](../go-sdk/README.md) |
-| **Anchor program (on-chain CPI)** | **`ifx`** program crate, `features = ["cpi"]` |
+| **App / bot / wallet / Anchor backend (off-chain)** | **`ifx-sdk`** (`rust-sdk/`) or [`@ifx-run/sdk`](../sdk/README.md) / [`go-sdk`](../go-sdk/README.md) |
 | **Wire-only / custom encoder** | **`ifx-core`** directly (types + codec, no RPC) |
+| **Maintain / fork the Ifx program** | **`ifx`** program crate (in-repo) |
 
-There is **no requirement** for off-chain code to depend on the **`ifx`** program crate. Shared wire lives in **`ifx-core`** (crates.io). The program crate is for **on-chain execution and CPI account structs** only.
+Off-chain code should **not** depend on the **`ifx`** program crate to build transactions. Shared wire lives in **`ifx-core`**. Integrators place Ifx instructions as **top-level ix** alongside their own program ix — **not** by CPI-wrapping Ifx inside their program.
 
 **Terminal B (Rust SDK):** [client-sdks.md](./client-sdks.md) § P1.
 
@@ -26,12 +26,12 @@ There is **no requirement** for off-chain code to depend on the **`ifx`** progra
 |-------|-----------|------------|----------|
 | **`ifx-core`** | `crates/ifx-core/` | `borsh`, … (no `solana-sdk` tx builder) | Program + SDK + advanced encoders |
 | **`ifx-sdk`** | `rust-sdk/` | **`ifx-core`**, `solana-sdk` | Off-chain tx planning (like TS/Go SDK) |
-| **`ifx`** | `programs/ifx/` | **`ifx-core`**, `anchor-lang` | On-chain program + **`features = ["cpi"]`** for other programs |
+| **`ifx`** | `programs/ifx/` | **`ifx-core`**, `anchor-lang` | Deployed on-chain program (maintainers / forks) |
 
 ```text
-ifx-core  ◄──  ifx (program)     ← CPI integrators only
+ifx-core  ◄──  ifx (program)     ← on-chain execution
     ▲
-    └──  ifx-sdk (rust-sdk/)    ← wallets / bots (NOT ifx program)
+    └──  ifx-sdk (rust-sdk/)    ← off-chain tx planning (NOT ifx program)
 ```
 
 **`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk` + `idl/ifx.json`) and Go (`go-sdk` + bundled IDL): wire truth in a shared library, not the deployed program binary.
@@ -60,9 +60,7 @@ Anchor can generate a **client layer** from `idl/ifx.json` (discriminators, acco
 | Structured / Raw CPI patch helpers | ❌ | ✅ (R3) |
 | Golden parity with TS/Go | ❌ | ✅ |
 
-**Recommended:** use **`ifx-sdk`** (or `ifx-core` encoders) for instruction **data**; use Anchor client only if you already standardize on it for account metas — do **not** encode deep `Expr` trees with Anchor's recursive serializer.
-
-**Optional future:** `ifx-sdk` feature `anchor` — convert `solana_sdk::instruction::Instruction` ↔ Anchor `RequestBuilder` glue **without** depending on the `ifx` program crate.
+**Recommended:** use **`ifx-sdk`** (or `ifx-core` encoders) for instruction **data**. Anchor backends can `cargo add ifx-sdk` and assemble `Instruction`s directly; an Anchor IDL client for **other** programs' account metas is optional — do **not** encode deep `Expr` trees with Anchor's recursive serializer, and **no** extra Anchor interop feature is planned.
 
 ---
 
@@ -74,36 +72,24 @@ For almost all integrators, encode transactions with **`ifx-sdk`**, **`@ifx-run/
 - `expr.*` builds flat `Expr` trees (Borsh tags 0–51)
 - `letBuilder` / `ixLet` deduplicates `remaining_accounts`
 
-Rust backends should use **`ifx-sdk`** (in progress) — not path-depend on the **`ifx`** program crate for tx building.
+Rust backends should use **`ifx-sdk`** — not path-depend on the **`ifx`** program crate for tx building. See [`rust-sdk/README.md`](../rust-sdk/README.md) and `cargo test -p ifx-sdk --test localnet`.
 
 **Do not** use Anchor's recursive instruction coder for [`Expr`](../programs/ifx/src/state/types.rs). The program uses **Borsh** flat enum tags; match `ifx-core` / TS `codec.ts` / Go `codec` packages.
 
 ---
 
-## On-chain: CPI from another Anchor program
+## On-chain: do not wrap Ifx inside your program
 
-```toml
-# your-program/Cargo.toml
-[dependencies]
-ifx = { path = "../ifx/programs/ifx", features = ["cpi"] }
+Ifx is **not** a library for other programs to CPI into. `ifx_create_frame`, `ifx_reset_frame`, `ifx_let`, and `ifx_close_frame` all require **transaction top level** (stack height 1); the program returns `LetNotTopLevel`, `ResetNotTopLevel`, etc. otherwise.
+
+**Recommended integration:** plan the transaction off-chain with an SDK and place your ix and Ifx ix **side by side** at the top level, e.g.:
+
+```text
+your swap / settlement ix
+  + ifx_reset_frame → ifx_let → ifx_if_else / ifx_patched_cpi / ifx_assert
 ```
 
-```rust
-use anchor_lang::prelude::*;
-use ifx::cpi::accounts::{ResetFrame, Let};
-use ifx::{LetArgs, /* … */};
-
-// PDA: seeds = [b"frame", payer.as_ref(), frame_id.as_ref()]
-// Discriminators: programs/ifx/src/constants.rs (IX_DISC_*)
-```
-
-**Rules:**
-
-- **`ifx_let` must be a top-level instruction** in the transaction (stack height 1). Do not CPI into `ifx_let` from your program.
-- You may CPI into `ifx_assert`, `ifx_patched_cpi`, `ifx_if_else`, `ifx_reset_frame` depending on your flow.
-- Pass **`remaining_accounts`** in the order your bindings / CPI arms expect (same as SDK `LetIxBuilder`).
-
-Instruction-level docs live in [`programs/ifx/src/lib.rs`](../programs/ifx/src/lib.rs) and flow into `idl/ifx.json`.
+Anchor projects do **not** need a path dependency on the `ifx` program crate and should **not** `invoke` Ifx from their own program.
 
 ---
 

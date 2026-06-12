@@ -151,7 +151,7 @@ describe("ifx lighthouse coverage lets (R5, on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     for (const plan of [
@@ -220,7 +220,7 @@ describe("ifx lighthouse coverage lets (R5, on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     for (const plan of [

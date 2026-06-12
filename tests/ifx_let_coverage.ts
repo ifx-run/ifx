@@ -48,7 +48,7 @@ describe("ifx let binding coverage (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const b = scratch.letBuilder();
@@ -81,7 +81,7 @@ describe("ifx let binding coverage (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const mint = await createMint(
@@ -296,7 +296,7 @@ describe("ifx let binding coverage (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const mint = await createMint(
@@ -335,7 +335,7 @@ describe("ifx let binding coverage (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const mint = await createMint(
@@ -370,7 +370,7 @@ describe("ifx let binding coverage (on-chain)", () => {
       payer: payer.publicKey,
       frameId: randomBytes(32),
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
 
     const mint = await createMint(

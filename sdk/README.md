@@ -32,9 +32,9 @@ npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { FrameScratch } from "@ifx-run/sdk";
+import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
-const tapeLen = 256; // max per on-chain MAX_FRAME_TAPE_LEN
+const tapeLen = DEFAULT_TAPE_LEN; // 512; on-chain max MAX_FRAME_TAPE_LEN; typical 256–8192
 const frameId = randomBytes(32); // store frameId + tapeLen (config, DB, …)
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
@@ -45,7 +45,7 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve). `reset` / `let` need **no extra signer**; no one can `ifx_close_frame` for rent — the usual zero-cost path for swap / ATA glue. Verify after fetch: `isPublicFrameAuthority(decoded.authority, frame)`.
+**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve) — **public scratch**, anyone can write. Fine for devnet / stateless glue; **use `planNewFrame` + on-curve `authority` for production business Frames** (below). No extra signer on `reset`/`let`; no one can `close` for rent.
 
 **Tx 2 — business** (separate request / job; reset + let / assert / CPI). Reuse `scratch` from Tx 1 in the same process, or see [`examples/minimal-frame.ts`](./examples/minimal-frame.ts) for cross-job rebuild:
 
@@ -113,7 +113,9 @@ tx.add(letBuilder.buildIx());
 
 Each binding writes **`[ty:1][payload:ty.size()]`** to `Frame::tape`; wire refs use **`Value.index`** (binding index, `u8`). Off-chain type in `ScratchValue`; `planRecordOffsets` (`tape-layout.ts`) must match on-chain `plan_record_offsets`.
 
-At create: `tapeLen` up to **65_535**; `indexCap = min(256, floor(tapeLen / 2))`. Append failures: **`IndexCapReached`** vs **`TapeOutOfBounds`** — see [errors.md](../docs/errors.md).
+At create: `tapeLen` up to **65_535** on-chain; **prefer `DEFAULT_TAPE_LEN` (512)** and stay within **`RECOMMENDED_TAPE_LEN_MAX` (8192)** for typical txs — larger frames cost more rent and `let`/`reset` CU ([frame-cu-optimization.md](../docs/frame-cu-optimization.md)). `indexCap = min(256, floor(tapeLen / 2))`. Append failures: **`IndexCapReached`** vs **`TapeOutOfBounds`** — see [errors.md](../docs/errors.md).
+
+**`ifx_assert_multi`:** wire max **255** conditions (`MAX_ASSERT_MULTI_CONDS`); **merge 3–10 guards per ix** (`RECOMMENDED_ASSERT_MULTI_MAX`) to limit tx CU — split across multiple ix when larger. See [r4-assert-multi.md](../docs/r4-assert-multi.md).
 
 **No `extend_frame` / `shrink_frame`:** allocate full `tapeLen` + fixed `payload_at` at create; pass `tapeLen` to `new FrameScratch(framePk, tapeLen)`.
 
@@ -124,8 +126,8 @@ At create: `tapeLen` up to **65_535**; `indexCap = min(256, floor(tapeLen / 2))`
 - **Persist:** Values later read by `ifx_assert`, `ifx_patched_cpi` `RawCpiPatch`, or later `ifx_let` (`ScratchValue` / `expr.*`).
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
-- **`FrameScratch.planPublicFrame({ payer, frameId, … })`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); public scratch, no extra signer on writes. Localnet: `programId: IFX_LOCALNET_PROGRAM_ID`.
-- **`FrameScratch.planNewFrame({ payer, frameId, authority, … })`:** private / closeable Frame; on-curve `authority` (e.g. bot hot wallet) signs `reset`/`let`.
+- **`FrameScratch.planPublicFrame(...)`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); **public scratch** (anyone can `reset`/`let`; not `close`). Fine for devnet / stateless glue; **use `planNewFrame` + on-curve `authority` for production business Frames** — [frame-authority.md](../docs/frame-authority.md).
+- **`FrameScratch.planNewFrame({ payer, frameId, authority, … })`:** **recommended for production** — private / closeable Frame; on-curve `authority` (e.g. bot hot wallet) signs `reset`/`let`/`close`.
 - **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2 when scratch is not in memory; public Frames: `authority` = Frame PDA (`publicFrameAuthority(payer, frameId)`). `programId` defaults to devnet; localnet: `IFX_LOCALNET_PROGRAM_ID`.
 - **`FrameScratch.fromFrame` / `refreshFromChain`:** **tests and local debug only** — not production paths.
 
@@ -251,7 +253,7 @@ Omitted `programId` targets devnet (`DEFAULT_IFX_PROGRAM_ID`). Localnet / custom
 
 Repo [`examples/`](./examples/) (not published to npm): L0 `minimal-frame.ts` · guardrail `guardrail-lamports-delta.ts` / `guardrail-token-balance.ts` · L1 `dust-destroy-token2022.ts` (patched + static CPI) · structured CPI: `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/sdk_structured_cpi_codec.ts`.
 
-Go client: [`go-sdk/README.md`](../go-sdk/README.md).
+Other clients: [Go SDK](../go-sdk/README.md) · [Rust SDK](../rust-sdk/README.md) (`ifx-sdk`).
 
 ## Maintainers
 

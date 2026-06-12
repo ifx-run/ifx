@@ -322,4 +322,4 @@ go test ./integration/... -v -count=1
 
 ## 其它语言
 
-Ifx 另有 TypeScript 客户端 [`@ifx-run/sdk`](../sdk/README.zh-CN.md)，链上 wire 与语义相同。Go 与 TS 团队各自维护本语言 SDK；复杂编排场景可参考仓库 [`docs/`](../docs/) 与 [编排说明](../.cursor/skills/ifx-orchestration/SKILL.md)。
+TypeScript：[`@ifx-run/sdk`](../sdk/README.zh-CN.md)。Rust：[`ifx-sdk`](../rust-sdk/README.zh-CN.md)。链上 wire 与语义相同。复杂编排场景可参考仓库 [`docs/`](../docs/) 与 [编排说明](../.cursor/skills/ifx-orchestration/SKILL.md)。

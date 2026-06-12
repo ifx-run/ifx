@@ -4,7 +4,7 @@ English | [中文](./typed-let-bindings.zh-CN.md)
 
 Wire format for [`LetBinding`](../programs/ifx/src/state/types.rs): a **single enum** (tags `0`–`67`). Each variant appends one frame record **`[ty:1][payload:ty.size()]`**; the type is implied by the variant (or explicit for slices / `Eval`).
 
-SDK helpers: [`@ifx-run/sdk`](../sdk/README.md) `FrameScratch` / `letBuilder`.
+SDK helpers: [`@ifx-run/sdk`](../sdk/README.md) / [`ifx-sdk`](../rust-sdk/README.md) / [`go-sdk`](../go-sdk/README.md) — `FrameScratch` / `letBuilder` (or `LetBuilder` in Go/Rust).
 
 ---
 

@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn append_returns_binding_index() {
-        let tape_len = 256u32;
+        let tape_len = 512u32;
         let cap = index_cap_for_tape_len(tape_len);
         let mut frame = Frame {
             authority: Pubkey::default(),

@@ -17,9 +17,9 @@ See [roadmap.zh-CN.md](./roadmap.zh-CN.md) for the full document. Summary of **m
 
 ### Terminal B — Rust SDK
 
-- [client-sdks.md](./client-sdks.md) § P1 — `ifx-core` + `ifx-sdk` after **IR-1** freezes wire
+- [client-sdks.md](./client-sdks.md) § P1 — `ifx-core` + `ifx-sdk` (**R1–R3** ✅ minimal localnet; dust/orchestration planners backlog)
 
-**Order:** Terminal A (done) → audit / mainnet ∥ Terminal B.
+**Order:** Terminal A (done) → audit / mainnet; Terminal B core shipped.
 
 ---
 
@@ -32,6 +32,5 @@ See [roadmap.zh-CN.md](./roadmap.zh-CN.md) for the full document. Summary of **m
 | Token / Token-2022 typed lets | ✅ | tags 9–23 (+ R5 domain lets 45–67) |
 | Stake typed lets + structured CPI | ✅ | tags 31–38, 60–64; patch 29–32 |
 | Personal AMM showcase | ✅ | |
-| scratch PDA | ⏳ | v1 |
 
 Full breakdown: **§ 已交付 — 终点 A** in [roadmap.zh-CN.md](./roadmap.zh-CN.md).

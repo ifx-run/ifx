@@ -14,7 +14,7 @@ Ifx is a **deployed on-chain program**. **`ifx_if_else` branches execute during 
 
 Ifx adds **read → compute → assert → CPI** inside **one business transaction**, interleaved with the user's swap / ATA / DEX instructions. It is **not** a DEX replacement and **not** a client-only instruction pipeline.
 
-**Repo canon:** copy patterns from `sdk/examples/` and `tests/` — do not invent wire formats or hand-encode `Expr`. **Go backends:** use [`go-sdk/`](../../../go-sdk/README.md) with the same two-tx model (no Node).
+**Repo canon:** copy patterns from `sdk/examples/` and `tests/` — do not invent wire formats or hand-encode `Expr`. **Go backends:** [`go-sdk/`](../../../go-sdk/README.md). **Rust backends:** [`ifx-sdk`](../../../rust-sdk/README.md) + `rust-sdk/tests/` planners — same two-tx model (no Node).
 
 ## When to use Ifx
 
@@ -58,10 +58,10 @@ Tx 2+ (each job):          ifx_reset_frame  →  let / user ix / assert / cpi / 
 
 ```ts
 import { randomBytes } from "crypto";
-import { FrameScratch } from "@ifx-run/sdk";
+import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 const frameId = randomBytes(32); // persist
-const tapeLen = 256; // indexCap = 128; max tape MAX_FRAME_TAPE_LEN
+const tapeLen = DEFAULT_TAPE_LEN; // 512; indexCap = 256; max tape MAX_FRAME_TAPE_LEN
 
 // Tx 1 (devnet: omit programId — DEFAULT_IFX_PROGRAM_ID)
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({

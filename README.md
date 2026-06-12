@@ -25,7 +25,7 @@ When you need state checks, conditional branches, or arithmetic mid-flow, the us
 1. **A wrapper program per flow** — small glue, repeated deploy / audit / upgrade cost.
 2. **Client-only tx assembly** — snapshot chain state via RPC before sign, build instructions from assumptions that held *at query time*. Assumptions can break before landing; worse, **later instructions in the same tx still cannot branch on what earlier ones actually did** — only hard-coded unconditional paths. Classic failure: after a swap you want to close an ATA for rent; you assumed balance 0 off-chain and emitted unconditional `closeAccount`; on-chain balance ≠ 0 → **the whole tx reverts**, swap included.
 
-**Ifx is a third path:** one **reusable on-chain orchestration program**. Plan the dataflow off-chain with the [TypeScript SDK](./sdk/) or [Go SDK](./go-sdk/) (what to read, what to compute, when to CPI vs **Skip**). While the transaction executes, Ifx runs a fixed, enumerable instruction set in the same tx — **`ifx_let` reads on-chain state → math / `ifx_assert` → `ifx_if_else` conditional CPI or Skip** — over System, SPL, DEX, and other programs you already use. **No new wrapper per glue pattern**; **no betting on RPC snapshots** that mid-tx state will match.
+**Ifx is a third path:** one **reusable on-chain orchestration program**. Plan the dataflow off-chain with the [TypeScript SDK](./sdk/), [Go SDK](./go-sdk/), or [Rust SDK](./rust-sdk/) (what to read, what to compute, when to CPI vs **Skip**). While the transaction executes, Ifx runs a fixed, enumerable instruction set in the same tx — **`ifx_let` reads on-chain state → math / `ifx_assert` → `ifx_if_else` conditional CPI or Skip** — over System, SPL, DEX, and other programs you already use. **No new wrapper per glue pattern**; **no betting on RPC snapshots** that mid-tx state will match.
 
 | | **Ifx** | Client-only tx assembly |
 |---|---------|-------------------------|
@@ -34,7 +34,7 @@ When you need state checks, conditional branches, or arithmetic mid-flow, the us
 | Read balance **after** an earlier ix in the same tx | `ifx_let` sees post-ix state | Not at sign time; cannot Skip later ix from actual result |
 | Optional `closeAccount` when balance may be ≠ 0 | **`ifx_if_else` → Skip** arm; tx continues | Unconditional close **reverts the whole tx** |
 
-**Ifx is not** a TypeScript “instruction pipeline,” middleware, or tx composer that only runs off-chain. **TypeScript / Go SDKs** encode the dataflow; the **Ifx program** executes branches and CPIs on-chain.
+**Ifx is not** a TypeScript “instruction pipeline,” middleware, or tx composer that only runs off-chain. **TypeScript / Go / Rust SDKs** encode the dataflow; the **Ifx program** executes branches and CPIs on-chain.
 
 ### Typical flows
 
@@ -69,6 +69,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 | **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) (2026-06-09, commit `11be96e`); **not on mainnet** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
 | **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
 | **Program (localnet / repo default)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
 | **Program (devnet)** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` — [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) |
@@ -83,7 +84,7 @@ Go ([`solana-go`](https://github.com/gagliardetto/solana-go)):
 go get github.com/ifx-run/ifx/go-sdk
 ```
 
-Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` (Go integration tests; Surfpool required).
+Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` or `npm run rust:test` (Go/Rust integration tests; Surfpool required).
 
 ---
 
@@ -94,10 +95,10 @@ Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` (Go in
 ```ts
 import { randomBytes } from "crypto";
 import { Transaction } from "@solana/web3.js";
-import { expr, FrameScratch } from "@ifx-run/sdk";
+import { expr, FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 // Tx 1 — once per frame_id (standalone provisioning tx)
-const tapeLen = 256;
+const tapeLen = DEFAULT_TAPE_LEN;
 const frameId = randomBytes(32); // persist for later jobs
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
@@ -127,19 +128,19 @@ export ANCHOR_WALLET=~/.config/solana/id.json
 npx ts-node -r tsconfig-paths/register sdk/examples/minimal-frame.ts
 ```
 
-Examples: [`sdk/examples/`](./sdk/examples/) · [`go-sdk/examples/`](./go-sdk/examples/) · [Go SDK docs](./go-sdk/README.md)
+Examples: [`sdk/examples/`](./sdk/examples/) · [`go-sdk/examples/`](./go-sdk/examples/) · [`rust-sdk/examples/`](./rust-sdk/examples/) · [client SDK index](./docs/client-sdks.md)
 
 ### Try on devnet
 
 Point your provider at devnet — omitted `programId` uses `DEFAULT_IFX_PROGRAM_ID` (devnet):
 
 ```ts
-import { FrameScratch } from "@ifx-run/sdk";
+import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({
   payer,
   frameId,
-  tapeLen: 256,
+  tapeLen: DEFAULT_TAPE_LEN,
 });
 
 // business tx — scratch.authority is the Frame PDA (no authority signer)
@@ -370,6 +371,14 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 ## Before you ship
 
+**Mainnet / production integration**
+
+| Topic | Guidance |
+|-------|----------|
+| **Frame `authority`** | **Business Frames:** `planNewFrame` + **on-curve `authority`** (bot / relayer signs `reset`/`let`/`close`). **Off-curve / Frame PDA** (`planPublicFrame`) = **public scratch** — anyone can write; use for stateless glue or devnet only. See [frame-authority.md](./docs/frame-authority.md). |
+| **`tapeLen`** | On-chain max 65_535; SDK default **`DEFAULT_TAPE_LEN` = 512**; typical txs stay within **`RECOMMENDED_TAPE_LEN_MAX` = 8192** (larger frames = more rent + CU). |
+| **`ifx_assert_multi`** | Wire max 255 conditions; **merge 3–10 guards per ix** to limit tx CU. |
+
 - **Program ID:** npm `@ifx-run/sdk` defaults to devnet (`ifxdR1…`). Repo `npm test` uses localnet explicitly. Mainnet not deployed — [sdk/README.md](./sdk/README.md).
 - **Rent:** Creating a Frame PDA costs rent (scales with `tape_len`; default cap 256 bytes). Close with `ifx_close_frame` when done.
 - **Top-level `ifx_let`:** Bindings in one `ifx_let` ix must not depend on values written later in the same ix — use separate `ifx_let` calls or `letBuilder()` batches. Details: [docs/typed-let-bindings.md](./docs/typed-let-bindings.md).
@@ -389,7 +398,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 **CPI choice?** Official System / SPL / Token-2022 with tape-bound fields → **`structuredCpi()`** + **`structuredCpiPatch.*`**. DEX / custom layouts → **`rawCpi()`** + **`rawCpiPatch`** (unconditional: **`scratch.ixCpi`** / **`ifx_patched_cpi`**). Fixed template `data` at build time → **`staticCpi`** + **`arm.cpi(step.staticStep)`** or direct **`tx.add(ix)`**.
 
-**Do I need a Rust / Go client?** Off-chain: [`@ifx-run/sdk`](./sdk/README.md) or the **[Go SDK](./go-sdk/README.md)**; on-chain CPI: [docs/rust-integration.md](./docs/rust-integration.md). Roadmap: [docs/client-sdks.md](./docs/client-sdks.md).
+**Do I need a Rust / Go client?** Off-chain: [`@ifx-run/sdk`](./sdk/README.md), **[Go SDK](./go-sdk/README.md)**, or **[Rust SDK](./rust-sdk/README.md)** (`ifx-sdk`); on-chain CPI into Ifx: [docs/rust-integration.md](./docs/rust-integration.md). Roadmap: [docs/client-sdks.md](./docs/client-sdks.md).
 
 **Is this production-ready?** **Developer preview** — integration-tested on localnet; a preview build is on devnet. We publish [maintainer-led internal assessments](./audits/README.md) (not a third-party audit). Read the [latest review](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) and [docs/program-security.md](./docs/program-security.md). Pin `@ifx-run/sdk@devnet`, verify program ID, and do not use devnet for real value.
 
@@ -405,7 +414,8 @@ Use the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)
 |------------|---|
 | [sdk/README.md](./sdk/README.md) | TypeScript API, `FrameScratch`, `expr`, CPI helpers |
 | [go-sdk/README.md](./go-sdk/README.md) | Go API (same planner layer; no RPC / wallet wrapper) |
-| [docs/rust-integration.md](./docs/rust-integration.md) | Anchor / Rust CPI |
+| [rust-sdk/README.md](./rust-sdk/README.md) | Rust API (`ifx-sdk`; same planner layer; no RPC / wallet wrapper) |
+| [docs/rust-integration.md](./docs/rust-integration.md) | Rust CPI + off-chain `ifx-sdk` |
 | [docs/design.md](./docs/design.md) | SSA model and motivation |
 | [docs/README.md](./docs/README.md) | Full doc index |
 | [audits/README.md](./audits/README.md) | Security assessments (versioned) |

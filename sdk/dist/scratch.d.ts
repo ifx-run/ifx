@@ -125,7 +125,11 @@ export declare class FrameScratch {
     /** One `ifx_let` from a single {@link ScratchValue} or a {@link LetIxBuilder} batch. */
     ixLet(target: ScratchValue<IfxTy> | LetIxBuilder, opts?: IxOpts): TransactionInstruction;
     ixAssert(cond: Cond, opts?: IxOpts): TransactionInstruction;
-    /** Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure. */
+    /**
+     * Multiple guards in one ix (`ifx_assert_multi`); short-circuits on first failure.
+     * Prefer **3–10** conditions per ix ({@link RECOMMENDED_ASSERT_MULTI_MAX}); wire max
+     * {@link MAX_ASSERT_MULTI_CONDS}.
+     */
     ixAssertMulti(conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
     /** Patched CPI (`ifx_patched_cpi`). */
     ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;

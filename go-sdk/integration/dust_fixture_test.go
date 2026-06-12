@@ -100,7 +100,7 @@ func setupDustDestroyFixture(
 		Payer:     payer.PublicKey(),
 		FrameID:   frameID,
 		Authority: payer.PublicKey(),
-		TapeLen:   256,
+		TapeLen:   512,
 		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {

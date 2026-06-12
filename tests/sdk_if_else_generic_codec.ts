@@ -12,7 +12,7 @@ import { systemTransferTemplate } from "../sdk/src/cpi";
 
 describe("sdk if_else raw patched codec", () => {
   it("raw patched step starts with CPI_WIRE.rawPatched", () => {
-    const scratch = new FrameScratch(Keypair.generate().publicKey, 256);
+    const scratch = new FrameScratch(Keypair.generate().publicKey, 512);
     const lamports = scratch.letConstU64(42);
     const built = rawCpi(systemTransferTemplate({ fromPubkey: Keypair.generate().publicKey, toPubkey: Keypair.generate().publicKey }), {
       patches: [rawCpiPatch(4, lamports)],

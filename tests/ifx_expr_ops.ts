@@ -15,7 +15,7 @@ describe("ifx flat expr ops (on-chain)", () => {
   anchor.setProvider(provider);
   const payer = (provider.wallet as anchor.Wallet).payer;
 
-  async function provisionFrame(tapeLen = 256): Promise<FrameScratch> {
+  async function provisionFrame(tapeLen = 512): Promise<FrameScratch> {
     const frameId = randomBytes(32);
     const { scratch, ixCreate } = planLocalFrame({
       payer: payer.publicKey,

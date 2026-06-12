@@ -1,4 +1,4 @@
-//! Program-local [`U8LenVec`] (wire via [`ifx_core::U8LenVec`]; enables [`IdlBuild`] here).
+//! Program-local [`U8LenVec`] (wire via [`ifx_core::U8LenVec`]; enables `IdlBuild` here).
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use core::ops::{Deref, DerefMut};

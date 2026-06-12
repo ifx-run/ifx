@@ -20,7 +20,7 @@ describe("ifx anchor security (negative)", () => {
       payer: payer.publicKey,
       frameId,
       authority: payer.publicKey,
-      tapeLen: 256,
+      tapeLen: 512,
     });
     await sendAndConfirm(provider, LABEL_SETUP_CREATE_FRAME, ixCreate);
 
@@ -52,7 +52,7 @@ describe("ifx anchor security (negative)", () => {
         payer: payer.publicKey,
         frameId,
         authority: PublicKey.default,
-        tapeLen: 256,
+        tapeLen: 512,
         programId: IFX_LOCALNET_PROGRAM_ID,
       })
     );

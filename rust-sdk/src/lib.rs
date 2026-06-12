@@ -1,19 +1,51 @@
-//! Ifx off-chain SDK — instructions and wire encoding only (no RPC / wallet wrapper).
+//! Off-chain Ifx SDK — build `ifx_create_frame`, `ifx_let`, `ifx_assert`, `ifx_patched_cpi`,
+//! `ifx_if_else`, and related instructions as [`solana_sdk::instruction::Instruction`] values.
 //!
-//! Same layer as `@ifx-run/sdk` and `go-sdk`. Depends on [`ifx_core`] for shared types
-//! and codecs.
+//! Same layer as `@ifx-run/sdk` and `go-sdk`: wire encoding and planner helpers only —
+//! **no** RPC, wallet, or transaction submission wrapper.
 //!
-//! # Status (Terminal B)
+//! # Example
 //!
-//! | Phase | Scope |
-//! |-------|--------|
-//! | **R1** | `ifx-core` wire / layout / structured-cpi golden vs TS |
-//! | **R2** | `FrameScratch`, `LetBuilder`, `expr`, `ix_*` (incl. CPI / if_else / close) | ✅ |
-//! | **R3** | Integration tests / examples / decode (debug) | ✅ minimal localnet + docs; dust/orchestration backlog |
+//! Typical **business tx** on an existing Frame (create Frame is a separate one-time tx):
+//! read a token balance mid-flow, then **close the ATA only when amount is zero** —
+//! otherwise **Skip** so the rest of the transaction still succeeds.
 //!
-//! # Publishing
+//! ```no_run
+//! use ifx_sdk::expr;
+//! use ifx_sdk::if_else::{args, cpi, skip};
+//! use ifx_sdk::patched_cpi::{build_static_cpi, with_owner_signer};
+//! use ifx_sdk::scratch::FrameScratch;
+//! # use solana_sdk::pubkey::Pubkey;
 //!
-//! Crates.io crate name: **`ifx-sdk`**. Source directory: **`rust-sdk/`**.
+//! # fn plan(
+//! #     scratch: &mut FrameScratch,
+//! #     token_account: Pubkey,
+//! #     owner: Pubkey,
+//! #     rent_destination: Pubkey,
+//! #     close_tpl: solana_sdk::instruction::Instruction,
+//! # ) -> Result<(), ifx_sdk::ScratchError> {
+//! scratch.ix_reset();
+//!
+//! let mut b = scratch.let_builder();
+//! let amount = b.spl_token_amount(token_account)?;
+//! b.build_ix()?;
+//!
+//! let close_ix = with_owner_signer(&close_tpl, owner, true);
+//! let close_built = build_static_cpi(&close_ix)?;
+//!
+//! scratch.ix_if_else(
+//!     &args(
+//!         expr::is_zero(expr::r(&amount)),
+//!         cpi(close_built.cpi.clone()),
+//!         skip(),
+//!     ),
+//!     &close_built.remaining,
+//! )?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Full guide, examples, and integration tests: <https://github.com/ifx-run/ifx/tree/main/rust-sdk>.
 
 #![deny(unsafe_code)]
 

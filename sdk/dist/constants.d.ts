@@ -20,6 +20,17 @@ export declare const MIN_TAPE_LEN = 1;
 export declare const MAX_FRAME_TAPE_LEN = 65535;
 /** Maximum bindings on wire (`Value.index` is `u8`: indices `0..=255`). */
 export declare const MAX_BINDING_INDEX = 256;
+/** Default `tapeLen` for examples and new integrations (matches on-chain `DEFAULT_TAPE_LEN`). */
+export declare const DEFAULT_TAPE_LEN = 512;
+/** Recommended minimum `tapeLen` for production (lower rent / CU than multi-KiB frames). */
+export declare const RECOMMENDED_TAPE_LEN_MIN = 256;
+/** Recommended maximum `tapeLen` for typical txs — see `docs/frame-cu-optimization.md`. */
+export declare const RECOMMENDED_TAPE_LEN_MAX = 8192;
+/** Wire max conditions in `ifx_assert_multi` (`U8LenVec` count is `u8`). */
+export declare const MAX_ASSERT_MULTI_CONDS = 255;
+/** Suggested merge size per `ifx_assert_multi` ix (no on-chain CU cap). */
+export declare const RECOMMENDED_ASSERT_MULTI_MIN = 3;
+export declare const RECOMMENDED_ASSERT_MULTI_MAX = 10;
 /** Upper bound on `payload_at` table length at create: `min(256, floor(tape_len / 2))`. */
 export declare function indexCapForTapeLen(tapeLen: number): number;
 /** @deprecated Use {@link MIN_TAPE_LEN}. */

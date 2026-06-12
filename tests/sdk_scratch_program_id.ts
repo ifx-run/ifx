@@ -10,7 +10,7 @@ import {
 
 describe("FrameScratch programId", () => {
   const frame = PublicKey.unique();
-  const tapeLen = 256;
+  const tapeLen = 512;
 
   it("defaults to DEFAULT_IFX_PROGRAM_ID (= devnet until mainnet)", () => {
     const scratch = new FrameScratch(frame, tapeLen);

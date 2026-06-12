@@ -16,7 +16,7 @@ func TestPlanMinimalFrameBusiness(t *testing.T) {
 	plan, err := scratch.PlanPublicFrame(scratch.PlanNewFrameParams{
 		Payer:     payer,
 		FrameID:   frameID,
-		TapeLen:   256,
+		TapeLen:   512,
 		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {
