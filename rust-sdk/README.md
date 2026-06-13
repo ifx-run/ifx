@@ -2,6 +2,9 @@
 
 **[← Ifx project homepage](https://github.com/ifx-run/ifx)**
 
+[![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)
+[![ifx-core](https://img.shields.io/crates/v/ifx-core?logo=rust&label=ifx-core)](https://crates.io/crates/ifx-core)
+
 English | [中文](./README.zh-CN.md)
 
 Rust off-chain client for **Ifx**: build `ifx_create_frame`, `ifx_let`, `ifx_assert`, `ifx_patched_cpi`, `ifx_if_else`, and related instructions. **Does not wrap RPC or wallets** — you get `solana_sdk::instruction::Instruction` values; your backend signs and sends.
@@ -21,16 +24,23 @@ Prefer `FrameScratch` in application code; use `build_ix_create_frame` and frien
 
 ## Install
 
-Path dependency (monorepo):
+**Current release:** **`0.1.0`** on [crates.io](https://crates.io/crates/ifx-sdk) (`ifx-core@0.1.0`; mainnet default; aligned with `@ifx-run/sdk@0.1.0` and `go-sdk@v0.1.0`).
+
+```bash
+cargo add ifx-sdk
+```
+
+Monorepo path dependency:
 
 ```toml
 ifx-sdk = { path = "../rust-sdk" }
 ```
 
-Crates.io (when published):
+Pin in `Cargo.toml`:
 
-```bash
-cargo add ifx-sdk
+```toml
+ifx-sdk = { version = "0.1.0" }
+ifx-core = { version = "0.1.0" }
 ```
 
 ## Quick start

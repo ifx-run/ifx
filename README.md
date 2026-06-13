@@ -7,8 +7,9 @@
 English | [中文](./README.zh-CN.md)
 
 [![License](https://img.shields.io/github/license/ifx-run/ifx)](./LICENSE)
-[![npm version](https://img.shields.io/npm/v/@ifx-run/sdk/devnet?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk/v/devnet)
+[![npm version](https://img.shields.io/npm/v/@ifx-run/sdk?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
+[![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)
 [![Solana mainnet](https://img.shields.io/badge/Solana-mainnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
@@ -79,9 +80,9 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 | Key | Value |
 | --- | --- |
 | **Status** | [Devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.1.0` — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
-| **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
+| **Go** | [`go-sdk/`](./go-sdk/) — **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` ([README](./go-sdk/README.md)) |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) — **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk` ([README](./rust-sdk/README.md)) |
 | **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
 | **Program (localnet / repo build)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
 | **Program (mainnet / SDK default)** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` — [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) |
@@ -94,7 +95,13 @@ npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 Go ([`solana-go`](https://github.com/gagliardetto/solana-go)):
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk
+go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+```
+
+Rust:
+
+```bash
+cargo add ifx-sdk
 ```
 
 Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` or `npm run rust:test` (Go/Rust integration tests; Surfpool required).

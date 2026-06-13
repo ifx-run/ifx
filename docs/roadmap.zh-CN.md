@@ -111,8 +111,8 @@
 
 | 优先级 | 能力 | 状态 | 说明 |
 |--------|------|------|------|
-| **P0** | **Go SDK** | ✅ | `go-sdk/` |
-| **P1** | **Rust SDK** | ✅ | `ifx-core` + `ifx-sdk`（R1–R3 minimal localnet） |
+| **P0** | **Go SDK** | ✅ | `go-sdk/` **`v0.1.0`** |
+| **P1** | **Rust SDK** | ✅ | `ifx-core` + `ifx-sdk` **`0.1.0`** |
 
 ---
 

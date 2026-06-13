@@ -46,11 +46,7 @@ npm deprecate @ifx-run/sdk@0.2.0-devnet.0 "$MSG"
 npm deprecate @ifx-run/sdk@0.3.0-devnet.0 "$MSG"
 ```
 
-Optional: point the old `devnet` dist-tag at `0.1.0` so `npm i @ifx-run/sdk@devnet` does not resolve a deprecated version:
-
-```bash
-npm dist-tag add @ifx-run/sdk@0.1.0 devnet
-```
+We no longer maintain a separate `devnet` dist-tag — integrators should use `npm install @ifx-run/sdk` (`latest` → `0.1.0`).
 
 ## Version coupling
 

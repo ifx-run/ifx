@@ -12,11 +12,25 @@
 
 | 优先级 | SDK | 状态 | 说明 |
 |--------|-----|------|------|
-| **P0 — 高** | **Go SDK** | ✅ | `go-sdk/` — 与 TS 对齐的 planner + readback + errors + L1 dust |
-| **P1 — 中** | **Rust SDK** | ✅ R1–R3（L0–L3） | `ifx-core` + `ifx-sdk`；见 [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
-| — | TypeScript | ✅ 已交付 | `@ifx-run/sdk` |
+| — | TypeScript | ✅ 已交付 | [`@ifx-run/sdk`](https://www.npmjs.com/package/@ifx-run/sdk) **`0.1.0`** |
+| **P0 — 高** | **Go SDK** | ✅ 已交付 | [`go-sdk/`](../go-sdk/README.zh-CN.md) **`v0.1.0`** — planner + L0–L3 e2e；[examples](../go-sdk/examples/README.zh-CN.md) |
+| **P1 — 中** | **Rust SDK** | ✅ 已交付 | [`ifx-sdk`](https://crates.io/crates/ifx-sdk) **`0.1.0`** + `ifx-core`；[rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
 
 **不在本页范围：** 链上 `ifx` program crate 供维护 / fork；集成方链下组 tx，不把 Ifx CPI 包进自有合约。
+
+---
+
+## 已发布包（安装）
+
+三端默认 **主网** program id（`DEFAULT_*` / `DefaultProgramID`）。Localnet / devnet 须显式传入对应 program id（见各 README）。
+
+| 语言 | 包 | 安装 |
+|------|-----|------|
+| TypeScript | `@ifx-run/sdk@0.1.0` | `npm install @ifx-run/sdk` |
+| Go | `github.com/ifx-run/ifx/go-sdk@v0.1.0` | `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` |
+| Rust | `ifx-sdk@0.1.0` | `cargo add ifx-sdk` |
+
+生产环境请在各语言侧 **同时 pin 0.1.0**。Wire golden tests 见仓库 `tests/`、`go-sdk/integration/`、`rust-sdk/tests/`。
 
 ---
 
@@ -26,7 +40,7 @@
 2. **Wire 与 TS 一致** — `Expr` 扁平 Borsh tag **0–51**；`LetBinding` tag **0–67**；`Cpi` 步 kind **`0/1/2`**；`ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` 为强类型 Anchor 参数（内层 custom wire）。勿用 Anchor TS/Rust 递归 coder 编 deep `Expr`。
 3. **Layout 与链上一致** — `plan_record_offsets`、`index_cap_for_tape_len`、packed tape `[ty:1][payload]`；链下 planner 失败应 **fail fast**（对应链上 `TapeOutOfBounds` / `IndexCapReached`）。
 4. **测试** — 字节级 golden 对齐 `tests/sdk_expr_parity.ts`、`tests/sdk_let_binding_parity.ts`、`tests/sdk_if_else_codec.ts` 等；集成测试可复用 Surfpool / `anchor test` 场景。
-5. **IDL** — 分发 bundled `idl/ifx.json`（或与 npm SDK 同 revision pin program id）。
+5. **IDL** — 各 SDK 附带 bundled `idl/ifx.json`；生产请 pin **SDK `0.1.0`** 与目标集群 program id。
 
 ---
 

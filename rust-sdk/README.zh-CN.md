@@ -2,6 +2,9 @@
 
 **[← Ifx 项目主页](https://github.com/ifx-run/ifx)**
 
+[![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)
+[![ifx-core](https://img.shields.io/crates/v/ifx-core?logo=rust&label=ifx-core)](https://crates.io/crates/ifx-core)
+
 [English](./README.md) | 中文
 
 Ifx 的 Rust 链下客户端：组装 **Ifx 指令**（`ifx_create_frame`、`ifx_let`、`ifx_assert`、`ifx_patched_cpi`、`ifx_if_else` 等）。**不包装 RPC、不包装钱包**——只产出 `solana_sdk::instruction::Instruction`；签名与发送由你的后端负责。
@@ -21,16 +24,23 @@ Ifx 的 Rust 链下客户端：组装 **Ifx 指令**（`ifx_create_frame`、`ifx
 
 ## 安装
 
+**当前版本：** [**`0.1.0`**](https://crates.io/crates/ifx-sdk)（`ifx-core@0.1.0`；默认主网；与 `@ifx-run/sdk@0.1.0`、`go-sdk@v0.1.0` 对齐）。
+
+```bash
+cargo add ifx-sdk
+```
+
 Monorepo 路径依赖：
 
 ```toml
 ifx-sdk = { path = "../rust-sdk" }
 ```
 
-Crates.io（发布后）：
+在 `Cargo.toml` 中锁定：
 
-```bash
-cargo add ifx-sdk
+```toml
+ifx-sdk = { version = "0.1.0" }
+ifx-core = { version = "0.1.0" }
 ```
 
 ## 快速开始

@@ -231,8 +231,12 @@ When proposing code to the user:
 
 ## Install (user's project)
 
+**SDK `0.1.0`** — mainnet default; align with `ifx-sdk@0.1.0` / `go-sdk@v0.1.0`.
+
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
+go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+cargo add ifx-sdk
 ```
 
 Or depend on git/path to this repo's `sdk/` and run `npm run build` in `sdk/`.

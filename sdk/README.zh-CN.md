@@ -21,9 +21,13 @@ Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
 ## 安装
 
+**当前版本：** **`0.1.0`**（默认主网；与 `ifx-sdk@0.1.0`、`go-sdk@v0.1.0` 对齐）。
+
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
+
+锁定版本：`npm install @ifx-run/sdk@0.1.0`
 
 ## 创建 Frame，再使用
 

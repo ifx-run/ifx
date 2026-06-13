@@ -17,8 +17,10 @@ Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/s
 
 ## 安装
 
+**当前版本：** **`v0.1.0`**（默认主网；与 `@ifx-run/sdk@0.1.0`、`ifx-sdk@0.1.0` 对齐）。
+
 ```bash
-go get github.com/ifx-run/ifx/go-sdk
+go get github.com/ifx-run/ifx/go-sdk@v0.1.0
 ```
 
 模块路径：`github.com/ifx-run/ifx/go-sdk/...`
