@@ -229,12 +229,13 @@ Details: [docs/implementation.md](./docs/implementation.md) · [docs/bundles.md]
 
 ## Relationship to Lighthouse
 
-[Lighthouse](https://www.lighthouse.voyage/) provides **runtime assertions** on mainnet (Token, Stake, Sysvar, Delta, …), used by Phantom and others as tx security guardrails. Ifx is **complementary**, not a drop-in replacement:
+[Lighthouse](https://www.lighthouse.voyage/) provides **runtime assertions** on mainnet (Token, Stake, Sysvar, Delta, …), used by Phantom and others as tx security guardrails. Ifx is **complementary**, not a drop-in replacement. Each project names its mid-tx scratch differently (**Memory** vs **Frame**); the table compares **mechanisms**, not missing labels.
 
 | | Lighthouse | Ifx |
 |---|------------|-----|
 | Primary goal | Tx **security asserts** (fail → revert) | Tx **orchestration** (read → compute → assert → conditional CPI / **Skip**) |
-| Delta / change | Memory PDA + `AssertAccountDelta` | Two `ifx_let` + `Expr` (no Memory) |
+| Mid-tx scratch | **Memory PDA** — copy account fields into a snapshot buffer | **Frame tape** — typed values from `ifx_let` (SSA bindings) |
+| Delta / change | `AssertAccountDelta` vs Memory snapshot | Two `ifx_let` + `Expr` on Frame ([composable §5.2](./docs/lighthouse-coverage.md)) |
 | Skip optional steps | ❌ | ✅ `ifx_if_else` → Skip |
 | Patch CPI amounts | ❌ | ✅ structured / patched CPI |
 
@@ -251,7 +252,7 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 | Level | Example | You learn |
 |-------|---------|-----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame, `reset`, `let`, `assert` |
-| **L0+** | [guardrail-lamports-delta.ts](./sdk/examples/guardrail-lamports-delta.ts) · [guardrail-token-balance.ts](./sdk/examples/guardrail-token-balance.ts) | Lighthouse-style delta / absolute assert (composable, no Memory) |
+| **L0+** | [guardrail-lamports-delta.ts](./sdk/examples/guardrail-lamports-delta.ts) · [guardrail-token-balance.ts](./sdk/examples/guardrail-token-balance.ts) | Lighthouse-style delta / absolute assert on **Frame** (composable §5.2) |
 | **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`, structured + static CPI, chained `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | Two-hop A→USDC→B, read intermediate token balance, patch hop 2 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, structured CPI patches |

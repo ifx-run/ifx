@@ -227,12 +227,13 @@ flowchart LR
 
 ## 与 Lighthouse 的关系
 
-[Lighthouse](https://www.lighthouse.voyage/) 在 mainnet 提供 **运行时断言**（Token、Stake、Sysvar、Delta 等），被 Phantom 等钱包用于 tx 安全护栏。Ifx **不是** Lighthouse 替代品，而是 **互补**：
+[Lighthouse](https://www.lighthouse.voyage/) 在 mainnet 提供 **运行时断言**（Token、Stake、Sysvar、Delta 等），被 Phantom 等钱包用于 tx 安全护栏。Ifx **不是** Lighthouse 替代品，而是 **互补**。两者对「tx 内中间态」命名不同（**Memory** vs **Frame**）；下表对比的是 **机制**，不是说某一方「缺少」另一方的术语。
 
 | | Lighthouse | Ifx |
 |---|------------|-----|
 | 主要目标 | Tx **安全断言**（不满足 → revert） | Tx **编排**（读 → 算 → assert → 条件 CPI / **Skip**） |
-| Delta / 变化量 | Memory PDA + `AssertAccountDelta` | 两次 `ifx_let` + `Expr`（无 Memory） |
+| Tx 内草稿 | **Memory PDA** — 把账户字段拷贝进快照缓冲区 | **Frame tape** — `ifx_let` 求值得到的类型化 binding（SSA） |
+| Delta / 变化量 | `AssertAccountDelta` 对比 Memory 快照 | Frame 上两次 `ifx_let` + `Expr`（[可组合 §5.2](./docs/lighthouse-coverage.zh-CN.md)） |
 | 条件跳过步骤 | ❌ | ✅ `ifx_if_else` → Skip |
 | CPI 数值 patch | ❌ | ✅ structured / patched CPI |
 
@@ -249,7 +250,7 @@ Guardrail 示例（无 program 变更）：[lamports delta](./sdk/examples/guard
 | 级别 | 示例 | 你会学到 |
 |------|------|----------|
 | **L0** | [minimal-frame.ts](./sdk/examples/minimal-frame.ts) | Frame、`reset`、`let`、`assert` |
-| **L0+** | [guardrail-lamports-delta.ts](./sdk/examples/guardrail-lamports-delta.ts) · [guardrail-token-balance.ts](./sdk/examples/guardrail-token-balance.ts) | Lighthouse 式 delta / 绝对 assert（composable，无 Memory） |
+| **L0+** | [guardrail-lamports-delta.ts](./sdk/examples/guardrail-lamports-delta.ts) · [guardrail-token-balance.ts](./sdk/examples/guardrail-token-balance.ts) | Lighthouse 式 delta / 绝对 assert，在 **Frame** 上可组合（§5.2） |
 | **L1** | [dust-destroy-token2022.ts](./sdk/examples/dust-destroy-token2022.ts) | `letBuilder`、structured + static CPI、链式 `if_else` |
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | 两跳 A→USDC→B、读中间 token 余额、patch 第二跳 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | tx 中途读、assert 硬失败、structured CPI patch |
