@@ -8,7 +8,7 @@ Localnet、devnet、mainnet 使用不同 vanity 前缀（base58）：localnet **
 |------|------------|--------------|------------|
 | **Localnet** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | `localnet-program-keypair.json` | ✅ |
 | **Devnet** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | `devnet-program-keypair.json` | ❌ keypair；✅ `devnet.program-id` |
-| **Mainnet** | `keys/mainnet.program-id` | `mainnet-program-keypair.json` | ❌ keypair；✅ `mainnet.program-id` |
+| **Mainnet** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | `mainnet-program-keypair.json` | ❌ keypair；✅ `mainnet.program-id` |
 
 **本地 / Surfpool / `anchor test`：** 仅使用已提交的 localnet keypair。勿向这些地址在主网充值。
 
@@ -19,7 +19,7 @@ npm run keys:sync
 npm run keys:verify
 ```
 
-`declare_id!` 与仓库 IDL 对应 **localnet**（`IFX_LOCALNET_PROGRAM_ID`）。SDK **`DEFAULT_IFX_PROGRAM_ID`** 遵循 **主网 → 测试网 → devnet → localnet**（当前为 devnet）。Devnet 部署会临时 `anchor keys sync`（官方流程），`deploy:devnet` 在 `finally` 里恢复 localnet。若部署中途失败，运行 **`npm run keys:restore`**。
+`declare_id!` 与仓库 IDL 对应 **localnet**（`IFX_LOCALNET_PROGRAM_ID`）。SDK **`DEFAULT_IFX_PROGRAM_ID`** 遵循 **主网 → 测试网 → devnet → localnet**（当前为主网）。Devnet 部署会临时 `anchor keys sync`（官方流程），`deploy:devnet` 在 `finally` 里恢复 localnet。若部署中途失败，运行 **`npm run keys:restore`**。
 
 ## Devnet 部署
 
@@ -46,7 +46,7 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 
 `Anchor.toml` 里的 `wallet` 仅供本地 `anchor test`；**`deploy:devnet` 必须显式设置 `ANCHOR_WALLET`。**
 
-SDK：省略 `programId` 即 devnet。Localnet / 自定义 cluster：传 `IFX_LOCALNET_PROGRAM_ID` 或 `IxOpts.programId`。
+SDK：省略 `programId` 即主网。Devnet / localnet / 自定义 cluster：传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID` 或 `IxOpts.programId`。
 
 ## 重新 grind devnet keypair（维护者）
 
@@ -64,4 +64,4 @@ npm run keys:grind-devnet
 2. 把对应 base58 公钥（单行、无引号）写入 **`keys/mainnet.program-id`**，只提交该文件。
 3. Vanity 约定：公钥以 **`ifxM`** 开头；keypair 公钥须与 `mainnet.program-id` 一致。
 
-随后在 SDK / `declare_id!` / `Anchor.toml` 接入 `IFX_MAINNET_PROGRAM_ID` — 见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。
+主网 SDK 常量已接入 `IFX_MAINNET_PROGRAM_ID`；部署时再改 `declare_id!` — 见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。

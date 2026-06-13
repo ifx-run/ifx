@@ -5,6 +5,7 @@ import {
   DEFAULT_IFX_PROGRAM_ID,
   IFX_DEVNET_PROGRAM_ID,
   IFX_LOCALNET_PROGRAM_ID,
+  IFX_MAINNET_PROGRAM_ID,
   FrameScratch,
 } from "../sdk/src";
 
@@ -12,10 +13,10 @@ describe("FrameScratch programId", () => {
   const frame = PublicKey.unique();
   const tapeLen = 512;
 
-  it("defaults to DEFAULT_IFX_PROGRAM_ID (= devnet until mainnet)", () => {
+  it("defaults to DEFAULT_IFX_PROGRAM_ID (= mainnet)", () => {
     const scratch = new FrameScratch(frame, tapeLen);
     expect(scratch.programId.equals(DEFAULT_IFX_PROGRAM_ID)).to.be.true;
-    expect(scratch.programId.equals(IFX_DEVNET_PROGRAM_ID)).to.be.true;
+    expect(scratch.programId.equals(IFX_MAINNET_PROGRAM_ID)).to.be.true;
     expect(scratch.ixReset().programId.equals(DEFAULT_IFX_PROGRAM_ID)).to.be
       .true;
   });

@@ -3,11 +3,12 @@ import { PublicKey } from "@solana/web3.js";
 export declare const IFX_LOCALNET_PROGRAM_ID: PublicKey;
 /** Devnet deployment (`keys/devnet.program-id`; keypair not in git). */
 export declare const IFX_DEVNET_PROGRAM_ID: PublicKey;
+/** Mainnet deployment (`keys/mainnet.program-id`; keypair not in git). */
+export declare const IFX_MAINNET_PROGRAM_ID: PublicKey;
 /**
  * Default program id when `programId` is omitted from SDK builders.
  *
  * Priority (highest wins): **mainnet → testnet → devnet → localnet**.
- * Until mainnet is deployed, this equals {@link IFX_DEVNET_PROGRAM_ID}.
  *
  * Repo integration tests and local Surfpool must pass
  * {@link IFX_LOCALNET_PROGRAM_ID} explicitly (`planLocalFrame`, constructor, or `IxOpts`).

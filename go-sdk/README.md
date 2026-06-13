@@ -6,7 +6,7 @@ English | [中文](./README.zh-CN.md)
 
 Go off-chain client for **Ifx** on [`solana-go`](https://github.com/gagliardetto/solana-go): build `ifx_create_frame`, `ifx_let`, `ifx_assert`, `ifx_patched_cpi`, `ifx_if_else`, and related instructions. **Does not wrap RPC or wallets** — you get `solana.Instruction` values and account metas; your backend signs and sends.
 
-> **Preview:** No mainnet program yet. Default `ProgramID` is devnet (`constants.DefaultProgramID`). Local Surfpool / repo integration tests use `constants.LocalnetProgramID`.
+> **Preview:** Default `ProgramID` is mainnet (`constants.DefaultProgramID` = `constants.MainnetProgramID`). Local Surfpool / repo integration tests use `constants.LocalnetProgramID`. Devnet: `constants.DevnetProgramID`.
 
 ## Two layers
 
@@ -143,7 +143,7 @@ Match on-chain codes with `errors.MessageIncludes` — [error reference](../docs
 
 ## Program IDs
 
-`DefaultProgramID` (devnet) · `DevnetProgramID` · `LocalnetProgramID`. Set once on `FrameScratch` via `PlanNewFrame` / `NewFrameScratch` (`ProgramID` field).
+`DefaultProgramID` (mainnet) · `MainnetProgramID` · `DevnetProgramID` · `LocalnetProgramID`. Set once on `FrameScratch` via `PlanNewFrame` / `NewFrameScratch` (`ProgramID` field).
 
 ## Tests
 

@@ -31,11 +31,12 @@ Ifx adds **read → compute → assert → CPI** inside **one business transacti
 
 | Cluster | Constant | Address |
 |---------|----------|---------|
-| **npm default** | `DEFAULT_IFX_PROGRAM_ID` | devnet until mainnet (priority: mainnet → testnet → devnet → localnet) |
+| **npm default** | `DEFAULT_IFX_PROGRAM_ID` | mainnet (`IFX_MAINNET_PROGRAM_ID`) |
 | Localnet | `IFX_LOCALNET_PROGRAM_ID` | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
 | Devnet | `IFX_DEVNET_PROGRAM_ID` | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` |
+| Mainnet | `IFX_MAINNET_PROGRAM_ID` | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` |
 
-**Repo `npm test` / Surfpool:** pass `IFX_LOCALNET_PROGRAM_ID` (`planLocalFrame`). **npm consumers on devnet:** omit `programId` (default = devnet).
+**Repo `npm test` / Surfpool:** pass `IFX_LOCALNET_PROGRAM_ID` (`planLocalFrame`). **npm consumers on mainnet:** omit `programId` (default = mainnet). Devnet: pass `IFX_DEVNET_PROGRAM_ID`.
 
 Set `programId` once on **`FrameScratch`** (via `planPublicFrame({ programId })` or constructor). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; **TS only:** pass `IxOpts` to override per ix. **Go:** `ProgramID` on `FrameScratch` only (no per-ix override).
 

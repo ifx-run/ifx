@@ -41,6 +41,17 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
+// Cluster program ids (vanity base58 prefixes: localnet `ifxL`, devnet `ifx`, mainnet `ifxM`).
+//
+// | Cluster   | Program id                                       | Where wired |
+// |-----------|--------------------------------------------------|-------------|
+// | Localnet  | ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD     | declare_id! below · IFX_LOCALNET_PROGRAM_ID · idl/ifx.json |
+// | Devnet    | ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc     | IFX_DEVNET_PROGRAM_ID · keys/devnet.program-id |
+// | Mainnet   | ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj     | IFX_MAINNET_PROGRAM_ID · keys/mainnet.program-id · SDK DEFAULT_IFX_PROGRAM_ID |
+//
+// declare_id! matches localnet for repo builds, anchor test, and Surfpool.
+// Devnet deploy temporarily runs `anchor keys sync`; `npm run keys:restore` restores localnet.
+// Off-chain: pass the cluster id on FrameScratch / IxOpts, or omit for SDK default (mainnet).
 declare_id!("ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD");
 
 // Embedded for Solscan security.txt — see docs/mainnet-verification.md.

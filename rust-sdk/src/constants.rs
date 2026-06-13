@@ -18,5 +18,9 @@ pub const IFX_LOCALNET_PROGRAM_ID: Pubkey =
 pub const IFX_DEVNET_PROGRAM_ID: Pubkey =
     solana_sdk::pubkey!("ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc");
 
-/// Default when `program_id` is omitted (devnet until mainnet ships).
-pub const DEFAULT_IFX_PROGRAM_ID: Pubkey = IFX_DEVNET_PROGRAM_ID;
+/// Mainnet deployment (`keys/mainnet.program-id`).
+pub const IFX_MAINNET_PROGRAM_ID: Pubkey =
+    solana_sdk::pubkey!("ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj");
+
+/// Default when `program_id` is omitted (mainnet → testnet → devnet → localnet).
+pub const DEFAULT_IFX_PROGRAM_ID: Pubkey = IFX_MAINNET_PROGRAM_ID;

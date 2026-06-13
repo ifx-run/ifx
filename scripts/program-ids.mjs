@@ -49,7 +49,8 @@ export function hasPrefix(id, prefix = PROGRAM_ID_PREFIX, exact = false) {
 export function loadProgramIds() {
   const localnet = readKeypairPubkey(PATHS.localnetKeypair);
   const devnet = readProgramIdFile(PATHS.devnetProgramId);
-  return { localnet, devnet };
+  const mainnet = readProgramIdFile(PATHS.mainnetProgramId);
+  return { localnet, devnet, mainnet };
 }
 
 /** Read program ids and DEFAULT from sdk/src/constants.ts */
@@ -61,11 +62,14 @@ export function readSdkProgramIds() {
   const devnet = src.match(
     /IFX_DEVNET_PROGRAM_ID = new PublicKey\(\s*\n?\s*"([^"]+)"/
   )?.[1];
+  const mainnet = src.match(
+    /IFX_MAINNET_PROGRAM_ID = new PublicKey\(\s*\n?\s*"([^"]+)"/
+  )?.[1];
   const defaultId = src.match(
     /DEFAULT_IFX_PROGRAM_ID = (IFX_[A-Z_]+)/
   )?.[1];
-  if (!localnet || !devnet || !defaultId) {
+  if (!localnet || !devnet || !mainnet || !defaultId) {
     throw new Error("could not parse SDK program ids from constants.ts");
   }
-  return { localnet, devnet, defaultRef: defaultId };
+  return { localnet, devnet, mainnet, defaultRef: defaultId };
 }

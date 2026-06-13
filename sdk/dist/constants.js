@@ -1,22 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACCOUNT_DISC_FRAME = exports.IX_DISC_IF_ELSE = exports.IX_DISC_PATCHED_CPI = exports.IX_DISC_ASSERT_MULTI = exports.IX_DISC_ASSERT = exports.IX_DISC_LET = exports.IX_DISC_RESET_FRAME = exports.IX_DISC_CLOSE_FRAME = exports.IX_DISC_CREATE_FRAME = exports.MAX_FRAME_MEMORY_LEN = exports.MIN_MEMORY_LEN = exports.RECOMMENDED_ASSERT_MULTI_MAX = exports.RECOMMENDED_ASSERT_MULTI_MIN = exports.MAX_ASSERT_MULTI_CONDS = exports.RECOMMENDED_TAPE_LEN_MAX = exports.RECOMMENDED_TAPE_LEN_MIN = exports.DEFAULT_TAPE_LEN = exports.MAX_BINDING_INDEX = exports.MAX_FRAME_TAPE_LEN = exports.MIN_TAPE_LEN = exports.FRAME_SEED = exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_DEVNET_PROGRAM_ID = exports.IFX_LOCALNET_PROGRAM_ID = void 0;
+exports.ACCOUNT_DISC_FRAME = exports.IX_DISC_IF_ELSE = exports.IX_DISC_PATCHED_CPI = exports.IX_DISC_ASSERT_MULTI = exports.IX_DISC_ASSERT = exports.IX_DISC_LET = exports.IX_DISC_RESET_FRAME = exports.IX_DISC_CLOSE_FRAME = exports.IX_DISC_CREATE_FRAME = exports.MAX_FRAME_MEMORY_LEN = exports.MIN_MEMORY_LEN = exports.RECOMMENDED_ASSERT_MULTI_MAX = exports.RECOMMENDED_ASSERT_MULTI_MIN = exports.MAX_ASSERT_MULTI_CONDS = exports.RECOMMENDED_TAPE_LEN_MAX = exports.RECOMMENDED_TAPE_LEN_MIN = exports.DEFAULT_TAPE_LEN = exports.MAX_BINDING_INDEX = exports.MAX_FRAME_TAPE_LEN = exports.MIN_TAPE_LEN = exports.FRAME_SEED = exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_MAINNET_PROGRAM_ID = exports.IFX_DEVNET_PROGRAM_ID = exports.IFX_LOCALNET_PROGRAM_ID = void 0;
 exports.indexCapForTapeLen = indexCapForTapeLen;
 const web3_js_1 = require("@solana/web3.js");
 /** Localnet / default repo build (`keys/localnet-program-keypair.json`). */
 exports.IFX_LOCALNET_PROGRAM_ID = new web3_js_1.PublicKey("ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD");
 /** Devnet deployment (`keys/devnet.program-id`; keypair not in git). */
 exports.IFX_DEVNET_PROGRAM_ID = new web3_js_1.PublicKey("ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc");
+/** Mainnet deployment (`keys/mainnet.program-id`; keypair not in git). */
+exports.IFX_MAINNET_PROGRAM_ID = new web3_js_1.PublicKey("ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj");
 /**
  * Default program id when `programId` is omitted from SDK builders.
  *
  * Priority (highest wins): **mainnet → testnet → devnet → localnet**.
- * Until mainnet is deployed, this equals {@link IFX_DEVNET_PROGRAM_ID}.
  *
  * Repo integration tests and local Surfpool must pass
  * {@link IFX_LOCALNET_PROGRAM_ID} explicitly (`planLocalFrame`, constructor, or `IxOpts`).
  */
-exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_DEVNET_PROGRAM_ID;
+exports.DEFAULT_IFX_PROGRAM_ID = exports.IFX_MAINNET_PROGRAM_ID;
 exports.FRAME_SEED = Buffer.from("frame");
 /** Minimum `tape_len` at `ifx_create_frame` (matches on-chain `MIN_TAPE_LEN`). */
 exports.MIN_TAPE_LEN = 1;

@@ -41,7 +41,7 @@ export const MAX_TX_BYTES = 1232;
 
 /**
  * Local Surfpool / Anchor tests must target the repo localnet program id.
- * npm default is devnet ({@link DEFAULT_IFX_PROGRAM_ID}); use this helper
+ * npm default is mainnet ({@link DEFAULT_IFX_PROGRAM_ID}); use this helper
  * or pass {@link IFX_LOCALNET_PROGRAM_ID} explicitly.
  */
 export function planLocalFrame(

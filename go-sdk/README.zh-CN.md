@@ -6,7 +6,7 @@
 
 Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/solana-go) 上组装 **Ifx 指令**（`ifx_create_frame`、`ifx_let`、`ifx_assert`、`ifx_patched_cpi`、`ifx_if_else` 等）。**不包装 RPC、不包装钱包**——只产出 `solana.Instruction` 和账户 meta；签名与发送由你的后端负责。
 
-> **预览版：** 链上 program 尚无主网部署。省略 `ProgramID` 时默认 `constants.DefaultProgramID`（devnet）。本地 Surfpool / 本仓库集成测试请传 `constants.LocalnetProgramID`。
+> **预览版：** 省略 `ProgramID` 时默认主网（`constants.DefaultProgramID` = `constants.MainnetProgramID`）。本地 Surfpool / 本仓库集成测试请传 `constants.LocalnetProgramID`。Devnet：`constants.DevnetProgramID`。
 
 ## 两层 API
 
@@ -300,7 +300,8 @@ Dust 集成测试在 Go 内创建 TransferFee mint fixture（`integration/dust_f
 
 | 常量 | 用途 |
 |------|------|
-| `constants.DefaultProgramID` | 省略时的默认（devnet） |
+| `constants.DefaultProgramID` | 省略时的默认（主网） |
+| `constants.MainnetProgramID` | 主网部署 |
 | `constants.DevnetProgramID` | Devnet 部署 |
 | `constants.LocalnetProgramID` | 本仓库 Surfpool / `anchor test` |
 

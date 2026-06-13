@@ -9,6 +9,7 @@ import {
   PATHS,
   LOCALNET_PROGRAM_ID_PREFIX,
   DEVNET_PROGRAM_ID_PREFIX,
+  MAINNET_PROGRAM_ID_PREFIX,
   hasPrefix,
   loadProgramIds,
   readKeypairPubkey,
@@ -25,8 +26,10 @@ function main() {
   for (const [label, id, prefix] of [
     ["localnet (keys)", keys.localnet, LOCALNET_PROGRAM_ID_PREFIX],
     ["devnet (keys)", keys.devnet, DEVNET_PROGRAM_ID_PREFIX],
+    ["mainnet (keys)", keys.mainnet, MAINNET_PROGRAM_ID_PREFIX],
     ["localnet (sdk)", sdk.localnet, LOCALNET_PROGRAM_ID_PREFIX],
     ["devnet (sdk)", sdk.devnet, DEVNET_PROGRAM_ID_PREFIX],
+    ["mainnet (sdk)", sdk.mainnet, MAINNET_PROGRAM_ID_PREFIX],
   ]) {
     if (!hasPrefix(id, prefix)) {
       errors.push(`${label} must start with "${prefix}": ${id}`);
@@ -43,16 +46,20 @@ function main() {
       `sdk IFX_DEVNET_PROGRAM_ID ${sdk.devnet} != keys devnet ${keys.devnet}`
     );
   }
-
-  // Until IFX_MAINNET_PROGRAM_ID exists: npm default = devnet (mainnet → testnet → devnet → localnet).
-  if (sdk.defaultRef !== "IFX_DEVNET_PROGRAM_ID") {
+  if (keys.mainnet !== sdk.mainnet) {
     errors.push(
-      `sdk DEFAULT_IFX_PROGRAM_ID must be IFX_DEVNET_PROGRAM_ID until mainnet (got ${sdk.defaultRef})`
+      `sdk IFX_MAINNET_PROGRAM_ID ${sdk.mainnet} != keys mainnet ${keys.mainnet}`
     );
   }
 
-  if (keys.localnet === keys.devnet) {
-    errors.push("localnet and devnet program ids must differ");
+  if (sdk.defaultRef !== "IFX_MAINNET_PROGRAM_ID") {
+    errors.push(
+      `sdk DEFAULT_IFX_PROGRAM_ID must be IFX_MAINNET_PROGRAM_ID (got ${sdk.defaultRef})`
+    );
+  }
+
+  if (keys.localnet === keys.devnet || keys.localnet === keys.mainnet || keys.devnet === keys.mainnet) {
+    errors.push("localnet, devnet, and mainnet program ids must differ");
   }
 
   const libRs = fs.readFileSync(
@@ -83,12 +90,27 @@ function main() {
   ) {
     errors.push(`Anchor.toml [programs.devnet] missing ${keys.devnet}`);
   }
+  if (
+    !anchorToml.includes(`[programs.mainnet]`) ||
+    !anchorToml.includes(`ifx = "${keys.mainnet}"`)
+  ) {
+    errors.push(`Anchor.toml [programs.mainnet] missing ${keys.mainnet}`);
+  }
 
   if (fs.existsSync(PATHS.devnetKeypair)) {
     const devnetKeyPub = readKeypairPubkey(PATHS.devnetKeypair);
     if (devnetKeyPub !== keys.devnet) {
       errors.push(
         `keys/devnet-program-keypair.json: ${devnetKeyPub} (expected ${keys.devnet})`
+      );
+    }
+  }
+
+  if (fs.existsSync(PATHS.mainnetKeypair)) {
+    const mainnetKeyPub = readKeypairPubkey(PATHS.mainnetKeypair);
+    if (mainnetKeyPub !== keys.mainnet) {
+      errors.push(
+        `keys/mainnet-program-keypair.json: ${mainnetKeyPub} (expected ${keys.mainnet})`
       );
     }
   }
@@ -126,7 +148,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    `keys:verify OK (localnet ${keys.localnet}, devnet ${keys.devnet}, prefixes ${LOCALNET_PROGRAM_ID_PREFIX}/${DEVNET_PROGRAM_ID_PREFIX})`
+    `keys:verify OK (localnet ${keys.localnet}, devnet ${keys.devnet}, mainnet ${keys.mainnet}, prefixes ${LOCALNET_PROGRAM_ID_PREFIX}/${DEVNET_PROGRAM_ID_PREFIX}/${MAINNET_PROGRAM_ID_PREFIX})`
   );
 }
 

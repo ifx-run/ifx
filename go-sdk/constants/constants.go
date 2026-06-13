@@ -28,8 +28,9 @@ const (
 var (
 	LocalnetProgramID = solana.MustPublicKeyFromBase58("ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD")
 	DevnetProgramID   = solana.MustPublicKeyFromBase58("ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc")
-	// DefaultProgramID is used when ProgramID is omitted (devnet until mainnet).
-	DefaultProgramID = DevnetProgramID
+	MainnetProgramID  = solana.MustPublicKeyFromBase58("ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj")
+	// DefaultProgramID is used when ProgramID is omitted (mainnet → testnet → devnet → localnet).
+	DefaultProgramID = MainnetProgramID
 )
 
 // IndexCapForTapeLen returns min(256, tapeLen/2).

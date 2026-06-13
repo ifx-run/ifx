@@ -9,6 +9,7 @@
 [![License](https://img.shields.io/github/license/ifx-run/ifx)](./LICENSE)
 [![npm version](https://img.shields.io/npm/v/@ifx-run/sdk/devnet?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk/v/devnet)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
+[![Solana mainnet](https://img.shields.io/badge/Solana-mainnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
 
@@ -77,12 +78,13 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 
 | 项 | 说明 |
 | --- | --- |
-| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`）；**未上 mainnet** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
+| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；SDK 已登记 **主网 program id**（`ifxmwW…`）；**主网字节码尚未部署**；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`） |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` — **`DEFAULT_IFX_PROGRAM_ID` = 主网** |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate（[`README`](./rust-sdk/README.zh-CN.md)） |
 | **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
-| **Program（localnet / 仓库默认）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
+| **Program（localnet / 仓库构建）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
+| **Program（主网 / SDK 默认）** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` — [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) |
 | **Program（devnet）** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` — [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) |
 
 ```bash
@@ -139,9 +141,9 @@ npx ts-node -r tsconfig-paths/register sdk/examples/minimal-frame.ts
 
 示例：[`sdk/examples/`](./sdk/examples/) · [`go-sdk/examples/`](./go-sdk/examples/) · [`rust-sdk/examples/`](./rust-sdk/examples/) · [客户端 SDK 索引](./docs/client-sdks.zh-CN.md)
 
-### 在 devnet 上试
+### 在主网试（SDK 默认）
 
-Provider 指向 devnet — 省略 `programId` 即使用 `DEFAULT_IFX_PROGRAM_ID`（devnet）：
+Provider 指向 mainnet — 省略 `programId` 即 `DEFAULT_IFX_PROGRAM_ID`（= `IFX_MAINNET_PROGRAM_ID`）：
 
 ```ts
 import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
@@ -157,15 +159,32 @@ tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
 
-需要 **私有 / 可关闭** Frame（on-curve `authority` 签 reset/let，日后 `close` 回收 rent）？用 `planNewFrame({ …, authority: payer })` — 见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)。
+主网 program id：`ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`。上生产前请确认目标集群已部署 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md)。
 
-Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。仅使用测试 SOL / 测试资产 — 部署说明见 [keys/README.zh-CN.md](./keys/README.zh-CN.md)（维护者）。
+### 在 devnet 上试
+
+显式传 `IFX_DEVNET_PROGRAM_ID`（devnet 预览，仅测试 SOL / 测试资产）：
+
+```ts
+import { FrameScratch, DEFAULT_TAPE_LEN, IFX_DEVNET_PROGRAM_ID } from "@ifx-run/sdk";
+
+const { scratch, ixCreate } = FrameScratch.planPublicFrame({
+  payer,
+  frameId,
+  tapeLen: DEFAULT_TAPE_LEN,
+  programId: IFX_DEVNET_PROGRAM_ID,
+});
+```
+
+Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。部署说明见 [keys/README.zh-CN.md](./keys/README.zh-CN.md)（维护者）。
+
+需要 **私有 / 可关闭** Frame（on-curve `authority` 签 reset/let，日后 `close` 回收 rent）？用 `planNewFrame({ …, authority: payer })` — 见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)。
 
 ---
 
 ## 用 Cursor、Claude Code 或其他 AI agent
 
-> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、**Structured CPI**（官方 System/SPL 用 `structuredCpi`）与 **RawPatched** CPI（`rawCpi` + `ifx_patched_cpi`）及静态 CPI 的取舍、devnet `programId`、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 示例扩展，减少手写 wire format 和 `Expr` 错误。
+> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、**Structured CPI**（官方 System/SPL 用 `structuredCpi`）与 **RawPatched** CPI（`rawCpi` + `ifx_patched_cpi`）及静态 CPI 的取舍、各集群 `programId`（SDK 默认主网）、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 示例扩展，减少手写 wire format 和 `Expr` 错误。
 
 | | |
 |---|---|
@@ -348,11 +367,11 @@ await provider.sendAndConfirm(tx);
 
 | 环境 | Program ID | 说明 |
 |------|------------|------|
-| **Localnet**（仓库默认，`npm test`） | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair 见 [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
+| **Localnet**（仓库构建，`npm test`） | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair 见 [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
+| **Mainnet**（SDK 默认） | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | 公钥见 [`keys/mainnet.program-id`](./keys/mainnet.program-id)；部署 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
 | **Devnet**（团队预览） | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | 实验性；upgrade 权限不公开 — **勿用于真实资金** |
-| **Mainnet** | — | 未部署 |
 
-- **`declare_id!` / 仓库 IDL** 对应 **localnet**（仓库构建）。**`@ifx-run/sdk` npm 默认** 为 **devnet**（`DEFAULT_IFX_PROGRAM_ID`）。本地测试显式传 `IFX_LOCALNET_PROGRAM_ID`。
+- **`declare_id!` / 仓库 IDL** 对应 **localnet**（仓库构建）。**`@ifx-run/sdk` 默认** 为 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。Devnet / localnet 须显式传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID`。
 - 集成方：pin `@ifx-run/sdk`，核对目标集群合约 ID，上生产前阅读 [docs/SECURITY.zh-CN.md](./docs/SECURITY.zh-CN.md) 与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。
 - 维护者：[keys/README.zh-CN.md](./keys/README.zh-CN.md) · [docs/development.zh-CN.md](./docs/development.zh-CN.md)
 
@@ -388,7 +407,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 | **`tapeLen`** | 链上最大 65_535；SDK 默认 **`DEFAULT_TAPE_LEN` = 512**，典型 tx 不超过 **`RECOMMENDED_TAPE_LEN_MAX` = 8192**（更大 Frame 租金与 CU 更高）。 |
 | **`ifx_assert_multi`** | wire 最多 255 条；**每条 ix 建议合并 3–10 条** guard，避免整笔 tx CU 过高。 |
 
-- **Program ID：** npm `@ifx-run/sdk` 默认 devnet（`ifxdR1…`）。仓库 `npm test` 显式使用 localnet。主网未部署 — [sdk/README.zh-CN.md](./sdk/README.zh-CN.md)。
+- **Program ID：** npm `@ifx-run/sdk` 默认 **主网**（`ifxmwW…`）。仓库 `npm test` 显式使用 localnet。Devnet 预览：`IFX_DEVNET_PROGRAM_ID` — [sdk/README.zh-CN.md](./sdk/README.zh-CN.md)。
 - **Rent：** 创建 Frame PDA 需 rent（随 `tape_len` 增长；默认上限 256 字节）。不用时 `ifx_close_frame` 回收。
 - **顶层 `ifx_let`：** 同条 ix 内绑定不能前后依赖 — 拆成多条 `ifx_let` 或用 `letBuilder()` 分批。见 [docs/typed-let-bindings.zh-CN.md](./docs/typed-let-bindings.zh-CN.md)。
 - **Simulation 失败：** [docs/debugging.zh-CN.md](./docs/debugging.zh-CN.md) · [docs/errors.zh-CN.md](./docs/errors.zh-CN.md)
@@ -409,7 +428,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md)、**[Go SDK](./go-sdk/README.zh-CN.md)** 或 **[Rust SDK](./rust-sdk/README.zh-CN.md)**（`ifx-sdk`）；链上 CPI 进 Ifx 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
 
-**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对合约 ID，勿在 devnet 使用真实资产。
+**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署；SDK 已含主网 program id，**上主网前请确认已部署**。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk`、核对目标集群合约 ID，勿在 devnet 使用真实资产。
 
 ---
 

@@ -10,7 +10,7 @@
 
 Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
-> **预览版：** npm `0.4.0-devnet.0` 仅面向 **devnet**（尚无主网 program）。省略 `programId` 时使用 `DEFAULT_IFX_PROGRAM_ID`（= devnet）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。**与 `@ifx-run/sdk@0.3.0-devnet.0` 及更早版本不兼容**（Structured CPI Borsh wire）— SDK 与 devnet 程序须同步升级。
+> **预览版：** npm 默认指向 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。Devnet：`IFX_DEVNET_PROGRAM_ID`。
 
 1. **`FrameScratch`** — `let*` 规划 binding，`ix*` / `letBuilder().buildIx()` 产出指令；用 `tx.add(…)` 组装交易
 2. **`expr` / `Expr` / `ScratchValue`** — 构造器、链上 wire 类型、类型化 Frame binding
@@ -244,11 +244,11 @@ ifElseArgs(flag, arm.cpi(built.cpi));
 | 项 | 说明 |
 |----|------|
 | **npm** | `@ifx-run/sdk` 语义化版本见 [CHANGELOG.md](./CHANGELOG.md) |
-| **链上** | `DEFAULT_IFX_PROGRAM_ID`（= devnet）· `IFX_DEVNET_PROGRAM_ID` · `IFX_LOCALNET_PROGRAM_ID`（`constants.ts`） |
+| **链上** | `DEFAULT_IFX_PROGRAM_ID`（= 主网）· `IFX_MAINNET_PROGRAM_ID` · `IFX_DEVNET_PROGRAM_ID` · `IFX_LOCALNET_PROGRAM_ID`（`constants.ts`） |
 | **IDL** | `idl/ifx.json` 的 `metadata.version` 与 program crate 版本应对齐发布说明 |
 | **破坏性变更** | 指令 discriminator、`Expr` / `U8LenVec` / `U16LenVec` wire、Frame tape 布局 → 升 major 并写 changelog |
 
-省略 `programId` 即连 devnet（`DEFAULT_IFX_PROGRAM_ID`）。Localnet / 自定义 cluster：在 `planNewFrame` / 构造函数传 `IFX_LOCALNET_PROGRAM_ID`。单笔 ix 覆盖：`scratch.ixReset({ programId })`。
+省略 `programId` 即连主网（`DEFAULT_IFX_PROGRAM_ID`）。Devnet / localnet / 自定义 cluster：在 `planNewFrame` / 构造函数传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID`。单笔 ix 覆盖：`scratch.ixReset({ programId })`。
 
 ## 示例
 

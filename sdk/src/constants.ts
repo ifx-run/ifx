@@ -10,16 +10,20 @@ export const IFX_DEVNET_PROGRAM_ID = new PublicKey(
   "ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc"
 );
 
+/** Mainnet deployment (`keys/mainnet.program-id`; keypair not in git). */
+export const IFX_MAINNET_PROGRAM_ID = new PublicKey(
+  "ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj"
+);
+
 /**
  * Default program id when `programId` is omitted from SDK builders.
  *
  * Priority (highest wins): **mainnet → testnet → devnet → localnet**.
- * Until mainnet is deployed, this equals {@link IFX_DEVNET_PROGRAM_ID}.
  *
  * Repo integration tests and local Surfpool must pass
  * {@link IFX_LOCALNET_PROGRAM_ID} explicitly (`planLocalFrame`, constructor, or `IxOpts`).
  */
-export const DEFAULT_IFX_PROGRAM_ID = IFX_DEVNET_PROGRAM_ID;
+export const DEFAULT_IFX_PROGRAM_ID = IFX_MAINNET_PROGRAM_ID;
 
 export const FRAME_SEED = Buffer.from("frame");
 

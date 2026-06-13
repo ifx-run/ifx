@@ -13,6 +13,9 @@ ifx = "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD"
 [programs.devnet]
 ifx = "ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc"
 
+[programs.mainnet]
+ifx = "ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj"
+
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"

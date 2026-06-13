@@ -8,7 +8,7 @@ Localnet, devnet, and mainnet use different vanity prefixes (base58): localnet *
 |---------|------------|--------------|--------|
 | **Localnet** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | `localnet-program-keypair.json` | ✅ yes |
 | **Devnet** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | `devnet-program-keypair.json` | ❌ keypair; ✅ `devnet.program-id` |
-| **Mainnet** | `keys/mainnet.program-id` | `mainnet-program-keypair.json` | ❌ keypair; ✅ `mainnet.program-id` |
+| **Mainnet** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | `mainnet-program-keypair.json` | ❌ keypair; ✅ `mainnet.program-id` |
 
 **Local / Surfpool / `anchor test`:** committed localnet keypair only. Do not fund these addresses on mainnet.
 
@@ -19,7 +19,7 @@ npm run keys:sync      # copy localnet keypair → target/deploy/
 npm run keys:verify    # declare_id!, Anchor.toml, prefix checks
 ```
 
-`declare_id!` and committed IDL match **localnet** (`IFX_LOCALNET_PROGRAM_ID`). SDK **`DEFAULT_IFX_PROGRAM_ID`** follows **mainnet → testnet → devnet → localnet** (currently devnet). Devnet deploy temporarily runs `anchor keys sync` (official); `deploy:devnet` restores localnet in `finally`. If deploy fails mid-way, run **`npm run keys:restore`**.
+`declare_id!` and committed IDL match **localnet** (`IFX_LOCALNET_PROGRAM_ID`). SDK **`DEFAULT_IFX_PROGRAM_ID`** follows **mainnet → testnet → devnet → localnet** (currently mainnet). Devnet deploy temporarily runs `anchor keys sync` (official); `deploy:devnet` restores localnet in `finally`. If deploy fails mid-way, run **`npm run keys:restore`**.
 
 ## Devnet deploy
 
@@ -49,7 +49,7 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 
 `Anchor.toml` `[provider].wallet` is for local `anchor test` only; **`deploy:devnet` ignores it unless you set `ANCHOR_WALLET`.**
 
-SDK: omitted `programId` targets devnet. Localnet / custom cluster: pass `IFX_LOCALNET_PROGRAM_ID` or `IxOpts.programId`.
+SDK: omitted `programId` targets mainnet. Devnet / localnet / custom cluster: pass `IFX_DEVNET_PROGRAM_ID` or `IFX_LOCALNET_PROGRAM_ID` or `IxOpts.programId`.
 
 ## Regenerate devnet keypair (maintainers)
 
@@ -67,4 +67,4 @@ No repo script generates mainnet keys. Bring your own keypair:
 2. Write the matching base58 pubkey (one line, no quotes) to **`keys/mainnet.program-id`** and commit that file only.
 3. Vanity convention: pubkey starts with **`ifxM`**; keypair pubkey must match `mainnet.program-id`.
 
-Wire `IFX_MAINNET_PROGRAM_ID` in SDK / `declare_id!` / `Anchor.toml` as part of the mainnet release — see [docs/mainnet-verification.md](../docs/mainnet-verification.md).
+Wire `declare_id!` for mainnet deploy when ready — SDK already exports `IFX_MAINNET_PROGRAM_ID`. See [docs/mainnet-verification.md](../docs/mainnet-verification.md).
