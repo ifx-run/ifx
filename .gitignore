@@ -10,3 +10,5 @@ test-ledger
 .idea/
 # Devnet upgrade authority — pubkey in keys/devnet.program-id
 keys/devnet-program-keypair.json
+# Mainnet upgrade authority — pubkey in keys/mainnet.program-id
+keys/mainnet-program-keypair.json

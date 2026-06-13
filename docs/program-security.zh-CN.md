@@ -21,7 +21,7 @@ Ifx 是**非盈利开源**项目。下文按 **Solana 生态官方**文档中的
 | **Anchor 安全模式** | [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security) | 账户约束、signer/authority、应用不变量 |
 | **PDA 推导** | [PDA Derivation](https://solana.com/docs/core/pda/pda-derivation) | 规范 bump；seed 上限；账户替换风险 |
 | **Anchor 框架** | [Anchor 介绍](https://solana.com/docs/programs/anchor/index) | 约束宏、账户校验辅助 |
-| **Ifx 内部安全评估** | [audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md](../audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md) | 2026-06-09 审查 commit `11be96e` — 见 [audits/README.zh-CN.md](../audits/README.zh-CN.md) |
+| **Ifx 内部安全评估** | [audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md](../audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md) | 2026-06-13 审查 commit `8a42766` — 见 [audits/README.zh-CN.md](../audits/README.zh-CN.md) |
 
 Solana Foundation 在[论坛 RFP](https://forum.solana.com/t/pre-deployment-program-analysis/1030) 中也跟踪 **生态** 预部署分析工具（Scout、Radar 等）。属可选社区/OSS 工具 — **不**纳入本清单必选项。
 

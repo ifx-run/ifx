@@ -1,6 +1,6 @@
 /**
- * Program IDs per cluster. Local keypair is committed; devnet pubkey is committed;
- * devnet keypair stays out of git (see keys/README.md).
+ * Program IDs per cluster. Local keypair is committed; devnet/mainnet pubkeys are committed;
+ * devnet/mainnet keypairs stay out of git (see keys/README.md).
  */
 import fs from "fs";
 import path from "path";
@@ -9,6 +9,7 @@ import { Keypair } from "@solana/web3.js";
 
 export const LOCALNET_PROGRAM_ID_PREFIX = "ifxL";
 export const DEVNET_PROGRAM_ID_PREFIX = "ifx";
+export const MAINNET_PROGRAM_ID_PREFIX = "ifxM";
 /** @deprecated use {@link LOCALNET_PROGRAM_ID_PREFIX} */
 export const PROGRAM_ID_PREFIX = LOCALNET_PROGRAM_ID_PREFIX;
 
@@ -18,6 +19,8 @@ export const PATHS = {
   localnetKeypair: path.join(root, "keys", "localnet-program-keypair.json"),
   devnetKeypair: path.join(root, "keys", "devnet-program-keypair.json"),
   devnetProgramId: path.join(root, "keys", "devnet.program-id"),
+  mainnetKeypair: path.join(root, "keys", "mainnet-program-keypair.json"),
+  mainnetProgramId: path.join(root, "keys", "mainnet.program-id"),
   anchorToml: path.join(root, "Anchor.toml"),
   sdkConstants: path.join(root, "sdk", "src", "constants.ts"),
   idlJson: path.join(root, "idl", "ifx.json"),

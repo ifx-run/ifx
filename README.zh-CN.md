@@ -77,7 +77,7 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 
 | 项 | 说明 |
 | --- | --- |
-| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)（2026-06-09，commit `11be96e`）；**未上 mainnet** |
+| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`）；**未上 mainnet** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate（[`README`](./rust-sdk/README.zh-CN.md)） |
@@ -368,7 +368,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 | [Verified builds](https://solana.com/docs/programs/verified-builds)（solana-verify） | 主网流程已文档化 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
 | 维护者预检 | `npm run security:preflight`（构建 + keys 校验 + security.txt 检查） |
 | **内部安全评估** | [audits/](./audits/README.zh-CN.md) — 清单 [SECURITY-CHECKLIST.zh-CN.md](./audits/SECURITY-CHECKLIST.zh-CN.md) 对齐 [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security)；流程见 [AUDIT-WORKFLOW.zh-CN.md](./audits/AUDIT-WORKFLOW.zh-CN.md)；Phase 0：`npm run audit:phase0` |
-| **最新已发布审查** | [2026-06-09 @ `11be96e`](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md) — 仅 `programs/ifx`：**63 ✅ / 11 ⚠️ 已文档化取舍 / 0 ❌**；137 个 npm 测试，含 Structured CPI 与 [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |
+| **最新已发布审查** | [2026-06-13 @ `8a42766`](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md) — 仅 `programs/ifx`：**63 ✅ / 11 ⚠️ 已文档化取舍 / 0 ❌**；158 个 npm 测试，含 Structured CPI、Stake lets 与 [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |
 
 **这不等于什么：** 内部评估由维护者主导、与 git 版本绑定，**不构成安全担保** — 不能替代专业审计，也不能替代集成方上线前自行审查。
 
@@ -409,7 +409,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 **需要 Rust / Go client 吗？** 链下可用 [`@ifx-run/sdk`](./sdk/README.zh-CN.md)、**[Go SDK](./go-sdk/README.zh-CN.md)** 或 **[Rust SDK](./rust-sdk/README.zh-CN.md)**（`ifx-sdk`）；链上 CPI 进 Ifx 见 [docs/rust-integration.zh-CN.md](./docs/rust-integration.zh-CN.md)。多语言规划：[docs/client-sdks.zh-CN.md](./docs/client-sdks.zh-CN.md)。
 
-**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-09-11be96e-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对合约 ID，勿在 devnet 使用真实资产。
+**能上生产吗？** **开发者预览版** — localnet 集成测试；devnet 有预览部署。我们发布[维护者主导的内部评估](./audits/README.zh-CN.md)（**非**第三方审计）。请阅读[最新审查](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。请 pin `@ifx-run/sdk@devnet`、核对合约 ID，勿在 devnet 使用真实资产。
 
 ---
 

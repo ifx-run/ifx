@@ -21,7 +21,7 @@ Ifx is a **non-profit open-source** project. We follow **Solana ecosystem offici
 | **Anchor security patterns** | [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security) | Account constraints, signer/authority, invariants to test |
 | **PDA derivation** | [PDA Derivation](https://solana.com/docs/core/pda/pda-derivation) | Canonical bump; seed limits; substitution risks |
 | **Anchor framework** | [Anchor introduction](https://solana.com/docs/programs/anchor/index) | Constraint macros, account validation helpers |
-| **Ifx internal security assessment** | [audits/internal/2026-06-09-11be96e-ifx-internal-review.md](../audits/internal/2026-06-09-11be96e-ifx-internal-review.md) | 2026-06-09 review at commit `11be96e` — see [audits/README.md](../audits/README.md) |
+| **Ifx internal security assessment** | [audits/internal/2026-06-13-8a42766-ifx-internal-review.md](../audits/internal/2026-06-13-8a42766-ifx-internal-review.md) | 2026-06-13 review at commit `8a42766` — see [audits/README.md](../audits/README.md) |
 
 Solana Foundation also tracks **ecosystem** pre-deployment analysis (Scout, Radar, etc.) in [forum RFPs](https://forum.solana.com/t/pre-deployment-program-analysis/1030). Those are optional community/OSS tools — not required for this checklist.
 

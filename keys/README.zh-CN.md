@@ -2,12 +2,13 @@
 
 # Program keypair
 
-Localnet 与 devnet 使用不同 vanity 前缀（base58，**大小写不敏感**）：localnet **`ifxL`**（如 `ifxLD…`），devnet **`ifx`**（如 `ifxd…`）。每个 cluster **独立** program id 与 upgrade keypair。
+Localnet、devnet、mainnet 使用不同 vanity 前缀（base58）：localnet **`ifxL`**（如 `ifxLD…`），devnet **`ifx`**（如 `ifxd…`），mainnet **`ifxM`**（如 `ifxM…`）。每个 cluster **独立** program id 与 upgrade keypair。
 
 | 环境 | Program ID | Keypair 文件 | 是否进 git |
 |------|------------|--------------|------------|
 | **Localnet** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | `localnet-program-keypair.json` | ✅ |
 | **Devnet** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | `devnet-program-keypair.json` | ❌ keypair；✅ `devnet.program-id` |
+| **Mainnet** | `keys/mainnet.program-id` | `mainnet-program-keypair.json` | ❌ keypair；✅ `mainnet.program-id` |
 
 **本地 / Surfpool / `anchor test`：** 仅使用已提交的 localnet keypair。勿向这些地址在主网充值。
 
@@ -54,3 +55,13 @@ npm run keys:grind-devnet
 ```
 
 只提交更新后的 `devnet.program-id`，**不要**提交 `devnet-program-keypair.json`。
+
+## Mainnet keypair（维护者）
+
+仓库**不**提供 mainnet keypair 生成脚本。自行准备后：
+
+1. 将 program keypair JSON 放到 **`keys/mainnet-program-keypair.json`**（已 gitignore；建议 `chmod 600`）。
+2. 把对应 base58 公钥（单行、无引号）写入 **`keys/mainnet.program-id`**，只提交该文件。
+3. Vanity 约定：公钥以 **`ifxM`** 开头；keypair 公钥须与 `mainnet.program-id` 一致。
+
+随后在 SDK / `declare_id!` / `Anchor.toml` 接入 `IFX_MAINNET_PROGRAM_ID` — 见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。

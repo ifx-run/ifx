@@ -2,12 +2,13 @@ English | [中文](./README.zh-CN.md)
 
 # Program keypairs
 
-Localnet and devnet use different vanity prefixes (base58, **case-insensitive**): localnet **`ifxL`** (e.g. `ifxLD…`), devnet **`ifx`** (e.g. `ifxd…`). Each cluster has its **own** program id and upgrade keypair.
+Localnet, devnet, and mainnet use different vanity prefixes (base58): localnet **`ifxL`** (e.g. `ifxLD…`), devnet **`ifx`** (e.g. `ifxd…`), mainnet **`ifxM`** (e.g. `ifxM…`). Each cluster has its **own** program id and upgrade keypair.
 
 | Cluster | Program ID | Keypair file | In git |
 |---------|------------|--------------|--------|
 | **Localnet** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | `localnet-program-keypair.json` | ✅ yes |
 | **Devnet** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | `devnet-program-keypair.json` | ❌ keypair; ✅ `devnet.program-id` |
+| **Mainnet** | `keys/mainnet.program-id` | `mainnet-program-keypair.json` | ❌ keypair; ✅ `mainnet.program-id` |
 
 **Local / Surfpool / `anchor test`:** committed localnet keypair only. Do not fund these addresses on mainnet.
 
@@ -57,3 +58,13 @@ npm run keys:grind-devnet   # ifx prefix; updates devnet.program-id
 ```
 
 Commit the updated `devnet.program-id` only — never commit `devnet-program-keypair.json`.
+
+## Mainnet keypair (maintainers)
+
+No repo script generates mainnet keys. Bring your own keypair:
+
+1. Copy your program keypair JSON to **`keys/mainnet-program-keypair.json`** (gitignored; `chmod 600`).
+2. Write the matching base58 pubkey (one line, no quotes) to **`keys/mainnet.program-id`** and commit that file only.
+3. Vanity convention: pubkey starts with **`ifxM`**; keypair pubkey must match `mainnet.program-id`.
+
+Wire `IFX_MAINNET_PROGRAM_ID` in SDK / `declare_id!` / `Anchor.toml` as part of the mainnet release — see [docs/mainnet-verification.md](../docs/mainnet-verification.md).

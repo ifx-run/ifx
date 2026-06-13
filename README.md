@@ -77,7 +77,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 
 | Key | Value |
 | --- | --- |
-| **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) (2026-06-09, commit `11be96e`); **not on mainnet** |
+| **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`); **not on mainnet** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
@@ -370,7 +370,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 | [Verified builds](https://solana.com/docs/programs/verified-builds) (solana-verify) | Documented for mainnet — see [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
 | Maintainer preflight | `npm run security:preflight` (build + keys verify + security.txt check) |
 | **Internal security assessments** | [audits/](./audits/README.md) — checklist ([SECURITY-CHECKLIST.md](./audits/SECURITY-CHECKLIST.md)) aligned with [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security); workflow in [AUDIT-WORKFLOW.md](./audits/AUDIT-WORKFLOW.md); Phase 0 gate: `npm run audit:phase0` |
-| **Latest published review** | [2026-06-09 at `11be96e`](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) — **63 ✅ / 11 ⚠️ documented trade-offs / 0 ❌** on `programs/ifx` only; 137 npm tests incl. Structured CPI + [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |
+| **Latest published review** | [2026-06-13 at `8a42766`](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) — **63 ✅ / 11 ⚠️ documented trade-offs / 0 ❌** on `programs/ifx` only; 158 npm tests incl. Structured CPI, Stake lets, and [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |
 
 **What this is not:** internal assessments are **maintainer-led**, versioned with git, and **not a security guarantee** — they do not replace a professional audit or your own review before production.
 
@@ -411,7 +411,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 **Do I need a Rust / Go client?** Off-chain: [`@ifx-run/sdk`](./sdk/README.md), **[Go SDK](./go-sdk/README.md)**, or **[Rust SDK](./rust-sdk/README.md)** (`ifx-sdk`); on-chain CPI into Ifx: [docs/rust-integration.md](./docs/rust-integration.md). Roadmap: [docs/client-sdks.md](./docs/client-sdks.md).
 
-**Is this production-ready?** **Developer preview** — integration-tested on localnet; a preview build is on devnet. We publish [maintainer-led internal assessments](./audits/README.md) (not a third-party audit). Read the [latest review](./audits/internal/2026-06-09-11be96e-ifx-internal-review.md) and [docs/program-security.md](./docs/program-security.md). Pin `@ifx-run/sdk@devnet`, verify program ID, and do not use devnet for real value.
+**Is this production-ready?** **Developer preview** — integration-tested on localnet; a preview build is on devnet. We publish [maintainer-led internal assessments](./audits/README.md) (not a third-party audit). Read the [latest review](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) and [docs/program-security.md](./docs/program-security.md). Pin `@ifx-run/sdk@devnet`, verify program ID, and do not use devnet for real value.
 
 ---
 
