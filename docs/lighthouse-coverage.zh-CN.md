@@ -94,7 +94,7 @@ MemoryWrite(用户 lamports) → Transfer 1 SOL → AssertAccountDelta(Δ == -1e
 | 状态载体 | Memory PDA + 直接读账户 | **Frame tape**（SSA binding） |
 | CPI | 基本不做通用编排 | **Static / RawPatched / Structured CPI** |
 | IR | 断言参数 | **`LetBinding` + `Expr` + CPI IR**（可静态画图） |
-| 部署成熟度 | mainnet，钱包集成 | devnet preview |
+| 部署成熟度 | mainnet，钱包集成 | 主网已部署；无第三方审计 |
 
 ### 3.2 关系（对外话术）
 

@@ -44,7 +44,7 @@ Set `programId` once on **`FrameScratch`** (via `planPublicFrame({ programId })`
 
 `planPublicFrame` returns `{ scratch, ixCreate, frame, frameBump }` — do not re-derive the PDA outside.
 
-Status: **developer preview** — pin `@ifx-run/sdk`, no audit. See [README.md](../../../README.md).
+Status: **mainnet deployed** — pin `@ifx-run/sdk`, **no third-party audit**. See [README.md](../../../README.md).
 
 ## Two-transaction model (required)
 

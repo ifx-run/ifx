@@ -4,7 +4,7 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** 当前 devnet npm 版本为 **`0.4.0-devnet.0`** — 仅 devnet 预览（尚无主网 program）。**与 `0.3.0-devnet.0` 在 Structured CPI wire 上不兼容**（Borsh layout）；须同步升级 SDK 与 devnet 程序。
+**状态：** npm 版本 **`0.4.0-devnet.0`** — 默认 program id 为 **主网**（`ifxmwW…`）。**与 `0.3.0-devnet.0` 在 Structured CPI wire 上不兼容**（Borsh layout）；须同步升级 SDK 与链上程序。
 
 ## [Unreleased]
 

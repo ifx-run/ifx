@@ -83,7 +83,7 @@ Ifx focuses on **same-tx execution orchestration** (`ifx_let` → `ifx_assert` /
 | State carrier | Memory PDA + direct reads | **Frame tape** (SSA bindings) |
 | CPI | Not general orchestration | **Static / RawPatched / Structured CPI** |
 | IR | Assertion args | **`LetBinding` + `Expr` + CPI IR** |
-| Maturity | Mainnet, wallet adoption | Devnet preview |
+| Maturity | Mainnet, wallet adoption | Mainnet deployed; no third-party audit |
 
 ### 3.2 Relationship (external messaging)
 

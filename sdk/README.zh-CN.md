@@ -10,7 +10,7 @@
 
 Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
-> **预览版：** npm 默认指向 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。Devnet：`IFX_DEVNET_PROGRAM_ID`。
+> **集群：** npm 默认指向 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。仓库 Surfpool / 集成测试须显式传 `IFX_LOCALNET_PROGRAM_ID`。Devnet：`IFX_DEVNET_PROGRAM_ID`。
 
 1. **`FrameScratch`** — `let*` 规划 binding，`ix*` / `letBuilder().buildIx()` 产出指令；用 `tx.add(…)` 组装交易
 2. **`expr` / `Expr` / `ScratchValue`** — 构造器、链上 wire 类型、类型化 Frame binding

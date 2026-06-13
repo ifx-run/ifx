@@ -107,7 +107,7 @@ Solscan 细节见 [mainnet-verification.zh-CN.md](./mainnet-verification.zh-CN.m
 - [ ] 阅读 [SECURITY.zh-CN.md](./SECURITY.zh-CN.md)；漏洞通过 GitHub Advisories 私下报告
 - [ ] 若依赖字节码 ↔ 源码一致，确认 Solscan **Verified**（主网）
 - [ ] 模拟交易；失败时查 [errors.zh-CN.md](./errors.zh-CN.md) / [debugging.zh-CN.md](./debugging.zh-CN.md)
-- [ ] 在项目另行公告前，将 Ifx 视为**开发者预览**
+- [ ] **无第三方付费审计** — 集成生产前请阅读[内部评估](../audits/README.zh-CN.md)并自行审查
 
 ---
 

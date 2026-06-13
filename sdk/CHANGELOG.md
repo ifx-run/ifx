@@ -4,7 +4,7 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** Current devnet npm release is **`0.4.0-devnet.0`** — devnet-only preview (no mainnet program). **`0.3.0-devnet.0` is incompatible** on Structured CPI wire (Borsh layout); upgrade SDK and redeployed devnet program together.
+**Status:** npm release **`0.4.0-devnet.0`** — default program id is **mainnet** (`ifxmwW…`). **`0.3.0-devnet.0` is incompatible** on Structured CPI wire (Borsh layout); upgrade SDK and on-chain program together.
 
 ## [Unreleased]
 

@@ -107,7 +107,7 @@ Before pointing production traffic at Ifx on any cluster:
 - [ ] Read [SECURITY.md](./SECURITY.md) and report issues privately via GitHub Advisories
 - [ ] Confirm Solscan **Verified** (mainnet) if you rely on bytecode ↔ source matching
 - [ ] Simulate your tx; read [errors.md](./errors.md) / [debugging.md](./debugging.md) on failure
-- [ ] Treat Ifx as **developer preview** until the project announces otherwise
+- [ ] **No third-party audit** — read [internal assessments](../audits/README.md) and do your own review before production integration
 
 ---
 

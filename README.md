@@ -78,7 +78,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 
 | Key | Value |
 | --- | --- |
-| **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`, slot 426150672); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
+| **Status** | [Devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
@@ -165,7 +165,7 @@ Mainnet program id: `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`. See [deployme
 
 ### Try on devnet
 
-Pass `IFX_DEVNET_PROGRAM_ID` explicitly (devnet preview only — test SOL / test tokens):
+Pass `IFX_DEVNET_PROGRAM_ID` explicitly (devnet experimental — test SOL / test tokens only):
 
 ```ts
 import { FrameScratch, DEFAULT_TAPE_LEN, IFX_DEVNET_PROGRAM_ID } from "@ifx-run/sdk";
@@ -371,7 +371,7 @@ Full test: [`tests/sponsored_buy.ts`](./tests/sponsored_buy.ts) · `if_else`: [`
 |---------|------------|--------|
 | **Localnet** (repo build, `npm test`) | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair in [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
 | **Mainnet** (SDK default) | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · deploy via `npm run deploy:mainnet` — [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
-| **Devnet** (team preview) | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | Experimental; upgrade authority not public — **do not use for real funds** |
+| **Devnet** (experimental) | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | Experimental; upgrade authority not public — **do not use for real funds** |
 
 - **`declare_id!` / committed IDL** match **localnet** (repo build). **`@ifx-run/sdk` default** is **mainnet** (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Devnet / localnet: pass `IFX_DEVNET_PROGRAM_ID` or `IFX_LOCALNET_PROGRAM_ID` explicitly.
 - Integrators: pin `@ifx-run/sdk`, verify program id on your cluster, read [docs/SECURITY.md](./docs/SECURITY.md) and [docs/program-security.md](./docs/program-security.md) before production use.
@@ -409,7 +409,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 | **`tapeLen`** | On-chain max 65_535; SDK default **`DEFAULT_TAPE_LEN` = 512**; typical txs stay within **`RECOMMENDED_TAPE_LEN_MAX` = 8192** (larger frames = more rent + CU). |
 | **`ifx_assert_multi`** | Wire max 255 conditions; **merge 3–10 guards per ix** to limit tx CU. |
 
-- **Program ID:** npm `@ifx-run/sdk` defaults to **mainnet** (`ifxmwW…`). Repo `npm test` uses localnet explicitly. Devnet preview: `IFX_DEVNET_PROGRAM_ID` — [sdk/README.md](./sdk/README.md).
+- **Program ID:** npm `@ifx-run/sdk` defaults to **mainnet** (`ifxmwW…`). Repo `npm test` uses localnet explicitly. Devnet: `IFX_DEVNET_PROGRAM_ID` — [sdk/README.md](./sdk/README.md).
 - **Rent:** Creating a Frame PDA costs rent (scales with `tape_len`; default cap 256 bytes). Close with `ifx_close_frame` when done.
 - **Top-level `ifx_let`:** Bindings in one `ifx_let` ix must not depend on values written later in the same ix — use separate `ifx_let` calls or `letBuilder()` batches. Details: [docs/typed-let-bindings.md](./docs/typed-let-bindings.md).
 - **Simulation failed?** Read Program logs as pseudocode: [docs/debugging.md](./docs/debugging.md) · error codes: [docs/errors.md](./docs/errors.md).
@@ -430,7 +430,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 **Do I need a Rust / Go client?** Off-chain: [`@ifx-run/sdk`](./sdk/README.md), **[Go SDK](./go-sdk/README.md)**, or **[Rust SDK](./rust-sdk/README.md)** (`ifx-sdk`); on-chain CPI into Ifx: [docs/rust-integration.md](./docs/rust-integration.md). Roadmap: [docs/client-sdks.md](./docs/client-sdks.md).
 
-**Is this production-ready?** **Developer preview** — integration-tested on localnet; devnet has a preview deployment; mainnet program id is in SDK but **verify mainnet deploy** before real funds. We publish [maintainer-led internal assessments](./audits/README.md) (not a third-party audit). Read the [latest review](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) and [docs/program-security.md](./docs/program-security.md). Pin `@ifx-run/sdk`, verify program ID on your cluster, and do not use devnet for real value.
+**Is this production-ready?** **No third-party audit** — mainnet is live (`ifxmwW…`). Read the [latest internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) and [docs/program-security.md](./docs/program-security.md) before integrating with real funds. Pin `@ifx-run/sdk`, verify program ID on your cluster. Devnet is experimental — test assets only.
 
 ---
 

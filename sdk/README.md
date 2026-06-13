@@ -10,7 +10,7 @@ English | [中文](./README.zh-CN.md)
 
 TypeScript SDK for Ifx in two layers — **does not wrap RPC / wallet**:
 
-> **Preview:** npm default targets **mainnet** (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Local Surfpool / repo tests pass `IFX_LOCALNET_PROGRAM_ID` explicitly. Devnet: `IFX_DEVNET_PROGRAM_ID`.
+> **Clusters:** npm default targets **mainnet** (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Local Surfpool / repo tests pass `IFX_LOCALNET_PROGRAM_ID` explicitly. Devnet: `IFX_DEVNET_PROGRAM_ID`.
 
 1. **`FrameScratch`** — plan bindings (`let*`) and build frame instructions (`ix*`, `letBuilder().buildIx()`); append with `tx.add(…)`
 2. **`expr` / `Expr` / `ScratchValue`** — builders, wire type, and typed Frame bindings

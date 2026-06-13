@@ -6,7 +6,7 @@ English | [中文](./README.zh-CN.md)
 
 Rust off-chain client for **Ifx**: build `ifx_create_frame`, `ifx_let`, `ifx_assert`, `ifx_patched_cpi`, `ifx_if_else`, and related instructions. **Does not wrap RPC or wallets** — you get `solana_sdk::instruction::Instruction` values; your backend signs and sends.
 
-> **Preview:** Default `program_id` is mainnet (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Local Surfpool / repo integration tests use `IFX_LOCALNET_PROGRAM_ID`. Devnet: `IFX_DEVNET_PROGRAM_ID`.
+> **Clusters:** Default `program_id` is mainnet (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Local Surfpool / repo integration tests use `IFX_LOCALNET_PROGRAM_ID`. Devnet: `IFX_DEVNET_PROGRAM_ID`.
 
 - **Crates.io name:** `ifx-sdk`
 - **Directory:** `rust-sdk/` (same convention as `go-sdk/`)

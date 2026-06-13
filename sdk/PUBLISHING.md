@@ -7,11 +7,11 @@ English | [中文](./PUBLISHING.zh-CN.md)
 1. Bump `version` in `sdk/package.json` and add a `CHANGELOG.md` section.
 2. From repo root: `npm run idl:sync` (keeps `sdk/src/idl/ifx.json` / `ifx.ts` aligned with `idl/ifx.json`).
 3. Run integration tests: `npm test` (or `npm run test:detach`).
-4. Confirm `DEFAULT_IFX_PROGRAM_ID` in `sdk/src/constants.ts` follows **mainnet → testnet → devnet → localnet** (currently devnet until mainnet deploy). Note the active default in the changelog.
+4. Confirm `DEFAULT_IFX_PROGRAM_ID` in `sdk/src/constants.ts` follows **mainnet → testnet → devnet → localnet** (currently mainnet). Note the active default in the changelog.
 
 ## Prerelease tags
 
-Use semver prerelease suffixes when the on-chain program is not on mainnet yet, e.g. **`0.4.0-devnet.0`**. Document in README that the package targets devnet only until a stable mainnet release.
+The npm version may still use a `-devnet` prerelease suffix (e.g. **`0.4.0-devnet.0`**) for historical tagging; **`DEFAULT_IFX_PROGRAM_ID` targets mainnet** after mainnet deploy. Document the active default in README and changelog.
 
 npm **requires `--tag`** for prerelease versions (they must not become `latest`). This repo publishes with:
 

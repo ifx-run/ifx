@@ -7,11 +7,11 @@
 1. 更新 `sdk/package.json` 的 `version`，并在 `CHANGELOG.md` 增加条目。
 2. 在仓库根目录运行：`npm run idl:sync`（使 `sdk/src/idl/ifx.json` / `ifx.ts` 与 `idl/ifx.json` 一致）。
 3. 运行集成测试：`npm test`（或 `npm run test:detach`）。
-4. 确认 `sdk/src/constants.ts` 中 `DEFAULT_IFX_PROGRAM_ID` 遵循 **主网 → 测试网 → devnet → localnet**（当前为 devnet）。在 changelog 中注明当前默认 cluster。
+4. 确认 `sdk/src/constants.ts` 中 `DEFAULT_IFX_PROGRAM_ID` 遵循 **主网 → 测试网 → devnet → localnet**（当前为主网）。在 changelog 中注明当前默认 cluster。
 
 ## 预发布标签
 
-主网 program 未部署时，使用 semver 预发布后缀，例如 **`0.4.0-devnet.0`**。在 README 中说明包仅面向 devnet，直至稳定主网版本。
+npm 版本号仍可能带 `-devnet` 预发布后缀（如 **`0.4.0-devnet.0`**，历史 tag 命名）；**主网部署后 `DEFAULT_IFX_PROGRAM_ID` 指向主网**。在 README 与 changelog 中写明当前默认 cluster。
 
 预发布版本**必须**带 `--tag`（不能自动成为 `latest`）。本仓库使用：
 

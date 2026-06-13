@@ -6,7 +6,7 @@
 
 Ifx 的 Rust 链下客户端：组装 **Ifx 指令**（`ifx_create_frame`、`ifx_let`、`ifx_assert`、`ifx_patched_cpi`、`ifx_if_else` 等）。**不包装 RPC、不包装钱包**——只产出 `solana_sdk::instruction::Instruction`；签名与发送由你的后端负责。
 
-> **预览版：** 省略 `program_id` 时默认主网（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。本地 Surfpool / 本仓库集成测试请传 `IFX_LOCALNET_PROGRAM_ID`。Devnet：`IFX_DEVNET_PROGRAM_ID`。
+> **集群：** 省略 `program_id` 时默认主网（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。本地 Surfpool / 本仓库集成测试请传 `IFX_LOCALNET_PROGRAM_ID`。Devnet：`IFX_DEVNET_PROGRAM_ID`。
 
 - **Crates.io 包名：** `ifx-sdk`
 - **源码目录：** `rust-sdk/`（与 `go-sdk/` 同级）
