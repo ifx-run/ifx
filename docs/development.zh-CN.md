@@ -67,6 +67,25 @@ solana program extend ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc <ADDITIONAL_BY
 
 `--keypair` 须与 `solana program show` 的 **Authority** 一致；否则设置 `UPGRADE_AUTHORITY=/path/to/keypair.json`。
 
+### Mainnet
+
+```bash
+export ANCHOR_PROVIDER_URL=https://你的主网-rpc/?api-key=KEY
+export ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json   # 必填；勿用 ~/.config/solana/id.json
+# keys/mainnet-program-keypair.json — 不进 git；见 keys/README.zh-CN.md
+
+npm run deploy:mainnet      # anchor keys sync；finally 自动恢复 localnet
+```
+
+向 **部署钱包** 充值主网 SOL（首次部署建议 **≥ 3–5 SOL**），无 faucet。
+
+```bash
+solana program extend ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj <ADDITIONAL_BYTES> \
+  --url "$ANCHOR_PROVIDER_URL" --keypair keys/mainnet-program-keypair.json
+```
+
+部署后见 [mainnet-verification.zh-CN.md](./mainnet-verification.zh-CN.md)。
+
 ---
 
 ## IDL 与类型同步

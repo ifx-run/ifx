@@ -69,6 +69,26 @@ solana program extend ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc <ADDITIONAL_BY
 
 `--keypair` must match the program’s on-chain **Authority** from `solana program show`. If different, set `UPGRADE_AUTHORITY=/path/to/keypair.json`.
 
+### Mainnet
+
+```bash
+export ANCHOR_PROVIDER_URL=https://your-mainnet-rpc.example.com/?api-key=KEY
+export ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json   # required; not ~/.config/solana/id.json
+# keys/mainnet-program-keypair.json — gitignored; see keys/README.md
+
+npm run deploy:mainnet      # anchor keys sync; auto-restore via finally
+```
+
+Fund the deploy wallet with **mainnet SOL** (≥ ~3–5 SOL for first deploy / large upgrade). There is no faucet.
+
+```bash
+# After keys:sync (mainnet) + anchor build --no-idl
+solana program extend ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj <ADDITIONAL_BYTES> \
+  --url "$ANCHOR_PROVIDER_URL" --keypair keys/mainnet-program-keypair.json
+```
+
+Post-deploy: [mainnet-verification.md](./mainnet-verification.md).
+
 ---
 
 ## IDL & type sync

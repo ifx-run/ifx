@@ -48,6 +48,54 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 
 SDK：省略 `programId` 即主网。Devnet / localnet / 自定义 cluster：传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID` 或 `IxOpts.programId`。
 
+## Mainnet 部署
+
+自行准备 program keypair（仓库无生成脚本）：**`keys/mainnet-program-keypair.json`**（gitignore；`chmod 600`），公钥须与 **`keys/mainnet.program-id`** 一致。
+
+两把 keypair：
+
+| 角色 | 环境变量 / 文件 |
+|------|-----------------|
+| **Fee payer / deploy signer** | **`ANCHOR_WALLET`**（必填；**不能**是 `~/.config/solana/id.json`） |
+| **Program id + upgrade 权限** | `keys/mainnet-program-keypair.json`（须与 `mainnet.program-id` 一致） |
+
+```bash
+# 1. Program upgrade key（gitignore）
+#    keys/mainnet-program-keypair.json
+
+# 2. 专用部署钱包 — 主网 SOL 充值（首次部署建议 ≥ 3–5 SOL）
+solana-keygen new -o ~/.keys/ifx-mainnet-deploy.json
+export ANCHOR_PROVIDER_URL=https://你的主网-rpc/?api-key=KEY
+export ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json
+
+# 3. 部署（finally 自动恢复 localnet）
+npm run deploy:mainnet
+```
+
+部分免费 RPC（如 Tatum）不支持 `getBalance` — 在 Solscan 确认余额后：
+
+```bash
+IFX_SKIP_BALANCE_CHECK=1 ANCHOR_PROVIDER_URL=https://你的-rpc ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json npm run deploy:mainnet
+```
+
+主网部署**默认不**走 `127.0.0.1:7890` 代理（devnet 会默认开）。仅在需要时设置 `IFX_PROXY`。
+
+`Anchor.toml` 里的 `wallet` 仅供本地 `anchor test`；**`deploy:mainnet` 必须显式设置 `ANCHOR_WALLET` 与 `ANCHOR_PROVIDER_URL`（推荐）。**
+
+部署后见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。
+
+**部署失败后续传 buffer**（先 `write-buffer` 再 `deploy --buffer`）：
+
+```bash
+IFX_SKIP_BALANCE_CHECK=1 \
+IFX_PROGRAM_BUFFER=<BUFFER_PUBKEY> \
+IFX_BUFFER_WRITE=1 \
+ANCHOR_PROVIDER_URL=https://你的主网-rpc ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json \
+npm run deploy:mainnet
+```
+
+链上 **Authority**（升级 / `program extend`）可能是 `ANCHOR_WALLET` — 以 `solana program show <PROGRAM_ID>` 为准。
+
 ## 重新 grind devnet keypair（维护者）
 
 ```bash
@@ -55,13 +103,3 @@ npm run keys:grind-devnet
 ```
 
 只提交更新后的 `devnet.program-id`，**不要**提交 `devnet-program-keypair.json`。
-
-## Mainnet keypair（维护者）
-
-仓库**不**提供 mainnet keypair 生成脚本。自行准备后：
-
-1. 将 program keypair JSON 放到 **`keys/mainnet-program-keypair.json`**（已 gitignore；建议 `chmod 600`）。
-2. 把对应 base58 公钥（单行、无引号）写入 **`keys/mainnet.program-id`**，只提交该文件。
-3. Vanity 约定：公钥以 **`ifxM`** 开头；keypair 公钥须与 `mainnet.program-id` 一致。
-
-主网 SDK 常量已接入 `IFX_MAINNET_PROGRAM_ID`；部署时再改 `declare_id!` — 见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。

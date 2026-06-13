@@ -78,7 +78,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 
 | Key | Value |
 | --- | --- |
-| **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment); **mainnet program id** in SDK (`ifxmwW…`); **mainnet bytecode not deployed yet**; **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
+| **Status** | **Developer preview** — localnet-tested, [devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`, slot 426150672); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
@@ -161,7 +161,7 @@ tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
 
-Mainnet program id: `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`. Verify the program is deployed on your cluster before production use — see [docs/mainnet-verification.md](./docs/mainnet-verification.md).
+Mainnet program id: `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`. See [deployment](#deployment) and [docs/mainnet-verification.md](./docs/mainnet-verification.md) before production use.
 
 ### Try on devnet
 
@@ -370,7 +370,7 @@ Full test: [`tests/sponsored_buy.ts`](./tests/sponsored_buy.ts) · `if_else`: [`
 | Cluster | Program ID | Notes |
 |---------|------------|--------|
 | **Localnet** (repo build, `npm test`) | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair in [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
-| **Mainnet** (SDK default) | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | Pubkey in [`keys/mainnet.program-id`](./keys/mainnet.program-id); deploy — [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
+| **Mainnet** (SDK default) | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · deploy via `npm run deploy:mainnet` — [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
 | **Devnet** (team preview) | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | Experimental; upgrade authority not public — **do not use for real funds** |
 
 - **`declare_id!` / committed IDL** match **localnet** (repo build). **`@ifx-run/sdk` default** is **mainnet** (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Devnet / localnet: pass `IFX_DEVNET_PROGRAM_ID` or `IFX_LOCALNET_PROGRAM_ID` explicitly.

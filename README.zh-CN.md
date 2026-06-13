@@ -78,7 +78,7 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 
 | 项 | 说明 |
 | --- | --- |
-| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)；SDK 已登记 **主网 program id**（`ifxmwW…`）；**主网字节码尚未部署**；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`） |
+| **状态** | **开发者预览版** — localnet 集成测试通过，[已部署 devnet](#部署)、**[已部署 mainnet](#部署)**（`ifxmwW…`，slot 426150672）；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`） |
 | **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` — **`DEFAULT_IFX_PROGRAM_ID` = 主网** |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk`（[`README`](./go-sdk/README.zh-CN.md)） |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate（[`README`](./rust-sdk/README.zh-CN.md)） |
@@ -368,7 +368,7 @@ await provider.sendAndConfirm(tx);
 | 环境 | Program ID | 说明 |
 |------|------------|------|
 | **Localnet**（仓库构建，`npm test`） | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair 见 [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
-| **Mainnet**（SDK 默认） | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | 公钥见 [`keys/mainnet.program-id`](./keys/mainnet.program-id)；部署 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
+| **Mainnet**（SDK 默认） | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · `npm run deploy:mainnet` — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
 | **Devnet**（团队预览） | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | 实验性；upgrade 权限不公开 — **勿用于真实资金** |
 
 - **`declare_id!` / 仓库 IDL** 对应 **localnet**（仓库构建）。**`@ifx-run/sdk` 默认** 为 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。Devnet / localnet 须显式传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID`。

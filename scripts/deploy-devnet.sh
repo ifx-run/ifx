@@ -17,6 +17,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 . "$ROOT/scripts/devnet-env.sh"
+. "$ROOT/scripts/deploy-common.sh"
 
 DEVNET_KEYPAIR="$ROOT/keys/devnet-program-keypair.json"
 DEVNET_PROGRAM_ID_FILE="$ROOT/keys/devnet.program-id"
@@ -91,29 +92,6 @@ ensure_program_data_capacity() {
     --keypair "$UPGRADE_AUTH"
 }
 
-check_deploy_wallet_balance() {
-  PROGRAM_BYTES=$(wc -c < "$PROGRAM_SO" | tr -d ' ')
-  BALANCE=$(solana balance "$DEPLOY_WALLET" --lamports --url "$RPC_URL" | tr -dc '0-9')
-  BUFFER_RENT=$(solana rent "$PROGRAM_BYTES" --lamports --url "$RPC_URL" 2>/dev/null | tr -dc '0-9')
-  if [ -z "$BUFFER_RENT" ]; then
-    BUFFER_RENT=$((PROGRAM_BYTES * 7000))
-  fi
-  # Upgrade deploy funds a temporary buffer (~program size) plus tx fees.
-  MIN=$((BUFFER_RENT + 100000000))
-  if [ "$BALANCE" -lt "$MIN" ]; then
-    SHORT=$((MIN - BALANCE))
-    echo "deploy wallet balance too low for program upgrade:" >&2
-    echo "  wallet:  ${BALANCE} lamports ($(awk "BEGIN {printf \"%.3f\", $BALANCE/1e9}") SOL)" >&2
-    echo "  need:    ~${MIN} lamports (~$(awk "BEGIN {printf \"%.3f\", $MIN/1e9}") SOL incl. buffer rent)" >&2
-    echo "  short:   ~${SHORT} lamports (~$(awk "BEGIN {printf \"%.3f\", $SHORT/1e9}") SOL)" >&2
-    echo "" >&2
-    echo "Devnet faucet (repeat if rate-limited):" >&2
-    echo "  solana airdrop 2 $(solana-keygen pubkey "$DEPLOY_WALLET") --url devnet" >&2
-    exit 1
-  fi
-  echo "deploy wallet balance OK: $(awk "BEGIN {printf \"%.3f\", $BALANCE/1e9}") SOL"
-}
-
 apply_devnet_proxy
 require_deploy_wallet
 check_devnet_keypair
@@ -125,7 +103,7 @@ IFX_CLUSTER=devnet sh scripts/sync-program-keys.sh
 anchor keys sync --provider.cluster devnet
 anchor build --no-idl
 ensure_program_data_capacity
-check_deploy_wallet_balance
+check_deploy_wallet_balance "Devnet faucet (repeat if rate-limited): solana airdrop 2 $(solana-keygen pubkey "$DEPLOY_WALLET") --url devnet"
 anchor program deploy \
   --provider.cluster devnet \
   --provider.wallet "$DEPLOY_WALLET" \
