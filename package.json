@@ -13,6 +13,7 @@
     "deploy:mainnet": "sh scripts/deploy-mainnet.sh",
     "security-txt:check": "sh scripts/check-security-txt.sh",
     "security:preflight": "npm run keys:sync && CARGO_TARGET_DIR=$PWD/target cargo build-sbf -- -p ifx && npm run keys:verify && npm run security-txt:check",
+    "create-public-frame": "npx ts-node --project tsconfig.scripts.json scripts/create-public-frame-512.ts",
     "audit:phase0": "sh scripts/audit-phase0.sh",
     "idl:generate": "npm run keys:sync && anchor build && cp target/idl/ifx.json idl/ifx.json",
     "idl:sync": "cp idl/ifx.json target/idl/ifx.json && cp idl/ifx.json sdk/src/idl/ifx.json && anchor idl type idl/ifx.json -o target/types/ifx.ts && anchor idl type idl/ifx.json -o sdk/src/idl/ifx.ts",

@@ -29,6 +29,7 @@ Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; l
 | | |
 | --- | --- |
 | **Status** | [Devnet](#networks--sdks) + **[mainnet](#networks--sdks)** deployed (`ifxmwW…`); **no third-party audit**; [latest internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, `8a42766`) |
+| **Shared public Frame (mainnet)** | `6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn` · `tapeLen=512` · [Solscan](https://solscan.io/account/6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn) · backend orchestration scratch — **start every business tx with `ixReset()`** ([dedicated Frame](./scripts/create-public-frame-512.ts) if you need a private session) |
 | **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
 | **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk` |
