@@ -25,7 +25,7 @@ There is **no** Raydium-style program, **no** pool PDA owned by an AMM, **no** c
 
 ### 1.2 “Program-free” means no pool / DEX program
 
-**Program-free** refers only to the **absence of a specialized pool or DEX smart contract**:
+**Program-free** refers only to the **absence of a specialized pool or DEX smart contract** (on Solana: a dedicated on-chain **program**):
 
 - ✅ SPL Token program (system-level) may appear as CPI targets
 - ✅ A **generic orchestration program** (Ifx) may appear in the same tx to evaluate expressions and patch transfer amounts

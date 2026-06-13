@@ -25,7 +25,7 @@
 
 ### 1.2 「Program-free」= 无专用 pool / DEX 合约
 
-**Program-free** 仅指 **不存在专用的 pool 或 DEX 智能合约**：
+**Program-free** 仅指 **不存在专用的 pool 或 DEX 智能合约**（Solana 上即专用链上 **program**）：
 
 - ✅ 可出现 SPL Token program（系统级 CPI）
 - ✅ 同一 tx 可出现 **通用编排 program**（Ifx），用于表达式求值与 patch 转账金额

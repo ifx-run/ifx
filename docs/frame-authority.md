@@ -92,7 +92,7 @@ We do **not** yet catalog broad product flows that *require* private Frames beyo
 
 ### 3.8 Advanced — cross-unit session without `reset` (authority-managed)
 
-Sometimes **unit 1** (tx or landed bundle) runs `reset → let → …` and lands; **later** (another block, another day) **unit 2** must **read** bindings from unit 1 **without** `reset` — because `reset` would clear `index_count` / start a new session.
+Sometimes **unit 1** (tx or landed bundle) runs `reset → let → …` and lands; **later** (after unit 1’s slot — possibly much later on wall-clock time) **unit 2** must **read** bindings from unit 1 **without** `reset` — because `reset` would clear `index_count` / start a new session.
 
 **Why private `authority` helps**
 
@@ -117,7 +117,7 @@ This is **not** durable application state — still Frame scratch. Values are on
 
 | Shape | Why private cross-unit might appear |
 |-------|-------------------------------------|
-| **Relayer / bot pipeline + delayed user sig** | Bot lands tx1 (`reset`, `let`, partial settle); user signs read-only tx2 hours later; bot’s key blocks mempool grief `reset` between landings. |
+| **Relayer / bot pipeline + delayed user sig** | Bot lands tx1 (`reset`, `let`, partial settle); user signs read-only tx2 hours later; bot’s on-curve `authority` blocks third-party `reset` between the two separate landings (intervening slots). |
 | **Split flow without bundle** | Tx size / CU forces tx1 landed yesterday, tx2 today; tx2 must read mid-tx snapshot materialized as bindings — bundle no longer possible. |
 | **Pre-signed tx2 after separate tx1 landing** | Same as pre-sign edge (§3.7), but emphasis on **time gap** and **session custody** rather than bundle atomicity. |
 | **“Session handoff” under one operator** | One hot wallet owns orchestration; wants Frame as **operator-scoped scratch** across multiple customer txs without closing PDA. |

@@ -23,9 +23,9 @@ Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没�
 要做状态检查、条件分支或数值运算，通常只有两条老路：
 
 1. **为每个流程写一个包装合约** — 胶水逻辑往往不大，却要反复部署、审计、升级。
-2. **完全在链下组 tx** — 签名前用 RPC 拉链上状态当依据，按「当时认为成立」的假设拼 instruction。问题在于：假设可能在签字与上链之间失效；更关键的是，**同一笔 tx 里靠前的 ix 执行完后，后面的 ix 仍无法根据实际结果分支**，只能写死无条件路径。典型失败：swap 之后想关 ATA 省 rent，链下假设余额为 0 却拼了无条件的 `closeAccount`，链上余额非 0 时 **整笔 tx revert**，swap 的成果一并作废。
+2. **完全在链下组 tx** — 签名前用 RPC 拉链上状态当依据，按「当时认为成立」的假设拼 instruction。问题在于：假设可能在签字与上链之间失效；更关键的是，**同一笔 tx 里靠前的 ix 执行完后，后面的 ix 仍无法根据实际结果分支**，只能写死无条件路径。典型失败：swap 之后想关 ATA 省 rent，链下假设余额为 0 却拼了无条件的 `closeAccount`，链上余额非 0 时 **整笔 tx revert**，swap 的成果一并作废。这就是 **TOCTOU**（time-of-check to time-of-use，检查与使用分离）：在链下检查，在链上执行时却不按执行时刻的状态再判一次。
 
-**Ifx 提供第三条路：** 一个 **可复用的链上编排合约**。链下用 [TypeScript SDK](./sdk/)、[Go SDK](./go-sdk/) 或 [Rust SDK](./rust-sdk/) 描述数据流（读哪些账户、算什么、满足条件时 CPI 谁、否则 **Skip**）；**交易执行过程中**，Ifx 在同一 tx 内用固定、可枚举的指令完成 **`ifx_let` 读链上状态 → 运算 / `ifx_assert` → `ifx_if_else` 条件 CPI 或 Skip**，直接调用 System、SPL、DEX 等已有 program — **不必为每种小胶水再部署包装合约**，也 **不必赌 RPC 快照与交易中途的实际状态一致**。
+**Ifx 提供第三条路：** 一个 **可复用的链上编排合约**。链下用 [TypeScript SDK](./sdk/)、[Go SDK](./go-sdk/) 或 [Rust SDK](./rust-sdk/) 描述数据流（读哪些账户、算什么、满足条件时 CPI 谁、否则 **Skip**）；**交易执行过程中**，Ifx 在同一 tx 内用固定、可枚举的指令完成 **`ifx_let` 读链上状态 → 运算 / `ifx_assert` → `ifx_if_else` 条件 CPI 或 Skip**，直接调用 System、SPL、DEX 等已有 program — **不必为每种小胶水再部署包装合约**，**检查与分支在 tx 执行时完成**，消除 RPC 快照与无条件 instruction 列表带来的 TOCTOU 窗口。
 
 |                              | **Ifx**                        | 纯客户端组 tx                   |
 |------------------------------|--------------------------------|----------------------------|
@@ -35,6 +35,17 @@ Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没�
 | 余额可能 ≠ 0 时的可选 `closeAccount` | **`ifx_if_else` → Skip**，tx 继续 | 无条件 close **整笔 tx revert** |
 
 **Ifx 不是** TypeScript 的「instruction pipeline / middleware / tx composer」，只在链下拼 ix。**TypeScript / Go / Rust SDK** 编码数据流；**Ifx 合约** 在链上执行分支与 CPI。
+
+### TOCTOU（time-of-check to time-of-use，检查与使用分离）
+
+**TOCTOU** 指 **检查**（RPC、模拟或链下 planner 假设）与 **使用**（最终落地的 CPI / 转账 / close）不是原子操作。在 Solana 上常见两类：
+
+1. **签名时 vs 上链时** — 从 RPC 读取/模拟到你这笔 tx 在某个 slot 实际执行之间，其他交易可能已在更早的 slot 落地并改写账户状态；你签的是基于旧快照拼出来的 instruction。
+2. **同一 tx 内不重读** — 链下看过余额，swap 后仍拼无条件的 `closeAccount`；swap 已在链上执行，但 close 前没人再读余额 → 整笔 revert。
+
+**Ifx 针对的是「单笔业务 tx 内」的 TOCTOU：** `ifx_let` 在 **执行过程中** 加载账户字段（可排在靠前 ix 之后），`ifx_assert` 守不变量，`ifx_if_else` 按该时刻快照选 CPI 或 **Skip** — 而不是签名时的猜测。Ifx **不是** 新的 TOCTOU 风险来源；它是让你在 **同一原子 tx 里完成检查再使用** 的机制。
+
+**不覆盖：** **多笔独立落地 tx** 之间的竞态仍要靠 bundle 顺序、`ixReset` 纪律或私有 Frame — 见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md) 与 [bundles.zh-CN.md](./docs/bundles.zh-CN.md)。
 
 ### 典型需求
 

@@ -23,9 +23,9 @@ A Solana transaction is an **ordered instruction list**. The runtime has no if/e
 When you need state checks, conditional branches, or arithmetic mid-flow, the usual options are:
 
 1. **A wrapper program per flow** — small glue, repeated deploy / audit / upgrade cost.
-2. **Client-only tx assembly** — snapshot chain state via RPC before sign, build instructions from assumptions that held *at query time*. Assumptions can break before landing; worse, **later instructions in the same tx still cannot branch on what earlier ones actually did** — only hard-coded unconditional paths. Classic failure: after a swap you want to close an ATA for rent; you assumed balance 0 off-chain and emitted unconditional `closeAccount`; on-chain balance ≠ 0 → **the whole tx reverts**, swap included.
+2. **Client-only tx assembly** — snapshot chain state via RPC before sign, build instructions from assumptions that held *at query time*. Assumptions can break before landing; worse, **later instructions in the same tx still cannot branch on what earlier ones actually did** — only hard-coded unconditional paths. Classic failure: after a swap you want to close an ATA for rent; you assumed balance 0 off-chain and emitted unconditional `closeAccount`; on-chain balance ≠ 0 → **the whole tx reverts**, swap included. That is **TOCTOU** (time-of-check to time-of-use): check off-chain, act on-chain without re-reading at the moment of use.
 
-**Ifx is a third path:** one **reusable on-chain orchestration program**. Plan the dataflow off-chain with the [TypeScript SDK](./sdk/), [Go SDK](./go-sdk/), or [Rust SDK](./rust-sdk/) (what to read, what to compute, when to CPI vs **Skip**). While the transaction executes, Ifx runs a fixed, enumerable instruction set in the same tx — **`ifx_let` reads on-chain state → math / `ifx_assert` → `ifx_if_else` conditional CPI or Skip** — over System, SPL, DEX, and other programs you already use. **No new wrapper per glue pattern**; **no betting on RPC snapshots** that mid-tx state will match.
+**Ifx is a third path:** one **reusable on-chain orchestration program**. Plan the dataflow off-chain with the [TypeScript SDK](./sdk/), [Go SDK](./go-sdk/), or [Rust SDK](./rust-sdk/) (what to read, what to compute, when to CPI vs **Skip**). While the transaction executes, Ifx runs a fixed, enumerable instruction set in the same tx — **`ifx_let` reads on-chain state → math / `ifx_assert` → `ifx_if_else` conditional CPI or Skip** — over System, SPL, DEX, and other programs you already use. **No new wrapper per glue pattern**; **checks and branches run at execution time inside the tx**, closing the TOCTOU gap that RPC snapshots and unconditional ix lists create.
 
 | | **Ifx** | Client-only tx assembly |
 |---|---------|-------------------------|
@@ -35,6 +35,17 @@ When you need state checks, conditional branches, or arithmetic mid-flow, the us
 | Optional `closeAccount` when balance may be ≠ 0 | **`ifx_if_else` → Skip** arm; tx continues | Unconditional close **reverts the whole tx** |
 
 **Ifx is not** a TypeScript “instruction pipeline,” middleware, or tx composer that only runs off-chain. **TypeScript / Go / Rust SDKs** encode the dataflow; the **Ifx program** executes branches and CPIs on-chain.
+
+### TOCTOU (time-of-check to time-of-use)
+
+**TOCTOU** is the classic race where a **check** (RPC query, simulation, or off-chain planner assumption) and the **use** (CPI / transfer / close that lands on-chain) are not atomic. On Solana this shows up in two common forms:
+
+1. **Sign-time vs landing-time** — between your RPC read or simulation and when your transaction executes in a slot, other transactions may land in earlier slots and change account state; you signed instructions built for stale facts.
+2. **Same-tx, no re-read** — you checked balance off-chain, then emitted unconditional `closeAccount` after a swap; the swap ix ran first on-chain, but nothing re-read balance before close → revert.
+
+**Ifx addresses TOCTOU inside one business transaction:** `ifx_let` loads account fields **during execution** (after earlier ix in that tx), `ifx_assert` guards invariants, and `ifx_if_else` picks CPI vs **Skip** from that live snapshot — not from a guess made at sign time. Ifx is **not** a separate vulnerability class; it is the mechanism that lets you **check and use in the same atomic tx**.
+
+**Out of scope:** races across **separate landed transactions** still need bundle ordering, `ixReset` discipline, or private Frames — see [frame-authority.md](./docs/frame-authority.md) and [bundles.md](./docs/bundles.md).
 
 ### Typical flows
 

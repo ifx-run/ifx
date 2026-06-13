@@ -121,7 +121,7 @@ Ifx **does not** implement bundling. When the user mentions **Jito**, **bundle**
 **What bundles do *not* guarantee:**
 
 - `sendBundle` → `bundle_id` means **received**, not **landed** — poll status, retry on auction failure
-- Frame is **not** locked after the bundle — anyone can `reset` in a later block
+- Frame is **not** locked after the bundle — anyone can `reset` in a later slot
 - Two normal RPC sends have **no** ordering; do not assume tx2 sees tx1's Frame unless pattern 3 + landed bundle
 
 **Agent guidance:**

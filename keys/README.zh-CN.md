@@ -26,7 +26,7 @@ npm run keys:verify
 
 | 角色 | 环境变量 / 文件 |
 |------|-----------------|
-| **付 gas / 签部署交易** | **`ANCHOR_WALLET`**（必填；**不能**是 `~/.config/solana/id.json`） |
+| **Fee payer / deploy signer** | **`ANCHOR_WALLET`**（必填；**不能**是 `~/.config/solana/id.json`） |
 | **Program id + upgrade 权限** | `keys/devnet-program-keypair.json`（须与 `devnet.program-id` 一致） |
 
 ```bash

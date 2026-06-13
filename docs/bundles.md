@@ -28,7 +28,7 @@ So if tx1 writes Frame `tape` / `cursor` / `index_count` and tx2 (same bundle, l
 | Not guaranteed | Implication for Ifx |
 |----------------|---------------------|
 | **Landing** | `sendBundle` returning `bundle_id` only means the Block Engine **received** the bundle. You must poll `getBundleStatuses` / `getInflightBundleStatuses`. Failed auction → nothing on-chain |
-| **Frame locked after the bundle** | Anyone can still `reset` or append in a **later** tx / block |
+| **Frame locked after the bundle** | Anyone can still `reset` or append in a **later** tx or slot |
 | **Safety between standalone txs** | `create` in tx A and business in tx B **days apart** — bundle does not connect them unless both are in **one** bundle |
 | **Cross-tx scratch without a bundle** | Two normal RPC sends — **no** ordering; someone can reset your Frame in between |
 | **Ifx access control** | Public Frames (off-curve `authority`); private Frames require on-curve **`authority`** signer on writes — [frame-authority.md](./frame-authority.md). Bundle is not a substitute |

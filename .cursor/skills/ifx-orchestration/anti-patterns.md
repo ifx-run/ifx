@@ -8,7 +8,7 @@ Reject or refactor these when reviewing agent-generated integration code.
 |--------------|-----|-----|
 | Single tx: `create_frame` + swap + let | Frame provisioning is separate rent step | Tx1 create; Tx2+ reset + business |
 | Frame PDA as app state across days | Scratch, not durable app state | Store real state in your PDAs; Frame = scratch |
-| Private Frame / nonce custody without on-curve `authority` | Pre-signed read tx **without `reset`** after an earlier write — third party can poison **between** separate landings | **`planNewFrame`** + bot key, **or** public Frame + **landed bundle** with `reset` on tx₁ — [frame-authority.md](../../../docs/frame-authority.md) §3.4 |
+| Private Frame / pre-signed session custody without on-curve `authority` | Pre-signed read tx **without `reset`** after an earlier write — third party can poison **between** separate landings | **`planNewFrame`** + bot key, **or** public Frame + **landed bundle** with `reset` on tx₁ — [frame-authority.md](../../../docs/frame-authority.md) §3.4 |
 | Omit `ixReset` at start of a business tx / bundle | Public Frame tape may include others' writes or stale session | **Always `ixReset` first** in each atomic unit (default) |
 | Cross-tx Frame `tape` without landed bundle | No ordering; race on reset | Pattern 3 + Jito only, or single tx / pattern 2 with reset each tx |
 | Jito bundle for every Ifx flow | Extra complexity, landing risk | Default single business tx ([pattern 1](../../../docs/bundles.md)) |
