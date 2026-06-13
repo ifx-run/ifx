@@ -18,6 +18,32 @@ English | [中文](./README.zh-CN.md)
 
 Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; layout and IR off-chain.
 
+## Networks & SDKs
+
+| Cluster | Program ID | Notes |
+|---------|------------|--------|
+| **Localnet** (repo build, `npm test`) | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair in [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
+| **Mainnet** (SDK default) | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · [mainnet verification](./docs/mainnet-verification.md) |
+| **Devnet** (experimental) | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) · **test assets only** |
+
+| | |
+| --- | --- |
+| **Status** | [Devnet](#networks--sdks) + **[mainnet](#networks--sdks)** deployed (`ifxmwW…`); **no third-party audit**; [latest internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, `8a42766`) |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk` |
+| **Cursor / AI agents** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
+
+```bash
+npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
+go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+cargo add ifx-sdk
+```
+
+Or clone this repo: `cd sdk && npm run build` (TS) · `npm run go:test` / `npm run rust:test` (Go/Rust; Surfpool).
+
+---
+
 ## What Ifx is (and is not)
 
 A Solana transaction is an **ordered instruction list**. The runtime has no if/else and **no way to hand one instruction’s result to the next** — intermediate state lives in accounts you read later, not inline values between steps.
@@ -76,35 +102,6 @@ Ifx does **not** replace your DEX or token programs. It is the glue: read → co
 No separate “conditional-close helper program.” The branch runs in **Ifx**; `CloseAccount` is a CPI to SPL Token.
 
 Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/examples/dust-destroy-token2022.ts) · test [`tests/dust_destroy_token2022.ts`](./tests/dust_destroy_token2022.ts).
-
-| Key | Value |
-| --- | --- |
-| **Status** | [Devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
-| **Go** | [`go-sdk/`](./go-sdk/) — **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` ([README](./go-sdk/README.md)) |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) — **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk` ([README](./rust-sdk/README.md)) |
-| **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
-| **Program (localnet / repo build)** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
-| **Program (mainnet / SDK default)** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` — [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) |
-| **Program (devnet)** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` — [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) |
-
-```bash
-npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-```
-
-Go ([`solana-go`](https://github.com/gagliardetto/solana-go)):
-
-```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.0
-```
-
-Rust:
-
-```bash
-cargo add ifx-sdk
-```
-
-Or clone this repo and `cd sdk && npm run build` (TS) / `npm run go:test` or `npm run rust:test` (Go/Rust integration tests; Surfpool required).
 
 ---
 
@@ -168,7 +165,7 @@ tx.add(scratch.ixReset());
 tx.add(scratch.ixLet(one));
 ```
 
-Mainnet program id: `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`. See [deployment](#deployment) and [docs/mainnet-verification.md](./docs/mainnet-verification.md) before production use.
+Mainnet program id: `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`. See [Networks & SDKs](#networks--sdks) and [docs/mainnet-verification.md](./docs/mainnet-verification.md) before production use.
 
 ### Try on devnet
 
@@ -374,15 +371,11 @@ Full test: [`tests/sponsored_buy.ts`](./tests/sponsored_buy.ts) · `if_else`: [`
 
 ## Deployment
 
-| Cluster | Program ID | Notes |
-|---------|------------|--------|
-| **Localnet** (repo build, `npm test`) | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair in [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
-| **Mainnet** (SDK default) | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · deploy via `npm run deploy:mainnet` — [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
-| **Devnet** (experimental) | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | Experimental; upgrade authority not public — **do not use for real funds** |
+Cluster program IDs and client install commands are at the top — [Networks & SDKs](#networks--sdks).
 
 - **`declare_id!` / committed IDL** match **localnet** (repo build). **`@ifx-run/sdk` default** is **mainnet** (`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`). Devnet / localnet: pass `IFX_DEVNET_PROGRAM_ID` or `IFX_LOCALNET_PROGRAM_ID` explicitly.
 - Integrators: pin `@ifx-run/sdk`, verify program id on your cluster, read [docs/SECURITY.md](./docs/SECURITY.md) and [docs/program-security.md](./docs/program-security.md) before production use.
-- Maintainers: [keys/README.md](./keys/README.md) · [docs/development.md](./docs/development.md)
+- Maintainers: deploy via `npm run deploy:mainnet` / `npm run deploy:devnet` — [keys/README.md](./keys/README.md) · [docs/development.md](./docs/development.md) · [docs/mainnet-verification.md](./docs/mainnet-verification.md)
 
 ---
 

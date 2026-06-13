@@ -18,6 +18,32 @@
 
 不是 VM，也不是脚本引擎 — 链上指令固定、可枚举；布局与 IR 在链下生成。
 
+## 网络与 SDK
+
+| 环境 | Program ID | 说明 |
+|------|------------|------|
+| **Localnet**（仓库构建，`npm test`） | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair 见 [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
+| **Mainnet**（SDK 默认） | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · [主网验证](./docs/mainnet-verification.zh-CN.md) |
+| **Devnet**（实验环境） | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) · **仅测试资产** |
+
+| 项 | 说明 |
+| --- | --- |
+| **状态** | [Devnet](#网络与-sdk) + **[Mainnet](#网络与-sdk)** 已部署（`ifxmwW…`）；**无第三方付费审计**；[最新内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，`8a42766`） |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk` |
+| **Cursor / AI agent** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
+
+```bash
+npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
+go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+cargo add ifx-sdk
+```
+
+或克隆本仓库：`cd sdk && npm run build`（TS）· `npm run go:test` / `npm run rust:test`（Go/Rust；需 Surfpool）。
+
+---
+
 ## Ifx 是什么（不是什么）
 
 Solana 交易是一笔 **按顺序执行的 instruction 列表**。运行时没有 if/else，也 **没有机制把上一条 instruction 的执行结果交给下一条** — 中间态只能写在账户里、靠后面的 ix 再读，不能在指令之间行内传值。
@@ -76,35 +102,6 @@ Ifx **不替代** DEX 或 token 合约。它是胶水：当结果依赖**本 tx 
 无需单独的「条件 close 辅助合约」。分支在 **Ifx** 里执行；`CloseAccount` 是对 SPL Token 的 CPI。
 
 更完整变体（dust：burn + harvest + close）：[L1 dust 清理](./sdk/examples/dust-destroy-token2022.ts) · 测试 [`tests/dust_destroy_token2022.ts`](./tests/dust_destroy_token2022.ts)。
-
-| 项 | 说明 |
-| --- | --- |
-| **状态** | [已部署 devnet](#部署)、**[已部署 mainnet](#部署)**（`ifxmwW…`）；**无第三方付费审计**；[维护者主导的内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，commit `8a42766`） |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.0`** — **`DEFAULT_IFX_PROGRAM_ID` = 主网** |
-| **Go** | [`go-sdk/`](./go-sdk/) — **`v0.1.0`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.0`（[`README`](./go-sdk/README.zh-CN.md)） |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) — **`ifx-sdk@0.1.0`** · `cargo add ifx-sdk`（[`README`](./rust-sdk/README.zh-CN.md)） |
-| **Cursor / AI agent** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — 建议让 AI 写 tx 前先读 |
-| **Program（localnet / 仓库构建）** | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` |
-| **Program（主网 / SDK 默认）** | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` — [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) |
-| **Program（devnet）** | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` — [Solscan](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet) |
-
-```bash
-npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-```
-
-Go（[`solana-go`](https://github.com/gagliardetto/solana-go)）：
-
-```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.0
-```
-
-Rust：
-
-```bash
-cargo add ifx-sdk
-```
-
-或克隆本仓库后 `cd sdk && npm run build`（TS）/ `npm run go:test` 或 `npm run rust:test`（Go/Rust 集成测试，需 Surfpool）。
 
 ---
 
@@ -372,15 +369,11 @@ await provider.sendAndConfirm(tx);
 
 ## 部署
 
-| 环境 | Program ID | 说明 |
-|------|------------|------|
-| **Localnet**（仓库构建，`npm test`） | `ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD` | Keypair 见 [`keys/localnet-program-keypair.json`](./keys/localnet-program-keypair.json) |
-| **Mainnet**（SDK 默认） | `ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` | [Solscan](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · `npm run deploy:mainnet` — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
-| **Devnet**（实验环境） | `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc` | 实验性；upgrade 权限不公开 — **勿用于真实资金** |
+各集群 program ID 与客户端安装见文首 — [网络与 SDK](#网络与-sdk)。
 
 - **`declare_id!` / 仓库 IDL** 对应 **localnet**（仓库构建）。**`@ifx-run/sdk` 默认** 为 **主网**（`DEFAULT_IFX_PROGRAM_ID` = `IFX_MAINNET_PROGRAM_ID`）。Devnet / localnet 须显式传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID`。
 - 集成方：pin `@ifx-run/sdk`，核对目标集群合约 ID，上生产前阅读 [docs/SECURITY.zh-CN.md](./docs/SECURITY.zh-CN.md) 与 [docs/program-security.zh-CN.md](./docs/program-security.zh-CN.md)。
-- 维护者：[keys/README.zh-CN.md](./keys/README.zh-CN.md) · [docs/development.zh-CN.md](./docs/development.zh-CN.md)
+- 维护者：`npm run deploy:mainnet` / `npm run deploy:devnet` — [keys/README.zh-CN.md](./keys/README.zh-CN.md) · [docs/development.zh-CN.md](./docs/development.zh-CN.md) · [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md)
 
 ---
 
