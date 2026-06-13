@@ -9,26 +9,14 @@
 3. 运行集成测试：`npm test`（或 `npm run test:detach`）。
 4. 确认 `sdk/src/constants.ts` 中 `DEFAULT_IFX_PROGRAM_ID` 遵循 **主网 → 测试网 → devnet → localnet**（当前为主网）。在 changelog 中注明当前默认 cluster。
 
-## 预发布标签
-
-npm 版本号仍可能带 `-devnet` 预发布后缀（如 **`0.4.0-devnet.0`**，历史 tag 命名）；**主网部署后 `DEFAULT_IFX_PROGRAM_ID` 指向主网**。在 README 与 changelog 中写明当前默认 cluster。
-
-预发布版本**必须**带 `--tag`（不能自动成为 `latest`）。本仓库使用：
+## 安装（当前）
 
 ```bash
-npm publish --tag devnet
+npm install @ifx-run/sdk
+# 或锁定：npm install @ifx-run/sdk@0.1.0
 ```
 
-（`npm run sdk:publish` 已自动带上该参数。）
-
-**集成方安装：**
-
-```bash
-npm install @ifx-run/sdk@devnet
-# 或精确版本：npm install @ifx-run/sdk@0.4.0-devnet.0
-```
-
-仅 `npm install @ifx-run/sdk` 会解析 `latest` 标签 — 在发布稳定版 `1.x` 之前不会装到预发布版。
+`latest` 指向 **`0.1.0`**（默认主网）。与 **`ifx-sdk@0.1.0`**、**`go-sdk@v0.1.0`** 使用同一 git revision。
 
 ## 试打包
 
@@ -36,7 +24,7 @@ npm install @ifx-run/sdk@devnet
 npm run sdk:pack
 ```
 
-检查生成的 tarball：应只含 `dist/`、`README.md`、`CHANGELOG.md`、`LICENSE`（不含 `src/`、`examples/`）。
+检查 tarball：仅含 `dist/`、`README.md`、`CHANGELOG.md`、`LICENSE`（不含 `src/`、`examples/`）。
 
 ## 发布
 
@@ -45,26 +33,33 @@ npm login
 npm run sdk:publish
 ```
 
-`prepublishOnly` 会在 `sdk/` 内执行 `npm run rebuild`。
+`prepublishOnly` 会在 `sdk/` 内执行 `npm run rebuild`。正式版使用默认 **`latest`** tag（不再 `--tag devnet`）。
 
-## 废弃上一版 devnet 发布
+## 废弃历史 `*-devnet.*` 预览版
 
-**devnet program redeploy**（wire 须与本 SDK 一致）且 **`npm publish --tag devnet`** 成功后，标记旧 npm 版本不兼容：
+旧 devnet 预览线（`0.1.0-devnet.0` … `0.3.0-devnet.0`）与 `0.1.0` **wire 不兼容**。发布 `0.1.0` 后执行：
 
 ```bash
-npm deprecate @ifx-run/sdk@0.1.0-devnet.0 \
-  "Incompatible with current devnet program (Cpi/IfElseArm wire unify). Use @ifx-run/sdk@devnet."
+MSG='Superseded by @ifx-run/sdk@0.1.0 (mainnet default). Wire-incompatible devnet preview — do not use.'
+npm deprecate @ifx-run/sdk@0.1.0-devnet.0 "$MSG"
+npm deprecate @ifx-run/sdk@0.2.0-devnet.0 "$MSG"
+npm deprecate @ifx-run/sdk@0.3.0-devnet.0 "$MSG"
 ```
 
-顺序：先 publish → 再 devnet 部署匹配 `.so` → 最后 deprecate。
+可选：把旧 `devnet` dist-tag 指到 `0.1.0`，避免 `npm i @ifx-run/sdk@devnet` 仍解析到废弃版本：
 
-## 版本耦合
+```bash
+npm dist-tag add @ifx-run/sdk@0.1.0 devnet
+```
 
-| 产物 | 需保持同步 |
+## 版本绑定
+
+| 产物 | 须保持一致 |
 |------|------------|
 | npm `@ifx-run/sdk` semver | `sdk/package.json` `version` |
-| 链上 program | `idl/ifx.json` → `metadata.version` + 已部署 `.so` |
-| `DEFAULT_IFX_PROGRAM_ID` | `sdk/src/constants.ts` — npm 默认（主网 → 测试网 → devnet → localnet；当前 devnet） |
-| Wire 格式 | `sdk/src/codec.ts` + program `programs/ifx` — 破坏性变更需升 major |
+| `ifx-sdk` / `go-sdk` | 同一 release commit 上的相同 **0.x** |
+| 链上 program | 目标集群上已部署的 `.so` + `idl/ifx.json` |
+| `DEFAULT_IFX_PROGRAM_ID` | `sdk/src/constants.ts` — 当前为主网 |
+| Wire | `sdk/src/codec.ts` + `programs/ifx` — breaking 须升 semver |
 
-生产环境应同时 pin **npm 版本**与 **program id**。
+生产集成请同时 pin **npm 版本**与 **program id**。

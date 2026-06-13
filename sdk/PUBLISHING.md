@@ -9,26 +9,14 @@ English | [中文](./PUBLISHING.zh-CN.md)
 3. Run integration tests: `npm test` (or `npm run test:detach`).
 4. Confirm `DEFAULT_IFX_PROGRAM_ID` in `sdk/src/constants.ts` follows **mainnet → testnet → devnet → localnet** (currently mainnet). Note the active default in the changelog.
 
-## Prerelease tags
-
-The npm version may still use a `-devnet` prerelease suffix (e.g. **`0.4.0-devnet.0`**) for historical tagging; **`DEFAULT_IFX_PROGRAM_ID` targets mainnet** after mainnet deploy. Document the active default in README and changelog.
-
-npm **requires `--tag`** for prerelease versions (they must not become `latest`). This repo publishes with:
+## Install (current)
 
 ```bash
-npm publish --tag devnet
+npm install @ifx-run/sdk
+# or pin: npm install @ifx-run/sdk@0.1.0
 ```
 
-(`npm run sdk:publish` passes that flag automatically.)
-
-**Install for integrators:**
-
-```bash
-npm install @ifx-run/sdk@devnet
-# or pin exact: npm install @ifx-run/sdk@0.4.0-devnet.0
-```
-
-Plain `npm install @ifx-run/sdk` resolves the `latest` tag only — no prerelease until a stable `1.x` ships.
+`latest` points at **`0.1.0`** (mainnet default). Align with **`ifx-sdk@0.1.0`** and **`go-sdk@v0.1.0`** on the same git revision.
 
 ## Dry run
 
@@ -45,26 +33,33 @@ npm login
 npm run sdk:publish
 ```
 
-`prepublishOnly` runs `npm run rebuild` inside `sdk/`.
+`prepublishOnly` runs `npm run rebuild` inside `sdk/`. Stable releases use the default **`latest`** tag (no `--tag devnet`).
 
-## Deprecate previous devnet release
+## Deprecate legacy `*-devnet.*` previews
 
-After **devnet program redeploy** (wire must match this SDK), mark the prior npm version incompatible:
+Historical devnet-only npm lines (`0.1.0-devnet.0` … `0.3.0-devnet.0`) are **wire-incompatible** with `0.1.0`. After publishing `0.1.0`, mark them deprecated:
 
 ```bash
-npm deprecate @ifx-run/sdk@0.1.0-devnet.0 \
-  "Incompatible with current devnet program (Cpi/IfElseArm wire unify). Use @ifx-run/sdk@devnet."
+MSG='Superseded by @ifx-run/sdk@0.1.0 (mainnet default). Wire-incompatible devnet preview — do not use.'
+npm deprecate @ifx-run/sdk@0.1.0-devnet.0 "$MSG"
+npm deprecate @ifx-run/sdk@0.2.0-devnet.0 "$MSG"
+npm deprecate @ifx-run/sdk@0.3.0-devnet.0 "$MSG"
 ```
 
-Run this **after** `npm publish --tag devnet` and **after** the matching `.so` is live on devnet.
+Optional: point the old `devnet` dist-tag at `0.1.0` so `npm i @ifx-run/sdk@devnet` does not resolve a deprecated version:
+
+```bash
+npm dist-tag add @ifx-run/sdk@0.1.0 devnet
+```
 
 ## Version coupling
 
 | Artifact | What to keep in sync |
 |----------|----------------------|
 | npm `@ifx-run/sdk` semver | `sdk/package.json` `version` |
-| On-chain program | `idl/ifx.json` → `metadata.version` + deployed `.so` |
-| `DEFAULT_IFX_PROGRAM_ID` | `sdk/src/constants.ts` — npm default (mainnet → testnet → devnet → localnet; currently devnet) |
-| Wire format | `sdk/src/codec.ts` + program `programs/ifx` — breaking changes need major semver |
+| `ifx-sdk` / `go-sdk` | same **0.x** on the same release commit |
+| On-chain program | `idl/ifx.json` + deployed `.so` on your cluster |
+| `DEFAULT_IFX_PROGRAM_ID` | `sdk/src/constants.ts` — currently mainnet |
+| Wire format | `sdk/src/codec.ts` + program `programs/ifx` — breaking changes need semver bump |
 
 Consumers should pin **both** npm version and program id for production.

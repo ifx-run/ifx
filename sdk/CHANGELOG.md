@@ -4,14 +4,22 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** npm release **`0.4.0-devnet.0`** — default program id is **mainnet** (`ifxmwW…`). **`0.3.0-devnet.0` is incompatible** on Structured CPI wire (Borsh layout); upgrade SDK and on-chain program together.
+**Status:** npm release **`0.1.0`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.0**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-13
+
 ### Added
 
+- First **mainnet-default** npm release; aligned with **`ifx-sdk@0.1.0`** and **`go-sdk@v0.1.0`** (same wire revision).
 - **`StructuredCpiPatch` tags 29–32 (SP-5):** Stake `Withdraw` / `Split` / `Deactivate` / `DelegateStake` — `structuredCpiPatch.stakeWithdraw` / `stakeSplit` / `stakeDeactivate` / `stakeDelegateStake`; infer from native stake ix templates.
 - **Examples:** `stake-conditional-withdraw.ts` (`planStakeStructuredWithdrawTx`), `upgradeable-program-guard.ts`, `guardrail-two-account-lamports-diff.ts`.
+
+### Changed
+
+- **`DEFAULT_IFX_PROGRAM_ID`** = **`IFX_MAINNET_PROGRAM_ID`** (`ifxmwW…`).
+- Deprecated npm `*-devnet.*` preview releases (`0.1.0-devnet.0` … `0.3.0-devnet.0`).
 
 ## [0.4.0-devnet.0] - 2026-06-08
 

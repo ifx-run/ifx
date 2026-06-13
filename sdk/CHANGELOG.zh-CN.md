@@ -4,14 +4,22 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** npm 版本 **`0.4.0-devnet.0`** — 默认 program id 为 **主网**（`ifxmwW…`）。**与 `0.3.0-devnet.0` 在 Structured CPI wire 上不兼容**（Borsh layout）；须同步升级 SDK 与链上程序。
+**状态：** npm 版本 **`0.1.0`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.0** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-13
+
 ### 新增
 
+- 首个 **默认主网** 的 npm 版本；与 **`ifx-sdk@0.1.0`**、**`go-sdk@v0.1.0`** 同 wire revision。
 - **`StructuredCpiPatch` tag 29–32（SP-5）：** Stake `Withdraw` / `Split` / `Deactivate` / `DelegateStake` — `structuredCpiPatch.stakeWithdraw` 等；可从原生 stake ix 模板推断 tag。
 - **示例：** `stake-conditional-withdraw.ts`（`planStakeStructuredWithdrawTx`）、`upgradeable-program-guard.ts`、`guardrail-two-account-lamports-diff.ts`。
+
+### 变更
+
+- **`DEFAULT_IFX_PROGRAM_ID`** = **`IFX_MAINNET_PROGRAM_ID`**（`ifxmwW…`）。
+- 废弃 npm `*-devnet.*` 预览版（`0.1.0-devnet.0` … `0.3.0-devnet.0`）。
 
 ## [0.4.0-devnet.0] - 2026-06-08
 

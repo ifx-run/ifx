@@ -79,7 +79,7 @@ Extended variant (burn + harvest + close for dust): [L1 dust destroy](./sdk/exam
 | Key | Value |
 | --- | --- |
 | **Status** | [Devnet deployed](#deployment), **[mainnet deployed](#deployment)** (`ifxmwW…`); **no third-party audit**; [maintainer-led internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, commit `8a42766`) |
-| **npm** | [`@ifx-run/sdk`](./sdk/) `0.4.0-devnet.0` — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
+| **npm** | [`@ifx-run/sdk`](./sdk/) `0.1.0` — **`DEFAULT_IFX_PROGRAM_ID` = mainnet** |
 | **Go** | [`go-sdk/`](./go-sdk/) — `go get github.com/ifx-run/ifx/go-sdk` ([README](./go-sdk/README.md)) |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) — `ifx-sdk` crate ([README](./rust-sdk/README.md)) |
 | **Cursor / AI agents** | **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)** — recommended before AI writes tx code |
