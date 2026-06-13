@@ -9,6 +9,10 @@ use crate::{
 ///
 /// Creates a Frame PDA with seeds `[FRAME_SEED, payer, frame_id]`. `frame_id` is a
 /// 32-byte salt chosen off-chain; it is not stored in the account body.
+///
+/// **Address-centric lifecycle:** seeds are enforced here only. Later instructions
+/// (`reset`, `let`, `close`, …) identify the Frame by **account pubkey** — no
+/// `frame_id`, no seeds re-check — see repo `docs/design.md` §4.1.
 #[derive(Accounts)]
 #[instruction(frame_id: [u8; 32], authority: Pubkey, tape_len: u32)]
 pub struct CreateFrame<'info> {

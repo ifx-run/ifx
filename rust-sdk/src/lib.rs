@@ -92,7 +92,8 @@ pub use ix::{
 pub use let_builder::{LetBuilder, LetBuilderFinish};
 pub use patched_cpi::{
     build_raw_cpi, build_static_cpi, build_structured_cpi, frame_value, raw_cpi_patch,
-    structured_system_transfer, system_transfer_template, with_owner_signer,
+    structured_system_transfer, structured_token_transfer, system_transfer_template,
+    with_owner_signer,
 };
 pub use scratch::{FrameScratch, PlanNewFrameParams, PlanNewFrameResult};
 pub use typed::ScratchValue;

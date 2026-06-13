@@ -17,7 +17,7 @@ See [roadmap.zh-CN.md](./roadmap.zh-CN.md) for the full document. Summary of **m
 
 ### Terminal B — Rust SDK
 
-- [client-sdks.md](./client-sdks.md) § P1 — `ifx-core` + `ifx-sdk` (**R1–R3** ✅ minimal localnet; dust/orchestration planners backlog)
+- [client-sdks.md](./client-sdks.md) § P1 — `ifx-core` + `ifx-sdk` (**R1–R3** ✅ L0–L3 localnet planners)
 
 **Order:** Terminal A (done) → audit / mainnet; Terminal B core shipped.
 

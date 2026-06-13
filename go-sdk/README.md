@@ -135,7 +135,7 @@ Static CPI step: `patchedcpi.StaticCpi(ix, nil)`. Branches: `ifelse.Skip`, `ifel
 
 ## Examples
 
-See [`examples/README.md`](./examples/README.md): minimal frame, dust destroy (`PlanDustDestroyInstructions`), orchestration integration test.
+See [`examples/README.md`](./examples/README.md): minimal frame, dust destroy, two-hop swap, personal AMM, sponsored buy — plus orchestration integration test.
 
 ## Errors
 

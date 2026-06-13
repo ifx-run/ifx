@@ -6,7 +6,7 @@
 
 | 文档 | 读者 | 内容 |
 |------|------|------|
-| [design.zh-CN.md](./design.zh-CN.md) | 架构 / 产品 | 动机、原则、tape 与 SSA 模型、非目标 |
+| [design.zh-CN.md](./design.zh-CN.md) | 架构 / 产品 | 动机、原则、tape 与 SSA 模型、**Frame 地址闭环（§4.1）**、非目标 |
 | [glossary.zh-CN.md](./glossary.zh-CN.md) | 所有人 | **术语表** — 为何叫 `tape`、`index`、`cursor` 等 |
 | [implementation.zh-CN.md](./implementation.zh-CN.md) | 集成者 | 指令、类型、限制 |
 | [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) | Rust / Anchor 集成者 | CPI、wire 编码、SDK 与 program crate |

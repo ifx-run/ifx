@@ -59,7 +59,7 @@
 
 **账户校验：** BC15–BC24（owner、signer、writable、PDA、重复账户、sysvar、init 防 griefing 等）→ 见英文 BC.3 表与 A–E 映射。
 
-**CPI 安全：** BC25 任意 CPI ⚠️ · BC26 不提升权限 ✅ · BC27 无 `invoke_signed` N/A
+**CPI 安全：** BC25 Structured 白名单 + Static/Raw 构造者自担（type-unsafe，✅ 设计如此）· BC26 不提升权限 ✅ · BC27 无 `invoke_signed` N/A
 
 **算术与不变量：** BC28–BC29 ✅ · BC30 无 post-CPI 依赖读 N/A
 
@@ -98,7 +98,7 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 | IFX-SEC-B01 | seeds `[FRAME_SEED, payer, frame_id]` | `create_frame.rs` |
 | IFX-SEC-B02 | 规范 bump | `create_frame.rs` |
 | IFX-SEC-B03 | `frame_id` 与 instruction/seeds 一致 | `create_frame.rs` |
-| IFX-SEC-B04 | 非 create：错误 pubkey 失败；**不** re-check seeds | ⚠️ |
+| IFX-SEC-B04 | 非 create：仅以 **pubkey** 识别 Frame；**刻意不** re-check seeds（地址闭环设计，节省 CU）— [design.zh-CN.md §4.1](../docs/design.zh-CN.md#41-frame-地址即身份闭环设计) | ✅ 接受的设计 — `reset_frame.rs`、`let_op.rs`、`close_frame.rs` |
 | IFX-SEC-B05 | 同 PDA 无冲突角色 | N/A |
 | IFX-SEC-B06 | 拒绝 default `authority` | `create_frame.rs` |
 | IFX-SEC-B07 | Close signer == `Frame.authority` | `close_frame.rs` |
@@ -111,7 +111,7 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 |----|--------|----------|
 | IFX-SEC-C01 | remaining 切片边界 | `patched_cpi.rs` |
 | IFX-SEC-C02 | 空范围拒绝 | `patched_cpi.rs` |
-| IFX-SEC-C03 | CPI 目标 program 来自 remaining（无白名单） | ⚠️ |
+| IFX-SEC-C03 | **Static / RawPatched：** program id 来自 `remaining`（构造者指定；type-unsafe）。**Structured：** 按 patch 族校验 program id — `structured_cpi.rs` | ✅ 接受的设计 — [raw-cpi-patches.zh-CN.md § 设计意图](../docs/raw-cpi-patches.zh-CN.md#设计意图type-safe-与-type-unsafe-cpi) |
 | IFX-SEC-C04 | 内层账户 owner 由 callee 校验 | ⚠️ |
 | IFX-SEC-C05 | 同 ix CPI 后不 mut Frame | `if_else.rs` |
 | IFX-SEC-C06 | 无 `invoke_signed` | ⚠️ |

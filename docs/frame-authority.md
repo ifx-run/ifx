@@ -12,13 +12,15 @@ Related: [design.md](./design.md) · [implementation.md](./implementation.md) ·
 
 Frame `tape` is **scratch**, but the **PDA persists**. Integrators may:
 
-- Run **one business tx** (`reset → let → cpi`) — safe when atomic.
+- Run **one business tx** (`reset → let → cpi`) — atomic; no interleaving.
 - Split work across a **landed Jito bundle** (tx2 reads bindings from tx1 **without** `reset`).
 - **Pre-sign** a later tx (e.g. durable nonce) that **reads** Frame bindings written in an earlier bundled tx.
 
-If a read-only pre-signed tx leaks, an attacker can **poison** the Frame before it lands: `reset` + `let` with malicious values, then land the victim tx. Today anyone may write any Frame.
+**Public Frame risk (without discipline):** anyone can `reset` / `let` on an off-curve `authority` Frame. If you **omit `reset` at the start of an atomic unit**, or leave a **gap** between a landed write tx and a later **pre-signed read-only** tx, a third party can poison `tape` in between.
 
-**Goal:** optional **private** Frames for bot / relayer hot wallets; default **public** Frames unchanged for ordinary flows.
+**Mitigation (public Frame, production):** treat each **atomic unit** — **one transaction**, or **one landed bundle** — as exclusive. **Start the unit with at least one `ifx_reset_frame`** (typically the first Ifx instruction in the first tx of the unit). Within that unit, Solana / bundle ordering prevents others from interleaving writes; `reset` also clears any pre-landing poison when the unit lands. See §3.4.
+
+**Private Frame goal:** optional **write ACL** and **`close`** — not the default production path when public Frame + `reset` discipline (§3.4) suffices. Concrete uses today are narrow; it can add **defense-in-depth** in some flows. See §3.7.
 
 ---
 
@@ -34,6 +36,8 @@ If a read-only pre-signed tx leaks, an attacker can **poison** the Frame before 
 `Pubkey::default()` remains invalid at create.
 
 SDK: `planPublicFrame` / `publicFrameAuthority` → set **`authority`** to the **Frame PDA** (off-curve, non-closeable, public writes).
+
+**Frame pubkey vs `frame_id`:** `frame_id` is a create-time PDA salt only; it is not stored on-chain and is not passed to `reset` / `let` / `close`. After create, integrators use the **Frame address** (`scratch.frame`). Non-create instructions do not re-verify PDA seeds — by design ([design.md §4.1](./design.md#41-frame-address-identity-closed-loop)).
 
 ---
 
@@ -54,13 +58,88 @@ SDK: `planPublicFrame` / `publicFrameAuthority` → set **`authority`** to the *
 
 **Cost:** on-curve private Frame adds `remaining_accounts[0]` (1-byte account index when authority is already a tx signer). Public Frame: **zero** extra accounts.
 
-### 3.2 Who signs in practice
+### 3.4 Public Frame — production when `reset` starts each atomic unit
+
+**Atomic unit** = one Solana **transaction**, or one **landed Jito bundle** (ordered, same-slot, all-or-nothing among its txs).
+
+| Rule | Why it works |
+|------|----------------|
+| **Every business tx** begins with `scratch.ixReset()` (default) | Single tx is atomic — no third party can interleave `let` between your instructions. |
+| **First tx of a bundle** begins with `reset` | Clears pre-landing third-party writes on the Frame; starts a fresh session (`index_count = 0`, `generation` bump). Later bundle txs may omit `reset` only when intentionally continuing bindings from tx1 — still no external interleaving **inside** the landed bundle. |
+| **Standalone tx2** (not in a bundle with tx1) also begins with `reset` | Any writes between tx1 landing and tx2 submission are discarded at tx2 `reset` — you do not rely on stale tape. |
+
+Under these rules, **public Frame is production-viable** — not “devnet only.” You trade away **close** (off-curve authority cannot sign `close`) and **unsigned write ACL**, not session safety inside the unit.
+
+**Public Frame is not enough when:**
+
+- **Pre-signed read-only tx** must read bindings from a **prior landed tx** and **cannot** `reset` (would wipe those bindings) — e.g. durable-nonce tx2 in a split signing flow **outside** a single landed bundle. Use **private Frame** (`planNewFrame` + on-curve `authority`).
+- You need **`ifx_close_frame`** to reclaim rent.
+- You intentionally skip `reset` on a **standalone** follow-up tx and depend on cross-tx tape — race risk; use bundle or private Frame.
+
+### 3.7 Private Frame — optional; narrow concrete uses
+
+**Default production path:** `planPublicFrame` + **`ixReset` at each atomic unit start** (§3.4). That covers the common case (single-tx orchestration, bundle with `reset` on tx₁).
+
+**Private Frame** (`planNewFrame` + on-curve `authority`) is **not required** for most integrators today. It exists for:
+
+| Use | Required? | Notes |
+|-----|-----------|--------|
+| **`ifx_close_frame`** (reclaim rent) | **Yes** — only if you need close | Public Frame authority is off-curve → no one can sign `close`. |
+| **Pre-signed read-only tx** after an **earlier landed write**, **no `reset`** between, **not** in one landed bundle | Sometimes | Alternative: public Frame + landed bundle with `reset` on tx₁ (§3.4). Private Frame blocks third-party `reset`/`let` between separate landings. |
+| **Defense-in-depth** write ACL | Optional | Even with `reset` discipline, on-curve `authority` means unrelated keys cannot append to your Frame between your txs. Extra CU/account meta; marginal benefit if you always `reset` correctly. |
+
+We do **not** yet catalog broad product flows that *require* private Frames beyond **`close`** and the pre-sign edge above. Treat private Frame as an **opt-in hardening knob**, not a production default — unless you have a concrete need from the table.
+
+### 3.8 Advanced — cross-unit session without `reset` (authority-managed)
+
+Sometimes **unit 1** (tx or landed bundle) runs `reset → let → …` and lands; **later** (another block, another day) **unit 2** must **read** bindings from unit 1 **without** `reset` — because `reset` would clear `index_count` / start a new session.
+
+**Why private `authority` helps**
+
+| Actor | Public Frame | Private Frame (`authority` signer) |
+|-------|--------------|-------------------------------------|
+| Third party between units | Can **`reset`** → wipes your session for readers | Cannot `reset` / `let` without **your** key |
+| Third party `let` (no `reset`) | Can **append** new bindings (higher indices) | Cannot append without **your** key |
+| You (authority) | Full control if you sign writes | Same — you choose **not** to `reset` until unit 2 finishes |
+
+Tape is **append-only** within a session: extra `let` calls (if they were possible) add **new** indices and do not overwrite earlier payloads. The real cross-unit threat on a public Frame is an unauthorized **`reset`**, not someone “overwriting” index `0`.
+
+**Operational contract (all on authority owner)**
+
+1. Unit 1 lands with bindings you intend to reuse.
+2. **Do not** `reset` until unit 2 (and any chained read-only steps) complete.
+3. Unit 2: omit `reset`, read via same binding indices / `letFrameGeneration` / `letFrameIndexCount` if needed.
+4. When done, `reset` or `close` (private only) before the next unrelated flow.
+
+This is **not** durable application state — still Frame scratch. Values are only as fresh as unit 1’s last `let`; chain moved on. You are trading **off-chain replanning** for **on-chain binding persistence** across wall-clock time.
+
+**Plausible (but niche) product shapes — no shipped Ifx integrator yet**
+
+| Shape | Why private cross-unit might appear |
+|-------|-------------------------------------|
+| **Relayer / bot pipeline + delayed user sig** | Bot lands tx1 (`reset`, `let`, partial settle); user signs read-only tx2 hours later; bot’s key blocks mempool grief `reset` between landings. |
+| **Split flow without bundle** | Tx size / CU forces tx1 landed yesterday, tx2 today; tx2 must read mid-tx snapshot materialized as bindings — bundle no longer possible. |
+| **Pre-signed tx2 after separate tx1 landing** | Same as pre-sign edge (§3.7), but emphasis on **time gap** and **session custody** rather than bundle atomicity. |
+| **“Session handoff” under one operator** | One hot wallet owns orchestration; wants Frame as **operator-scoped scratch** across multiple customer txs without closing PDA. |
+
+**Why most teams skip it**
+
+- **Off-chain planner + `ixReset` each job** is simpler and matches public Frame + §3.4.
+- **Landed Jito bundle** covers many two-tx splits with no wall-clock gap.
+- **Stale bindings** — unit 2 trusts unit 1’s tape, not live chain; often you still want a fresh `let` in unit 2 for amounts that matter.
+- **`index_cap` / `tape_len`** are fixed at create — long-lived sessions need sizing up front.
+
+**Verdict:** Real need is **possible but advanced and uncommon** today — mostly **custodial relayer / delayed partial signing** where the operator already holds an on-curve key and refuses bundles or replanning. Document as a **supported power feature**, not something to optimize main docs around until a concrete integrator appears.
+
+---
+
+### 3.5 Who signs in practice
 
 For **private** Frames, **`authority` is usually the same key that already signs the business tx** (fee payer / bot hot wallet). No extra multisig — one signature covers fee + writes.
 
 **Read-only** instructions (`ifx_assert`, `ifx_patched_cpi`, `ifx_if_else`) do **not** require `authority` — pre-signed txs that only read tape stay valid.
 
-### 3.3 Instruction matrix
+### 3.6 Instruction matrix
 
 | Instruction | Mutates Frame | Top level only | `authority` signer (on-curve) |
 |-------------|---------------|----------------|-------------------------------|
@@ -141,17 +220,19 @@ Patched / structured CPI steps use **`invoke`**, not **`invoke_signed`**. Templa
 
 ## 6. Integrator patterns
 
-### 6.1 Default — public Frame (unchanged)
+### 6.1 Default — public Frame (production with `reset`)
 
 ```ts
 // authority = Frame PDA (off-curve) — zero extra signers on reset/let
 const { scratch, ixCreate } = FrameScratch.planPublicFrame({ payer, frameId, tapeLen });
+
+// Every business tx / bundle: reset FIRST
 tx.add(scratch.ixReset(), scratch.letBuilder()…, …);
 ```
 
-Single tx; no ACL overhead.
+**Production-safe** when each atomic unit (tx or landed bundle) starts with `reset` — §3.4. No ACL overhead; cannot `close` for rent.
 
-### 6.2 Bot / relayer — private Frame
+### 6.2 Optional — private Frame (narrow / defense-in-depth)
 
 ```ts
 const bot = relayerKeypair.publicKey;
@@ -164,7 +245,7 @@ const { scratch, ixCreate } = FrameScratch.planNewFrame({
 // reset / let include bot as authority signer (SDK adds automatically)
 ```
 
-Pre-signed user tx that only **`ifx_patched_cpi`** / **`ifx_if_else`** reads tape: third parties cannot poison the Frame without **bot**’s key.
+Use when you need **`close`**, the **pre-signed read** edge case (§3.7), or **optional** extra write ACL — not because public Frame is “devnet only.”
 
 ### 6.3 Bundle + durable nonce (advanced)
 
@@ -199,13 +280,13 @@ Numeric codes: [errors.md](./errors.md).
 
 - **Wire / IDL:** `close_authority` → `authority` (same offset — rename only).
 - **Breaking:** devnet redeploy + SDK bump; `planNewFrame({ closeAuthority })` → `authority`.
-- **Default recommendation:** public Frame for end-user examples; document private Frames for relayer / nonce custody flows.
+- **Default recommendation:** **`planPublicFrame` + `ixReset` at each atomic unit start** (§3.4). **`planNewFrame`** only for **`close`**, pre-signed-read edge (§3.7), or optional defense-in-depth.
 
 ---
 
 ## 9. Non-goals
 
-- Frame authority does **not** lock Frame after a bundle lands — later txs can still write a **public** Frame.
-- Does **not** prove cross-tx binding freshness — use single tx, bundle ordering, or asserts.
-- Does **not** restrict **reading** Frame — intentional for pre-signed read paths.
-- Does **not** add invoke_signed outbound CPI — unchanged.
+- Frame authority does **not** lock a **public** Frame after your unit lands — the next **separate** tx from anyone can still `reset` it. Your next flow should **`reset` again** at unit start (§3.4).
+- Does **not** prove cross-tx binding freshness **without** `reset`, bundle ordering, or private `authority` — see §3.4 “not enough when”.
+- Does **not** restrict **reading** Frame — intentional for pre-signed read paths (use private Frame when those reads must trust prior writes).
+- Does **not** add `invoke_signed` outbound CPI — unchanged.

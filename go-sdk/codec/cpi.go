@@ -20,9 +20,8 @@ type Cpi struct {
 	AccountsLen   uint8
 	Data          []byte
 	Patches       PatchList
-	// Structured-only (Kind == CpiWireStructured). Payload is Borsh StructuredCpiPatch
-	// (variant tag + nested body). Builder may store tag separately via StructuredTag.
-	StructuredTag     uint8
+	// Structured-only (Kind == CpiWireStructured). Full Borsh StructuredCpiPatch
+	// (top-level variant tag + nested body) from structuredcpi.EncodeStructuredCpiPatch.
 	StructuredPayload []byte
 }
 
@@ -69,14 +68,8 @@ func EncodeCpi(c Cpi) ([]byte, error) {
 }
 
 func structuredPatchWire(c Cpi) ([]byte, error) {
-	if c.StructuredPayload == nil {
-		return nil, fmt.Errorf("structured CPI requires StructuredPayload")
-	}
-	if len(c.StructuredPayload) > 0 && c.StructuredPayload[0] == c.StructuredTag && c.StructuredTag != 0 {
-		return c.StructuredPayload, nil
-	}
-	if c.StructuredTag != 0 {
-		return append([]byte{c.StructuredTag}, c.StructuredPayload...), nil
+	if len(c.StructuredPayload) == 0 {
+		return nil, fmt.Errorf("structured CPI requires non-empty StructuredPayload (use structuredcpi.EncodeStructuredCpiPatch)")
 	}
 	return c.StructuredPayload, nil
 }

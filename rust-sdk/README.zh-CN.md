@@ -51,7 +51,7 @@ let plan = FrameScratch::plan_public_frame(PlanNewFrameParams {
     tape_len: 256,
     program_id: Some(IFX_DEVNET_PROGRAM_ID),
 })?;
-// 单独发送 plan.ix_create；持久化 frame_id、tape_len、plan.frame
+// 单独发送 plan.ix_create；持久化 plan.frame（pubkey）+ tape_len（create 后 frame_id 可丢弃）
 // plan.scratch.authority == plan.frame（公共 Frame，reset/let 无需额外 signer）
 ```
 

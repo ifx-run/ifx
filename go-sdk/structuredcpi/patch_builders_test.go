@@ -3,6 +3,7 @@ package structuredcpi
 import (
 	"testing"
 
+	"github.com/ifx-run/ifx/go-sdk/codec"
 	"github.com/ifx-run/ifx/go-sdk/constants"
 )
 
@@ -126,8 +127,47 @@ func TestStructuredCpiPatchCoversAllWireTags(t *testing.T) {
 	}
 	for _, tc := range structuredPatchWireKeys {
 		p := tc.fn()
-		if _, err := EncodePatchPayload(p.WireTag, p.Payload); err != nil {
-			t.Fatalf("%s tag %d: %v", tc.name, p.WireTag, err)
+		full, err := EncodeStructuredCpiPatch(p.WireTag, p.Payload)
+		if err != nil {
+			t.Fatalf("%s tag %d EncodeStructuredCpiPatch: %v", tc.name, p.WireTag, err)
+		}
+		if len(full) == 0 {
+			t.Fatalf("%s tag %d: empty encoded patch", tc.name, p.WireTag)
+		}
+		if full[0] != p.WireTag {
+			t.Fatalf("%s tag %d: encoded patch starts with %d, want top-level variant %d (got %x)",
+				tc.name, p.WireTag, full[0], p.WireTag, full)
+		}
+		step, err := StructuredCpiStep(1, 4, p.WireTag, p.Payload)
+		if err != nil {
+			t.Fatalf("%s StructuredCpiStep: %v", tc.name, err)
+		}
+		if len(step.StructuredPayload) == 0 || step.StructuredPayload[0] != p.WireTag {
+			t.Fatalf("%s: step payload %x missing variant %d", tc.name, step.StructuredPayload, p.WireTag)
+		}
+		wire, err := codec.EncodeCpi(step)
+		if err != nil {
+			t.Fatalf("%s EncodeCpi: %v", tc.name, err)
+		}
+		if wire[0] != constants.CpiWireStructured || wire[3] != p.WireTag {
+			t.Fatalf("%s EncodeCpi wire %x header/tag mismatch", tc.name, wire)
+		}
+	}
+}
+
+func TestEncodeStructuredCpiPatchSystemTransferTagZero(t *testing.T) {
+	// Mirrors TS: encodeStructuredCpiPatch(systemTransfer) must not drop variant byte 0.
+	for _, idx := range []uint8{0, 5} {
+		full, err := EncodeStructuredCpiPatch(
+			constants.StructuredPatchSystemTransfer,
+			FrameValue{Index: idx},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := []byte{0, idx}
+		if len(full) != 2 || full[0] != 0 || full[1] != idx {
+			t.Fatalf("index %d: got %x want %x", idx, full, want)
 		}
 	}
 }

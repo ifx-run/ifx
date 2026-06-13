@@ -46,7 +46,7 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 ### 3.2 交易范围与 Frame 草稿纸
 
 - `tape` / `cursor` / `index_count` 是 **单笔 tx 内 Ifx 逻辑的草稿纸** — 不是通用业务状态层。
-- Frame **PDA 可长期留在链上**。**公共** Frame（off-curve `authority`）任何人可 `reset`/`let`；**私有** Frame（on-curve `authority`）写操作须 authority 签名 — [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
+- Frame **PDA 可长期留在链上**。**公共** Frame（off-curve `authority`）任何人可 `reset`/`let`；生产上靠 **每个原子单元开头 `reset`** 保证会话独占 — [frame-authority.zh-CN.md](./frame-authority.zh-CN.md) §3.4。**私有** Frame（on-curve `authority`）用于预签只读且不能 `reset`、或 `close`。
 - Ifx **不保证**跨 tx 的 tape 会话一致性。**已落地**的 Jito bundle 仅保证 **包内** tx 顺序 — 见 [bundles.zh-CN.md](./bundles.zh-CN.md)。Ifx 流程优先单笔业务 tx。
 
 ### 3.3 静态可分析与顶层写
@@ -70,9 +70,26 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 
 ## 4. Frame 与寻址
 
-- **Frame PDA：** `["frame", payer, frame_id]`，`frame_id` 为 32 字节 salt。
+- **Frame PDA：** `["frame", payer, frame_id]`；`frame_id` 为 32 字节 salt，**仅在 create 时**用于派生地址。
 - **`authority`：** **off-curve** → 公共 scratch 可写；**on-curve** → 私有 Frame（bot / relayer 密钥签 `reset` / `let` / `close`）。完整规范：[frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
 - **`tape_len`：** 创建时分配 tape 大小（`index_cap = min(256, tape_len / 2)`）。
+
+### 4.1 Frame 地址即身份（闭环设计）
+
+**设计意图：** `ifx_create_frame` 之后，Frame 的 **pubkey 即运行时唯一标识**。`frame_id` 只是一次性 PDA 盐值 — **不写入**账户体，也 **不传入** `reset`、`let`、`assert`、`if_else`、`patched_cpi`、`close`。
+
+| 阶段 | 如何识别 Frame | 指令里要带 `frame_id`？ |
+|------|----------------|-------------------------|
+| **Create** | Anchor 派生 `PDA(["frame", payer, frame_id])` | ✅（instruction 参数，用于 seeds） |
+| **Reset / let / assert / CPI / close** | 交易账户列表中的 `frame` pubkey | ❌ |
+
+**为何非 create 指令不 re-check seeds**
+
+- 若每次 `reset`/`let` 都重验 `["frame", payer, frame_id]`，须在每条指令里再次携带 `payer` + `frame_id` — 增加字节、账户解析与 **CU**，而在交易已传入正确 **地址** 后并不提升安全性。
+- 地址本身即 create 时对 `(payer, frame_id)` 的承诺。集成方持久化 **`scratch.frame`**（pubkey）+ `tape_len`（私有 Frame 另记 `authority`）；**create 之后可丢弃 `frame_id`**。
+- 非 create 路径的链上校验：`FrameAccount::try_from`（Ifx owner + layout），写操作另见 [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。传入随机非 Frame 地址会失败；传入 **另一个合法 Frame** 属于「账户 pubkey 传错」，与任意 Solana 程序中用错 ATA 同类 — 由 SDK/planner 防范，而非靠重复验 seeds。
+
+**集成清单：** 一次 `planPublicFrame` / `planNewFrame` → 持久化 `frame` 地址 → 之后所有业务 tx 仅用该 pubkey 调用 `FrameScratch` 或 `createIx*`。回收 rent 的 `ixCloseFrame` 同样只需 `frame` + `authority` 签名 — 不需要 `frame_id`。
 
 ---
 
@@ -102,13 +119,15 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 - `ifx_assert` / `ifx_if_else` 使用 `cond: Expr`。
 - `ifx_if_else` 分支：**`Skip`**、**`Revert`**，或 **1–254** 个顺序 **`Cpi`** 步（wire u8 tag = 步数）。
 - 每个 **`Cpi`** 步以 wire kind 开头：**`0` Static** · **`1` RawPatched** · **`2` Structured**（[structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）。
-  - **RawPatched：** 模板 `data` + **`patches`** 字节覆盖 — DEX / 逃生口。
-  - **Structured：** 官方 registry ix；从 typed Borsh patch 组装 `data` — `[2][accounts_start][accounts_len][StructuredCpiPatch…]`，无模板 blob。
-  - **Static：** 模板 `data` 原样 invoke。
+  - **Structured（type-safe）：** 官方 registry ix；链上校验 program id + patch 变体；从 typed Borsh patch 组装 `data` — `[2][accounts_start][accounts_len][StructuredCpiPatch…]`。
+  - **RawPatched（type-unsafe）：** 模板 `data` + **`patches`** 字节覆盖 — DEX / 自定义 / 非 registry layout。**program id 由构造者指定**；Ifx 不对 Raw 维护白名单（[`raw-cpi-patches.zh-CN.md`](./raw-cpi-patches.zh-CN.md) § 设计意图）。
+  - **Static：** 模板 `data` 原样 invoke；program id 同样由构造者指定。
 - 无条件 patched CPI：**`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** 或 **Structured**（须 apply patch）。
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**。
 
-**原始切片与字节 patch** 用于 typed 登记表未覆盖的 layout；钱包应标注为未校验 layout。
+**责任划分：** registry 能覆盖的 ix 优先 **Structured**（System / SPL / Token-2022 / Stake）。需要通用性时用 **Raw** — 与 typed API vs `unsafe` 同类：**交易构造者**负责模板、账户、offset 与目标 program。可选 Raw 白名单若不做到与 Structured 同粒度的 ix+字段校验，并无实质安全增益，只会重复 registry 并损害通用性。
+
+**原始切片与字节 patch** 是额外逃生口；有 typed `LetBinding` 时优先 typed 变体。
 
 ## 7. SDK 与可解释性
 

@@ -13,7 +13,7 @@
 | 优先级 | SDK | 状态 | 说明 |
 |--------|-----|------|------|
 | **P0 — 高** | **Go SDK** | ✅ | `go-sdk/` — 与 TS 对齐的 planner + readback + errors + L1 dust |
-| **P1 — 中** | **Rust SDK** | ✅ R1–R3（minimal） | `ifx-core` + `ifx-sdk`；见 [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
+| **P1 — 中** | **Rust SDK** | ✅ R1–R3（L0–L3） | `ifx-core` + `ifx-sdk`；见 [rust-integration.zh-CN.md](./rust-integration.zh-CN.md) |
 | — | TypeScript | ✅ 已交付 | `@ifx-run/sdk` |
 
 **不在本页范围：** 链上 `ifx` program crate 供维护 / fork；集成方链下组 tx，不把 Ifx CPI 包进自有合约。
@@ -71,7 +71,7 @@ go-sdk/                 # 模块 github.com/ifx-run/ifx/go-sdk
 | **G1 — Wire** | constants、PDA、`encodeExpr` / `encodeLetArgs` / patch & if_else codec | 与 TS parity tests 字节一致 | ✅ |
 | **G2 — IR** | `expr` 构造、`LetBinding` helper、类型推断（Eval） | LetBinding 0–67 / Expr 0–51 样例 | ✅ |
 | **G3 — Planner** | `FrameScratch`、`LetBuilder`（remaining 去重）、`ix_*` | `scratch/*_test.go` | ✅ |
-| **G4 — 完整** | RawPatched + **Structured** CPI、if_else、Pubkey let、L0–L1 e2e | `integration/*_test.go`、`structuredcpi/*_test.go` | ✅ |
+| **G4 — 完整** | RawPatched + **Structured** CPI、if_else、Pubkey let、L0–L3 e2e | `integration/*_test.go`、`structuredcpi/*_test.go` | ✅ |
 | **G5 — 文档** | Go SDK README、examples 说明 | `go-sdk/README` | ✅ |
 
 **后续增强（非阻塞）：** 更多 `examples/` 编排场景、SPL CPI 模板库扩展。
@@ -143,7 +143,7 @@ rust-sdk/                 # 链下 planner；package 名 ifx-sdk（crates.io: if
 |------|------|
 | **R1** | `ifx-core` 抽取 + golden vs TS | ✅ wire + layout + `structured-cpi`；`frame_layout` 暂缓 |
 | **R2** | planner + `ix_*` + `expr` | ✅ `FrameScratch`、`LetBuilder`、`let_*`、`ix_cpi` / `ix_if_else` / `ix_close`、parity 测试 |
-| **R3** | 示例与集成测试（`ifx-sdk`） | ✅ minimal localnet + 文档；dust/orchestration planner 待补 |
+| **R3** | 示例与集成测试（`ifx-sdk`） | ✅ L0–L3 localnet planner（minimal、close-empty-ATA、dust、two-hop、personal AMM、sponsored buy） |
 
 ---
 

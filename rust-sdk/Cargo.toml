@@ -22,6 +22,8 @@ solana-system-interface = { workspace = true }
 solana-client = { workspace = true }
 solana-transaction-status-client-types = { workspace = true }
 spl-token-interface = { workspace = true }
+spl-token-2022 = { workspace = true }
+spl-associated-token-account = { version = "8.0", features = ["no-entrypoint"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

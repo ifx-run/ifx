@@ -37,8 +37,9 @@ The **Frame** PDA holds a byte buffer (**tape**) plus a small index table. Names
 | **ty** / **ValueType** | First byte of each record | Primitive type tag (`Bool`, `U64`, …) | Short for **type**; size is fixed per variant (see [implementation.md](./implementation.md) §3). |
 | **payload** | Bytes after `ty` | Little-endian value bytes | Everything **`Expr`** and **`RawCpiPatch`** read for a binding (type comes from `ty` at `payload_at[i] - 1` on chain). |
 | **authority** | `Frame.authority` | **Off-curve** → public scratch; **on-curve** → private Frame (signer on writes) | Gates **`reset` / `let` / `close`** when on-curve. [frame-authority.md](./frame-authority.md). |
-| **frame_id** | PDA seed (32 bytes) | User-chosen salt with payer | Lets one payer hold **many** Frame PDAs; not stored in account body. Persist **`frame_id` + `tape_len`** off-chain after create. |
-| **payer** | PDA seed | Frame rent payer | Anchor `#[account(init, payer = …)]` convention. |
+| **frame_id** | PDA seed (32 bytes) | Salt with `payer` **only at `ifx_create_frame`** | Not stored on-chain. After create, persist **`frame` pubkey** (+ `tape_len`); `frame_id` may be discarded. See [design.md §4.1](./design.md#41-frame-address-identity-closed-loop). |
+| **frame** (address) | Frame account pubkey | **Runtime identity** for reset / let / assert / CPI / close | Returned by `planPublicFrame` / `planNewFrame` as `scratch.frame`. No seeds re-check on non-create ix (by design). |
+| **payer** | PDA seed | Frame rent payer at create | Anchor `#[account(init, payer = …)]` convention; not required on later instructions. |
 
 ### Why not “memory”, “slot”, or “register”?
 
@@ -87,7 +88,7 @@ Prefix **`ifx_`** matches the program module and keeps instruction names grep-fr
 | **`StructuredCpiPatch`** | flat Borsh enum (33 variants) | Official System / SPL / Token-2022 / Stake ix with typed payload | Variant tag **0–32** is the first byte of the Borsh blob after account slice; nested payloads (`AmountDecimalsPatch`, …) follow inside the enum. |
 | **Nested patch payload** | e.g. `AmountDecimalsPatch` | Which fields in ix `data` come from Frame vs wire literals | Sub-enum inside **`StructuredCpiPatch`**; Rust module **`structured_cpi_payload`**. |
 | **`structuredCpi()`** | SDK builder | Official `TransactionInstruction` → structured wire step | Same account ergonomics as **`rawCpi()`**; pass **`structuredCpiPatch.*`** for the patch. |
-| **`rawCpi()` / `rawCpiPatch()`** | SDK helpers | **RawPatched** template + byte patches | Escape hatch for non-registry programs. |
+| **`rawCpi()` / `rawCpiPatch()`** | SDK helpers | **RawPatched** template + byte patches | **Type-unsafe** escape hatch for non-registry programs (DEX, custom). Builder-chosen program id — not a defect; see [raw-cpi-patches.md](./raw-cpi-patches.md). |
 | **`IfElseArm`** | `Skip` / `Revert` / `Cpi[]` | One branch outcome | **Arm** = one side of conditional (PL terminology). Up to **254** sequential **`Cpi`** steps per arm. |
 | **`remaining_accounts`** | Account metas slice | Extra accounts beyond ix struct fields | Anchor/Solana convention: indices in **`LetBinding`** and **`Cpi`** point into this slice. |
 
@@ -119,7 +120,7 @@ Prefix **`ifx_`** matches the program module and keeps instruction names grep-fr
 | **`indexCapForTapeLen`** | `min(256, floor(tapeLen / 2))` | Matches on-chain **`index_cap_for_tape_len`**. |
 | **`DecodedFrame`** | Deserialized Frame account | Read **`tape`**, **`payload_at`**, **`generation`**, **`readValue(binding)`** after fetch. |
 | **`letBuilder`** | Batch many bindings → one **`ifx_let`** | Builds **`remaining_accounts`** dedupe + ordered **`LetBinding`** list. |
-| **`rawCpi` / `rawCpiPatch`** | SDK helpers for **RawPatched** wire steps | **`rawCpi(template, { patches })`** — byte overlays on template `data`. Use **`structuredCpi()`** for official registry ix. |
+| **`rawCpi` / `rawCpiPatch`** | SDK helpers for **RawPatched** wire steps | **`rawCpi(template, { patches })`** — byte overlays; builder bears program/layout risk. Use **`structuredCpi()`** for official registry ix. |
 | **`structuredCpi` / `structuredCpiPatch`** | Structured CPI builders | **`structuredCpi(splIx, { patch })`** — accounts from instruction; patch selects official layout. |
 | **`staticCpi`** | Wrap known ix for **`ifx_if_else`** static step | Empty **`patches`** — prefer plain **`tx.add(ix)`** when unconditional. |
 | **`$N`** (logs) | Binding index in pseudocode | See [debugging.md](./debugging.md): **`let $0: u64 = …`**. |

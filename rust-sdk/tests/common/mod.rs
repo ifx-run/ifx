@@ -2,6 +2,7 @@
 
 pub mod planners;
 pub mod token;
+pub mod token2022;
 
 use ifx_sdk::decode::{decode_frame_account, DecodedFrame};
 use ifx_sdk::scratch::FrameScratch;

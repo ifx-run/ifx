@@ -35,8 +35,8 @@ import { Transaction } from "@solana/web3.js";
 import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 const tapeLen = DEFAULT_TAPE_LEN; // 512；链上最大 MAX_FRAME_TAPE_LEN；典型 256–8192
-const frameId = randomBytes(32); // 持久化 frameId + tapeLen（配置、DB 等）
-const { scratch, ixCreate } = FrameScratch.planPublicFrame({
+const frameId = randomBytes(32); // 仅 create 用的 salt；Tx 1 后持久化 scratch.frame + tapeLen（frameId 可丢弃）
+const { scratch, ixCreate, frame } = FrameScratch.planPublicFrame({
   payer,
   frameId,
   tapeLen,
@@ -45,7 +45,7 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）— **公开 scratch**，任何人可写。适合 devnet / 无状态 glue；**生产业务 Frame 请用下方 `planNewFrame` + on-curve `authority`**。`reset` / `let` 无需额外 signer；无人能 `close` 回收 rent。
+**默认（公共 Frame）：** `planPublicFrame` 将 `authority` 设为 **Frame PDA**（off-curve）— 任何人可写。**生产可用**：每个原子单元（单笔 tx 或已落地 bundle）**开头 `ixReset()`** — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md) §3.4。`reset`/`let` 无需额外 signer；不能 `close` 收 rent。预签只读且中间不能 `reset`、或需要 `close` 时用 `planNewFrame`。
 
 **Tx 2 — 业务**（另一次请求 / 任务；`reset` + let / assert / CPI）。同进程复用 Tx 1 的 `scratch`；跨任务重建见 [`examples/minimal-frame.ts`](./examples/minimal-frame.ts)：
 
@@ -126,9 +126,10 @@ tx.add(letBuilder.buildIx());
 - **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
-- **`FrameScratch.planPublicFrame(...)`**：**默认** — `authority` = Frame PDA（`publicFrameAuthority`）；**公开 scratch**（任何人可 `reset`/`let`，不可 `close`）。适合 devnet 试跑与无状态 glue；**生产业务 Frame 请用 `planNewFrame` + on-curve `authority`** — 见 [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md)。
-- **`FrameScratch.planNewFrame(...)`**：**生产推荐** — 私有 / 可关闭 Frame；on-curve `authority`（如 bot 热钱包）签 `reset`/`let`/`close`。
-- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；公共 Frame 传 `publicFrameAuthority(payer, frameId)`。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
+- **`FrameScratch.planPublicFrame(...)`**：**默认** — 公共 scratch。每个原子单元开头 **`ixReset()`** 即可 **上生产** — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md) §3.4。
+- **`FrameScratch.planNewFrame(...)`**：可选 — 需 **`close`**、§3.7 预签边角、或纵深防御；公共 Frame + `ixReset` 纪律下多数生产不必用。
+- **Frame 地址（闭环）**：`frame_id` 仅用于 **create** 派生 PDA。Tx 1 后持久化 **`scratch.frame`**（pubkey）+ `tapeLen`，不必存 `frame_id`。`reset` / `let` / `close` 只传地址；链上 **不** re-check seeds（[design.zh-CN.md §4.1](../docs/design.zh-CN.md#41-frame-地址即身份闭环设计)）。
+- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；传入已持久化的 **`framePk`**。公共 Frame 的 `authority` 为 Frame PDA（仅当从 `payer`+`frameId` 重算时才需 `publicFrameAuthority`）。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
 ### SPL Token 与 Token-2022（应用层）
@@ -185,9 +186,9 @@ InitializeMint2 + Frame `Pubkey`：`tests/ifx_structured_cpi_initialize_mint.ts`
 
 **默认**不传 `remaining` — 账户来自模板指令（`[programId, …keys]`）。仅在合并进更长列表时传入（例如 `ifx_if_else` 与 `ifx_let` 共用 remaining）；只传 `PublicKey[]` 会丢失 signer/writable。
 
-## RawPatched CPI（`rawCpi` / `ifx_patched_cpi`）— 逃生口
+## RawPatched CPI（`rawCpi` / `ifx_patched_cpi`）— type-unsafe 逃生口
 
-**DEX 或自定义 program**，`data` layout 不在 structured registry 中 — 模板 ix + 字节覆盖：
+面向 **DEX 或自定义 program**（`data` layout 不在 structured registry）— 模板 ix + 字节覆盖。**program id 与 layout 由交易构造者负责**（类似 Rust `unsafe`）；Ifx **不对** Raw CPI 目标做白名单。registry 能覆盖时请用 **`structuredCpi()`** — 见 [raw-cpi-patches.zh-CN.md](../docs/raw-cpi-patches.zh-CN.md#设计意图type-safe-与-type-unsafe-cpi)。
 
 ```ts
 import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";

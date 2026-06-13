@@ -282,7 +282,10 @@ closeIfElse, err := s.IxIfElse(args, remainingMetas)
 | 包 / 测试 | 场景 |
 |-----------|------|
 | `examples` + `TestPlanMinimalFrameBusiness` | create 后的 reset → let → assert |
-| `examples.PlanDustDestroyInstructions` | Token-2022 dust：burn（patched）→ harvest → close（static CPI） |
+| `examples.PlanDustDestroyInstructions` | Token-2022 dust（L1） |
+| `examples.PlanTwoHopTokenSwapInstructions` | 两跳 swap A→USDC→B（L2） |
+| `examples.PlanPersonalAmmSwapInstructions` | Personal AMM 恒定乘积 swap（L2） |
+| `examples.PlanSponsoredBuyInstructions` | Sponsored swap 结算（L3） |
 | `integration/orchestration_test.go` | reset / let / assert / patched transfer / if_else |
 
 说明与 localnet 跑法：[`examples/README.zh-CN.md`](./examples/README.zh-CN.md)。

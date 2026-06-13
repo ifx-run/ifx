@@ -44,7 +44,7 @@ pub struct Frame {
 }
 ```
 
-- **PDA seeds:** `["frame", payer, frame_id]`（`frame_id` 32 字节 salt，不写入账户体）
+- **PDA seeds：** `["frame", payer, frame_id]`（`frame_id` 32 字节 salt，不写入账户体）。seeds **仅在 `ifx_create_frame`** 由 Anchor `init` 校验；其余指令只认 **账户 pubkey**，指令数据不含 `frame_id`，**不** re-check seeds（[design.zh-CN.md §4.1](./design.zh-CN.md#41-frame-地址即身份闭环设计)；刻意设计，节省 CU）。
 - **`tape_len`:** create 时 `1..=65_535`（固定；无 extend）
 - **`index_cap`:** `min(256, tape_len / 2)` — create 时固定 `payload_at` 表长
 - **账户空间:** `1 + 32 + 4 + 2 + 2 + 8 + 4 + (index_cap×2) + 4 + tape_len`
@@ -126,8 +126,8 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 - **`IfElseArm` wire：** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] 步
 - **`Cpi` wire kind**（每步首字节）：**`0` Static** · **`1` RawPatched** · **`2` Structured**（见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）
   - **Static：** `[0][accounts_start][accounts_len][U16LenVec data]`
-  - **RawPatched：** `[1][…][data][PatchList]` — 字节覆盖；DEX / 非 registry
-  - **Structured：** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **无 ix data 模板**；flat enum（variant tag **0–32** 在 Borsh blob 内）
+  - **RawPatched：** `[1][…][data][PatchList]` — 字节覆盖；DEX / 非 registry；**program id 由构造者指定**（刻意 type-unsafe — [`raw-cpi-patches.zh-CN.md`](./raw-cpi-patches.zh-CN.md)）
+  - **Structured：** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **无 ix data 模板**；flat enum（variant tag **0–32** 在 Borsh blob 内）；链上校验 program id
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**
 
 ---

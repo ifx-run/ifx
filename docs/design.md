@@ -46,7 +46,7 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 ### 3.2 Transaction scope & Frame as scratch
 
 - `tape` / `cursor` / `index_count` are **scratch for Ifx logic in a tx** — not a general-purpose state layer.
-- The Frame **PDA can persist** on-chain. **Public** Frames (off-curve `authority`) allow anyone to `reset`/`let`; **private** Frames (on-curve `authority`) require the authority signer on writes — [frame-authority.md](./frame-authority.md).
+- The Frame **PDA can persist** on-chain. **Public** Frames (off-curve `authority`) allow anyone to `reset`/`let`; session safety in production comes from **`reset` at each atomic unit start** (one tx or one landed bundle) — [frame-authority.md](./frame-authority.md) §3.4. **Private** Frames (on-curve `authority`) for pre-signed read without `reset`, or `close`.
 - Ifx **does not guarantee** cross-tx consistency of tape session state. A **landed** Jito bundle only orders txs **inside that bundle** — see [bundles.md](./bundles.md). Prefer one business tx per Ifx flow.
 
 ### 3.3 Statically analyzable & top-level writes
@@ -70,9 +70,26 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 
 ## 4. Frame & addressing
 
-- **Frame PDA:** `["frame", payer, frame_id]`; `frame_id` is a 32-byte salt.
+- **Frame PDA:** `["frame", payer, frame_id]`; `frame_id` is a 32-byte salt used **only at create** to derive the address.
 - **`authority`:** **off-curve** → public scratch writes; **on-curve** → private Frame (bot / relayer key signs `reset` / `let` / `close`). Full spec: [frame-authority.md](./frame-authority.md).
 - **`tape_len`:** Tape size allocated at creation (`index_cap = min(256, tape_len / 2)`).
+
+### 4.1 Frame address identity (closed loop)
+
+**Design intent:** After `ifx_create_frame`, the Frame’s **pubkey is the sole runtime identifier**. `frame_id` is a one-time PDA salt — it is **not stored** in the account body and is **not** passed to `reset`, `let`, `assert`, `if_else`, `patched_cpi`, or `close`.
+
+| Phase | What identifies the Frame | `frame_id` in ix? |
+|-------|---------------------------|------------------|
+| **Create** | Anchor derives `PDA(["frame", payer, frame_id])` | ✅ instruction arg (for seeds) |
+| **Reset / let / assert / CPI / close** | `frame` account pubkey in the tx | ❌ |
+
+**Why seeds are not re-checked on non-create instructions**
+
+- Re-verifying `["frame", payer, frame_id]` on every `reset`/`let` would require carrying `payer` + `frame_id` in each instruction again — extra bytes, account resolution, and **CU** — without adding security once the correct **address** is already in the transaction.
+- The address **is** the commitment to `(payer, frame_id)` from create. Integrators persist **`scratch.frame`** (pubkey) + `tape_len` (+ `authority` when private). They may discard `frame_id` after provisioning.
+- On-chain validation on non-create paths: `FrameAccount::try_from` (Ifx owner + layout) and, for writes/close, [`frame-authority.md`](./frame-authority.md) write gates. Passing a random non-Frame pubkey fails; passing a **different valid Frame** address is the same class of bug as using the wrong ATA in any Solana program — prevented by the SDK/planner, not by re-deriving seeds.
+
+**Integrator checklist:** use `planPublicFrame` / `planNewFrame` once → persist `frame` pubkey → all later txs use `FrameScratch` methods or `createIx*` with that pubkey only. To reclaim rent, `ixCloseFrame` also needs only `frame` + `authority` signer — no `frame_id`.
 
 ---
 
@@ -102,13 +119,15 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
 - Conditions are `Expr`; `ifx_assert` / `ifx_if_else` take `cond: Expr`.
 - `ifx_if_else` arms: **`Skip`**, **`Revert`**, or **1–254** sequential **`Cpi`** steps (wire u8 tag = step count).
 - Each **`Cpi`** step starts with wire kind **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md)).
-  - **RawPatched:** template `data` + optional **`patches`** (`PatchList`); byte overlay before invoke — DEX / escape hatch.
-  - **Structured:** official registry ix; ix `data` assembled from typed Borsh patch — `[2][accounts_start][accounts_len][StructuredCpiPatch…]` (no template blob).
-  - **Static:** template `data` invoked as-is (empty `PatchList`).
+  - **Structured (type-safe):** official registry ix; on-chain validates program id + patch variant; ix `data` assembled from typed Borsh patch — `[2][accounts_start][accounts_len][StructuredCpiPatch…]`.
+  - **RawPatched (type-unsafe):** template `data` + **`patches`** (`PatchList`); byte overlay before invoke — DEX / custom / non-registry layouts. **Program id is builder-chosen**; Ifx does not maintain a Raw allowlist ([`raw-cpi-patches.md`](./raw-cpi-patches.md) § design intent).
+  - **Static:** template `data` invoked as-is (empty `PatchList`); program id also builder-chosen.
 - Unconditional patched CPI: **`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** or **Structured** (requires patch apply).
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**.
 
-**Raw slices and byte patches** are escape hatches for layouts not in the typed registry; wallets should label them layout-unchecked.
+**Division of responsibility:** prefer **Structured** for registry ix (System / SPL / Token-2022 / Stake). Use **Raw** when generality matters — same trade-off as typed vs `unsafe` APIs: the **transaction constructor** is responsible for correct template, accounts, offsets, and target program. Optional Raw whitelists would not be meaningfully safer without duplicating Structured field-by-field.
+
+**Raw slices:** `AccountDataSlice` and generic `RawCpiPatch` byte offsets are additional escape hatches; prefer typed `LetBinding` variants when available.
 
 ## 7. SDK & interpretability
 

@@ -103,7 +103,7 @@
 |------|------|------|
 | **Rust R1** | `ifx-core` 抽取 + golden vs TS | ✅ |
 | **Rust R2** | planner + `ix_*` + `expr` | ✅ |
-| **Rust R3** | 示例 + L1 集成测试 | ✅ minimal localnet；dust/orchestration planner 待补 |
+| **Rust R3** | 示例 + L0–L3 集成测试 | ✅ minimal、close-empty-ATA、dust、two-hop、personal AMM、sponsored buy |
 
 ---
 

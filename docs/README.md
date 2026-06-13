@@ -6,7 +6,7 @@ Design and implementation docs live here. The repo root [README.md](../README.md
 
 | Doc | Audience | Contents |
 |-----|----------|----------|
-| [design.md](./design.md) | Architecture / product | Motivation, principles, tape & SSA model, non-goals |
+| [design.md](./design.md) | Architecture / product | Motivation, principles, tape & SSA model, **Frame address identity (§4.1)**, non-goals |
 | [glossary.md](./glossary.md) | Everyone | **Naming guide** — why `tape`, `index`, `cursor`, etc. |
 | [implementation.md](./implementation.md) | Integrators | Instructions, types, limits |
 | [rust-integration.md](./rust-integration.md) | Rust / Anchor integrators | CPI, wire encoding, SDK vs program crate |

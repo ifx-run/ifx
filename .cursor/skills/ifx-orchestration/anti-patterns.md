@@ -8,7 +8,8 @@ Reject or refactor these when reviewing agent-generated integration code.
 |--------------|-----|-----|
 | Single tx: `create_frame` + swap + let | Frame provisioning is separate rent step | Tx1 create; Tx2+ reset + business |
 | Frame PDA as app state across days | Scratch, not durable app state | Store real state in your PDAs; Frame = scratch |
-| Private Frame / nonce custody without on-curve `authority` | Anyone can poison tape before pre-signed read tx | Set `authority` to bot hot wallet — [frame-authority.md](../../../docs/frame-authority.md) |
+| Private Frame / nonce custody without on-curve `authority` | Pre-signed read tx **without `reset`** after an earlier write — third party can poison **between** separate landings | **`planNewFrame`** + bot key, **or** public Frame + **landed bundle** with `reset` on tx₁ — [frame-authority.md](../../../docs/frame-authority.md) §3.4 |
+| Omit `ixReset` at start of a business tx / bundle | Public Frame tape may include others' writes or stale session | **Always `ixReset` first** in each atomic unit (default) |
 | Cross-tx Frame `tape` without landed bundle | No ordering; race on reset | Pattern 3 + Jito only, or single tx / pattern 2 with reset each tx |
 | Jito bundle for every Ifx flow | Extra complexity, landing risk | Default single business tx ([pattern 1](../../../docs/bundles.md)) |
 | One-off program for a single conditional CPI | Same-tx orchestration over existing programs | Use if_else + CPI when Ifx fits; new programs for new state/rules |
@@ -19,6 +20,8 @@ Reject or refactor these when reviewing agent-generated integration code.
 | Anti-pattern | Why | Fix |
 |--------------|-----|-----|
 | `rawCpi()` + `rawCpiPatch` for official SPL/System ix | Manual offsets; easy to patch discriminator | `structuredCpi()` + `structuredCpiPatch.*` — see [structured-cpi-patches.md](../../../docs/structured-cpi-patches.md) |
+| Expect Ifx to whitelist Raw CPI program ids on-chain | Partial allowlist ≠ safe; full allowlist duplicates Structured and kills DEX generality | Raw is **type-unsafe by design** — builder responsibility; see [raw-cpi-patches.md](../../../docs/raw-cpi-patches.md) |
+| `rawCpi()` for DEX when layout is documented | **Valid** — this is what Raw is for | Not an anti-pattern; simulate and match offsets |
 | `ifx_patched_cpi` with **empty** patches | Invalid (`InvalidPatchedCpiPatches`) | `tx.add(static ix)` or `ifx_if_else` with `staticCpi` |
 | Patched CPI (`ifx_patched_cpi`) for unconditional hop1 swap | Hop1 amount known at build | `tx.add(hop1)` |
 | `staticCpi` when amount comes from let | Wrong step — patches missing | Official ix: `structuredCpi()`; DEX/custom: `rawCpi()` + `rawCpiPatch` |

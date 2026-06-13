@@ -39,7 +39,7 @@ Ifx adds **read → compute → assert → CPI** inside **one business transacti
 
 Set `programId` once on **`FrameScratch`** (via `planPublicFrame({ programId })` or constructor). All `scratch.ix*` / `letBuilder().buildIx()` use it automatically; **TS only:** pass `IxOpts` to override per ix. **Go:** `ProgramID` on `FrameScratch` only (no per-ix override).
 
-**Default Frame:** `planPublicFrame` — `authority` = Frame PDA (public scratch, no extra signer). Use `planNewFrame({ authority: payer })` only for private / closeable Frames — [frame-authority.md](../../../docs/frame-authority.md).
+**Default Frame:** `planPublicFrame` + `ixReset` per atomic unit (§3.4). `planNewFrame` only if you need **`close`** or optional hardening (§3.7) — not a production default.
 
 `planPublicFrame` returns `{ scratch, ixCreate, frame, frameBump }` — do not re-derive the PDA outside.
 
@@ -48,11 +48,12 @@ Status: **developer preview** — pin `@ifx-run/sdk`, no audit. See [README.md](
 ## Two-transaction model (required)
 
 ```text
-Tx 1 (once per frame_id):  ifx_create_frame  →  persist frameId + tapeLen
+Tx 1 (once per Frame):     ifx_create_frame  →  persist scratch.frame (pubkey) + tapeLen
 Tx 2+ (each job):          ifx_reset_frame  →  let / user ix / assert / cpi / if_else
 ```
 
-- Rebuild `FrameScratch` from stored `frameId` + `tapeLen` + payer (same PDA derivation).
+- `frame_id` is a **create-only** PDA salt; after Tx 1 you may discard it. Non-create instructions use the **Frame address only** — no seeds re-check ([design.md §4.1](../../../docs/design.md#41-frame-address-identity-closed-loop)).
+- Rebuild `FrameScratch` from stored **`frame` pubkey** + `tapeLen` (+ `authority` when private).
 - **Every business tx starts with `scratch.ixReset()`** (resets on-chain session: `cursor` / `index_count`, bumps `generation`; local planner syncs).
 - **Exception (advanced):** omit `reset` only when this tx continues Frame bindings from the **previous tx in the same landed Jito bundle** — see [Multi-tx & bundles](#multi-tx--jito-bundles) below. Default is still reset every tx.
 
@@ -60,7 +61,7 @@ Tx 2+ (each job):          ifx_reset_frame  →  let / user ix / assert / cpi / 
 import { randomBytes } from "crypto";
 import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
-const frameId = randomBytes(32); // persist
+const frameId = randomBytes(32); // create-only salt; after Tx 1 persist scratch.frame + tapeLen
 const tapeLen = DEFAULT_TAPE_LEN; // 512; indexCap = 256; max tape MAX_FRAME_TAPE_LEN
 
 // Tx 1 (devnet: omit programId — DEFAULT_IFX_PROGRAM_ID)
@@ -148,7 +149,7 @@ tx_b: refreshFromChain() → letFrameGeneration() / letFrameIndexCount() (option
 |-----------|---------|
 | Instruction `data` **fully known** at build time | `tx.add(ix)` or `scratch.ixIfElse(..., arm.cpi(staticCpi(...)))` |
 | **Official** System / SPL / Token-2022 ix + dynamic fields from tape | `scratch.ixCpi(structuredCpi(officialIx, structuredCpiPatch.*).build())` — see [structured-cpi-patches.md](../../docs/structured-cpi-patches.md) |
-| Non-registry layout / DEX — fill `data` from **Frame tape** | `scratch.ixCpi(rawCpi(template, { patches: [rawCpiPatch(dataOffset, value)] }).build())` — **RawPatched** |
+| Non-registry layout / DEX — fill `data` from **Frame tape** | `scratch.ixCpi(rawCpi(template, { patches: [rawCpiPatch(dataOffset, value)] }).build())` — **RawPatched (type-unsafe)**; builder picks program id — [raw-cpi-patches.md](../../docs/raw-cpi-patches.md) |
 | Unconditional static CPI, no Ifx branch | **Prefer `tx.add(ix)`** — do not use `ifx_patched_cpi` with empty patches |
 
 `rawCpiPatch(byteOffset, scratchValue)` — byteOffset is into template `data`; scratchValue uses `ref.index`.

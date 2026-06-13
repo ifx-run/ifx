@@ -4,6 +4,8 @@ English | [中文](./structured-cpi-patches.zh-CN.md)
 
 Wire: `Cpi::Structured { accounts, patch: StructuredCpiPatch }` — see `programs/ifx/src/state/cpi.rs` and `structured_cpi_patch.rs`.
 
+**Structured vs RawPatched:** Structured is the **type-safe** path — on-chain program id + ix variant + field layout per the registry below. **RawPatched** (`rawCpi`) is the **type-unsafe** escape hatch for DEX / custom programs; builder-chosen program id, no Raw allowlist ([`raw-cpi-patches.md`](./raw-cpi-patches.md) § design intent). Both are required; blocking Raw would not improve safety without duplicating this registry for every third-party layout.
+
 Dynamic fields use [`Value`](../../programs/ifx/src/state/types.rs) (Frame binding index); wire writes `index` as one byte. Literals stay typed (`u64`, `u8`, `[u8; 32]`).
 
 **One flat enum per official ix** — `StructuredCpiPatch` only; nested payloads (`AmountDecimalsPatch`, …) cannot mismatch the ix variant.

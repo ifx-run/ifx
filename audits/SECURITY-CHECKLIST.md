@@ -84,7 +84,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 
 | ID | Item | Detailed rows |
 |----|------|---------------|
-| IFX-SEC-BC25 | Validate CPI program IDs (no arbitrary CPI unless accepted) | C03 — ⚠️ |
+| IFX-SEC-BC25 | CPI program id: **Structured** = registry allowlist; **Static/Raw** = builder-chosen (type-unsafe by design) | C03 — ✅ [raw-cpi-patches.md § design intent](../docs/raw-cpi-patches.md#design-intent-type-safe-vs-type-unsafe-cpi) |
 | IFX-SEC-BC26 | Do not pass extra signer/writable privileges in CPI metas | C10 |
 | IFX-SEC-BC27 | `invoke_signed` uses correct canonical seeds | C06 — **N/A** (no `invoke_signed`) |
 
@@ -111,7 +111,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 |----|----------|---------------|
 | IFX-SEC-BC35 | Missing owner checks | A01 |
 | IFX-SEC-BC36 | Missing signer checks | A02 |
-| IFX-SEC-BC37 | Arbitrary CPI | C03 |
+| IFX-SEC-BC37 | Arbitrary CPI on Static/Raw paths — builder responsibility; not an Ifx defect | C03 — ✅ accepted design |
 | IFX-SEC-BC38 | Reinitialization | A05–A06 |
 | IFX-SEC-BC39 | PDA sharing | B05 |
 | IFX-SEC-BC40 | Type cosplay | A03–A04 |
@@ -148,7 +148,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | IFX-SEC-B01 | Seeds `[FRAME_SEED, payer, frame_id]` | `create_frame.rs` |
 | IFX-SEC-B02 | Canonical bump via Anchor `bump` (not user-supplied) | `create_frame.rs` |
 | IFX-SEC-B03 | `frame_id` in `#[instruction]` matches init seeds | `create_frame.rs` |
-| IFX-SEC-B04 | Non-create ix: wrong Frame pubkey → decode/layout fail (seeds **not** re-verified) | `reset_frame.rs`, `let_op.rs` — ⚠️ if accepted |
+| IFX-SEC-B04 | Non-create ix: Frame identified by **pubkey only**; seeds re-check **intentionally omitted** (address-centric closed loop; saves CU) — [design.md §4.1](../docs/design.md#41-frame-address-identity-closed-loop) | ✅ accepted design — `reset_frame.rs`, `let_op.rs`, `close_frame.rs` |
 | IFX-SEC-B05 | Same PDA not used for conflicting roles | N/A — single Frame type |
 | IFX-SEC-B06 | `authority == Pubkey::default()` rejected at create | `create_frame.rs` |
 | IFX-SEC-B07 | Close requires signer == stored `Frame.authority` | `close_frame.rs` |
@@ -163,7 +163,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 |----|-------|---------------|
 | IFX-SEC-C01 | `accounts_start` + `accounts_len` slice bounded on `remaining` | `patched_cpi.rs` `invoke_raw` |
 | IFX-SEC-C02 | Empty range rejected (`start < end`) | `patched_cpi.rs` |
-| IFX-SEC-C03 | CPI target program id from `remaining` (no on-chain allowlist) | `patched_cpi.rs` — ⚠️ if accepted |
+| IFX-SEC-C03 | **Static / RawPatched:** program id from `remaining` (builder-chosen; type-unsafe). **Structured:** registry program-id check per patch family — `structured_cpi.rs` | ✅ accepted design — [raw-cpi-patches.md § design intent](../docs/raw-cpi-patches.md#design-intent-type-safe-vs-type-unsafe-cpi) |
 | IFX-SEC-C04 | Ifx does not validate inner account owners (callee responsibility) | `patched_cpi.rs` — ⚠️ if accepted |
 | IFX-SEC-C05 | Frame not mutated after CPI in same instruction path | `if_else.rs`, `patched_cpi_ix.rs` |
 | IFX-SEC-C06 | No `invoke_signed` as Frame PDA | `patched_cpi.rs` — ⚠️ documented limit |

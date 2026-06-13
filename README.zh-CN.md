@@ -373,7 +373,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 | 主题 | 建议 |
 |------|------|
-| **Frame `authority`** | **业务 Frame** 用 `planNewFrame` + **on-curve `authority`**（bot / relayer 签 `reset`/`let`/`close`）。**off-curve / Frame PDA**（`planPublicFrame`）= **公开 scratch**，任何人可写 — 仅适合无状态 glue 或 devnet 试跑。见 [frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md)。 |
+| **Frame `authority`** | **默认：** `planPublicFrame` + 每个原子单元开头 **`ixReset`** — 覆盖多数生产流（[frame-authority.zh-CN.md](./docs/frame-authority.zh-CN.md) §3.4）。**`planNewFrame`** 可选：需 **`close`**、§3.7 预签边角、或纵深防御 — 非生产默认。 |
 | **`tapeLen`** | 链上最大 65_535；SDK 默认 **`DEFAULT_TAPE_LEN` = 512**，典型 tx 不超过 **`RECOMMENDED_TAPE_LEN_MAX` = 8192**（更大 Frame 租金与 CU 更高）。 |
 | **`ifx_assert_multi`** | wire 最多 255 条；**每条 ix 建议合并 3–10 条** guard，避免整笔 tx CU 过高。 |
 

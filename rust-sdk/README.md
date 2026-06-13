@@ -51,7 +51,7 @@ let plan = FrameScratch::plan_public_frame(PlanNewFrameParams {
     tape_len: 256,
     program_id: Some(IFX_DEVNET_PROGRAM_ID),
 })?;
-// Send plan.ix_create alone; persist frame_id, tape_len, plan.frame
+// Send plan.ix_create alone; persist plan.frame (pubkey) + tape_len (frame_id optional after create)
 // plan.scratch.authority == plan.frame (public Frame — no extra signer on reset/let)
 ```
 
@@ -122,7 +122,7 @@ Use `encode_cpi` / `build_ix_cpi` with structured patches from `ifx_core::struct
 
 ## Examples
 
-See [`examples/README.md`](./examples/README.md) — reference planners live under `tests/common/planners/` (not in the crate); localnet e2e in `tests/localnet.rs`.
+See [`examples/README.md`](./examples/README.md) — reference planners under `tests/common/planners/` (L0–L3); localnet e2e in `tests/localnet.rs`.
 
 ## Errors
 

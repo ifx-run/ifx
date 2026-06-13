@@ -35,8 +35,8 @@ import { Transaction } from "@solana/web3.js";
 import { FrameScratch, DEFAULT_TAPE_LEN } from "@ifx-run/sdk";
 
 const tapeLen = DEFAULT_TAPE_LEN; // 512; on-chain max MAX_FRAME_TAPE_LEN; typical 256–8192
-const frameId = randomBytes(32); // store frameId + tapeLen (config, DB, …)
-const { scratch, ixCreate } = FrameScratch.planPublicFrame({
+const frameId = randomBytes(32); // salt for create only; after Tx 1 persist scratch.frame + tapeLen (frameId optional)
+const { scratch, ixCreate, frame } = FrameScratch.planPublicFrame({
   payer,
   frameId,
   tapeLen,
@@ -45,7 +45,7 @@ const { scratch, ixCreate } = FrameScratch.planPublicFrame({
 await provider.sendAndConfirm(new Transaction().add(ixCreate));
 ```
 
-**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve) — **public scratch**, anyone can write. Fine for devnet / stateless glue; **use `planNewFrame` + on-curve `authority` for production business Frames** (below). No extra signer on `reset`/`let`; no one can `close` for rent.
+**Default (public Frame):** `planPublicFrame` sets `authority` to the **Frame PDA** (off-curve) — **public scratch**, anyone can write. **Production-safe** when every atomic unit (tx or landed bundle) **starts with `ixReset()`** — [frame-authority.md](../docs/frame-authority.md) §3.4. No extra signer on `reset`/`let`; cannot `close` for rent. Use `planNewFrame` for pre-signed read continuation without `reset`, or when you need `close`.
 
 **Tx 2 — business** (separate request / job; reset + let / assert / CPI). Reuse `scratch` from Tx 1 in the same process, or see [`examples/minimal-frame.ts`](./examples/minimal-frame.ts) for cross-job rebuild:
 
@@ -61,7 +61,7 @@ tx.add(scratch.ixAssert(expr.nonZero(target)));
 await provider.sendAndConfirm(tx);
 ```
 
-**Optional — private / closeable Frame** (on-curve `authority` signs `reset`/`let`; reclaim rent later). Use when you need bundle / nonce poison defense — [frame-authority.md](../docs/frame-authority.md):
+**Optional — private / closeable Frame** (`planNewFrame`): only when you need **`close`**, §3.7 pre-sign edge, or optional defense-in-depth — not the default production path. See [frame-authority.md](../docs/frame-authority.md) §3.7.
 
 ```ts
 const { ixCreate } = FrameScratch.planNewFrame({
@@ -126,9 +126,10 @@ At create: `tapeLen` up to **65_535** on-chain; **prefer `DEFAULT_TAPE_LEN` (512
 - **Persist:** Values later read by `ifx_assert`, `ifx_patched_cpi` `RawCpiPatch`, or later `ifx_let` (`ScratchValue` / `expr.*`).
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
-- **`FrameScratch.planPublicFrame(...)`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); **public scratch** (anyone can `reset`/`let`; not `close`). Fine for devnet / stateless glue; **use `planNewFrame` + on-curve `authority` for production business Frames** — [frame-authority.md](../docs/frame-authority.md).
-- **`FrameScratch.planNewFrame({ payer, frameId, authority, … })`:** **recommended for production** — private / closeable Frame; on-curve `authority` (e.g. bot hot wallet) signs `reset`/`let`/`close`.
-- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2 when scratch is not in memory; public Frames: `authority` = Frame PDA (`publicFrameAuthority(payer, frameId)`). `programId` defaults to devnet; localnet: `IFX_LOCALNET_PROGRAM_ID`.
+- **`FrameScratch.planPublicFrame(...)`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); **public scratch** (anyone can `reset`/`let`; not `close`). **Production** when each atomic unit starts with **`ixReset()`** — [frame-authority.md](../docs/frame-authority.md) §3.4.
+- **`FrameScratch.planNewFrame(...)`:** optional — **`close`**, §3.7 pre-sign edge, or defense-in-depth; not required for typical production if public Frame + `ixReset` discipline holds.
+- **Frame address (closed loop):** `frame_id` is only for **create** PDA derivation. After Tx 1, persist **`scratch.frame`** (pubkey) + `tapeLen` — not `frame_id`. `reset` / `let` / `close` pass the address only; on-chain does **not** re-check seeds ([design.md §4.1](../docs/design.md#41-frame-address-identity-closed-loop)).
+- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2 when scratch is not in memory; pass the persisted **`framePk`**. For public Frames, `authority` = Frame PDA (`publicFrameAuthority` only needed when re-deriving from `payer`+`frameId`). `programId` defaults to devnet; localnet: `IFX_LOCALNET_PROGRAM_ID`.
 - **`FrameScratch.fromFrame` / `refreshFromChain`:** **tests and local debug only** — not production paths.
 
 ### SPL Token & Token-2022 (application layer)
@@ -185,9 +186,9 @@ InitializeMint2 with Frame-bound `Pubkey` / decimals: `tests/ifx_structured_cpi_
 
 **Default:** omit `remaining` — accounts come from the template instruction (`[programId, …keys]`). Pass `remaining` only when merging into a longer list (e.g. `ifx_if_else` sharing accounts with `ifx_let` loads); pubkey-only arrays lose signer/writable flags.
 
-## RawPatched CPI (`rawCpi` / `ifx_patched_cpi`) — escape hatch
+## RawPatched CPI (`rawCpi` / `ifx_patched_cpi`) — type-unsafe escape hatch
 
-For **DEX or custom programs** whose `data` layout is not in the structured registry — template ix + byte overlays:
+For **DEX or custom programs** whose `data` layout is not in the structured registry — template ix + byte overlays. **Program id and layout are the transaction builder’s responsibility** (like Rust `unsafe`); Ifx does not whitelist Raw CPI targets. Prefer **`structuredCpi()`** when the registry covers your ix — see [raw-cpi-patches.md](../docs/raw-cpi-patches.md#design-intent-type-safe-vs-type-unsafe-cpi).
 
 ```ts
 import { rawCpi, rawCpiPatch } from "@ifx-run/sdk";

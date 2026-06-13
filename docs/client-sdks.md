@@ -12,7 +12,7 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 
 | Priority | SDK | Status | Notes |
 |----------|-----|--------|-------|
-| **P0 — high** | **Go SDK** | ✅ | [`go-sdk/`](../go-sdk/README.md) — planner + readback + L0–L1 e2e; see [examples](../go-sdk/examples/README.md) |
+| **P0 — high** | **Go SDK** | ✅ | [`go-sdk/`](../go-sdk/README.md) — planner + L0–L3 e2e; see [examples](../go-sdk/examples/README.md) |
 | **P1 — medium** | **Rust SDK** | ✅ R1–R3 (minimal) | `ifx-core` + `ifx-sdk`; see [rust-integration.md](./rust-integration.md) |
 | — | TypeScript | ✅ shipped | `@ifx-run/sdk` |
 
@@ -70,7 +70,7 @@ go-sdk/                 # module github.com/ifx-run/ifx/go-sdk
 | **G1 — Wire** | constants, PDA, `encodeExpr` / `encodeLetArgs` / patch & if_else codec | bytes match TS parity tests | ✅ |
 | **G2 — IR** | `expr` builders, `LetBinding` helpers, Eval type infer | LetBinding 0–67 / Expr 0–51 samples | ✅ |
 | **G3 — Planner** | `FrameScratch`, `LetBuilder` (remaining dedup), `ix_*` | `scratch/*_test.go` | ✅ |
-| **G4 — Complete** | RawPatched + **Structured** CPI, if_else, Pubkey lets, L0–L1 e2e | `integration/*_test.go`, `structuredcpi/*_test.go` | ✅ |
+| **G4 — Complete** | RawPatched + **Structured** CPI, if_else, Pubkey lets, L0–L3 e2e | `integration/*_test.go`, `structuredcpi/*_test.go` | ✅ |
 | **G5 — Docs** | Go SDK README, examples index | `go-sdk/README` | ✅ |
 
 **Follow-ups (non-blocking):** more `examples/` patterns, SPL CPI template helpers.
@@ -141,7 +141,7 @@ rust-sdk/                 # Off-chain planner; package name ifx-sdk (crates.io: 
 |-------|--------|
 | **R1** | `ifx-core` extraction + golden vs TS | ✅ wire + layout + `structured-cpi`; `frame_layout` deferred |
 | **R2** | planner + `ix_*` + `expr` | ✅ `FrameScratch`, `LetBuilder`, `let_*`, `ix_cpi` / `ix_if_else` / `ix_close`, parity tests |
-| **R3** | examples + integration tests (`ifx-sdk`) | ✅ minimal localnet + decode + docs; dust/orchestration planners backlog |
+| **R3** | examples + integration tests (`ifx-sdk`) | ✅ L0–L3 localnet planners (minimal, close-empty-ATA, dust, two-hop, personal AMM, sponsored buy) |
 
 ---
 

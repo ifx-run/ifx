@@ -1,3 +1,11 @@
+//! Patched CPI: **Static**, **RawPatched**, and **Structured** invoke paths.
+//!
+//! - **Structured** — type-safe: program id + ix variant validated per registry (`structured_cpi`).
+//! - **Static / RawPatched** — type-unsafe: program id comes from the tx builder's template
+//!   (`remaining[accounts_start]`). Intentional for DEX / custom layouts; no on-chain Raw
+//!   allowlist (partial whitelists would not be safe without duplicating Structured field-by-field).
+//!   Builder bears risk — see `docs/raw-cpi-patches.md` § design intent.
+
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::instruction::{AccountMeta, Instruction};
 use anchor_lang::solana_program::program::invoke;

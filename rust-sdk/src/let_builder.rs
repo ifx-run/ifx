@@ -93,6 +93,24 @@ impl<'a> LetBuilder<'a> {
         self.plan_at(LetBinding::SplTokenAccountAmount { account_index: 0 }, account)
     }
 
+    pub fn spl_token2022_amount(&mut self, account: Pubkey) -> Result<ScratchValue, ScratchError> {
+        self.plan_at(LetBinding::SplToken2022AccountAmount { account_index: 0 }, account)
+    }
+
+    pub fn spl_token2022_transfer_fee_withheld(
+        &mut self,
+        account: Pubkey,
+    ) -> Result<ScratchValue, ScratchError> {
+        self.plan_at(
+            LetBinding::SplToken2022AccountTransferFeeWithheld { account_index: 0 },
+            account,
+        )
+    }
+
+    pub fn spl_token2022_mint_decimals(&mut self, account: Pubkey) -> Result<ScratchValue, ScratchError> {
+        self.plan_at(LetBinding::SplToken2022MintDecimals { account_index: 0 }, account)
+    }
+
     pub fn spl_mint_decimals(&mut self, account: Pubkey) -> Result<ScratchValue, ScratchError> {
         self.plan_at(LetBinding::SplMintDecimals { account_index: 0 }, account)
     }

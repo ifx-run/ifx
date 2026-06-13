@@ -44,7 +44,7 @@ pub struct Frame {
 }
 ```
 
-- **PDA seeds:** `["frame", payer, frame_id]` (`frame_id` 32-byte salt; not stored in account body)
+- **PDA seeds:** `["frame", payer, frame_id]` (`frame_id` 32-byte salt; not stored in account body). Seeds are enforced **only on `ifx_create_frame`** (Anchor `init`). All other instructions identify the Frame by **account pubkey** only — no `frame_id` in ix data, no seeds re-check ([design.md §4.1](./design.md#41-frame-address-identity-closed-loop); intentional — saves CU).
 - **`tape_len`:** `1..=65_535` at create (fixed; no extend)
 - **`index_cap`:** `min(256, tape_len / 2)` — fixed `payload_at` table size at create
 - **Account space:** `1 + 32 + 4 + 2 + 2 + 8 + 4 + (index_cap×2) + 4 + tape_len`
@@ -134,8 +134,8 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 - **`IfElseArm` wire:** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] step
 - **`Cpi` wire kind** (first byte per step): **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md))
   - **Static:** `[0][accounts_start][accounts_len][U16LenVec data]` — invoke template as-is
-  - **RawPatched:** `[1][accounts_start][accounts_len][data][PatchList]` — byte overlay via [`RawCpiPatch`]; DEX / non-registry layouts
-  - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **no ix data template**; flat enum (variant tag **0–32** inside Borsh blob); official System / SPL / Token-2022 / Stake registry
+  - **RawPatched:** `[1][accounts_start][accounts_len][data][PatchList]` — byte overlay via [`RawCpiPatch`]; DEX / non-registry layouts; **builder-chosen program id** (type-unsafe by design — [`raw-cpi-patches.md`](./raw-cpi-patches.md))
+  - **Structured:** `[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]` — **no ix data template**; flat enum (variant tag **0–32** inside Borsh blob); official System / SPL / Token-2022 / Stake registry; on-chain program-id check
 - **`U8LenVec<T>`:** **u8** element count + Borsh elements (max 255); `LetArgs::bindings`
 - **`U16LenVec<T>`:** **u16 LE** element count + elements; RawPatched `Cpi::data` and `PatchList`
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**; copies typed bytes from `payload_at[source.index]`

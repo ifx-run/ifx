@@ -30,6 +30,10 @@ pub fn structured_system_transfer(lamports: Value) -> StructuredCpiPatch {
     StructuredCpiPatch::SystemTransfer { lamports }
 }
 
+pub fn structured_token_transfer(amount: Value) -> StructuredCpiPatch {
+    StructuredCpiPatch::TokenTransfer { amount }
+}
+
 pub fn build_raw_cpi(
     template: &Instruction,
     patches: &[RawCpiPatch],

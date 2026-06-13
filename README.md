@@ -375,7 +375,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 
 | Topic | Guidance |
 |-------|----------|
-| **Frame `authority`** | **Business Frames:** `planNewFrame` + **on-curve `authority`** (bot / relayer signs `reset`/`let`/`close`). **Off-curve / Frame PDA** (`planPublicFrame`) = **public scratch** — anyone can write; use for stateless glue or devnet only. See [frame-authority.md](./docs/frame-authority.md). |
+| **Frame `authority`** | **Default:** `planPublicFrame` + **`ixReset` at each atomic unit start** — covers most production flows ([frame-authority.md](./docs/frame-authority.md) §3.4). **`planNewFrame`** optional: **`close`**, pre-signed-read edge (§3.7), or defense-in-depth — not a production default. |
 | **`tapeLen`** | On-chain max 65_535; SDK default **`DEFAULT_TAPE_LEN` = 512**; typical txs stay within **`RECOMMENDED_TAPE_LEN_MAX` = 8192** (larger frames = more rent + CU). |
 | **`ifx_assert_multi`** | Wire max 255 conditions; **merge 3–10 guards per ix** to limit tx CU. |
 

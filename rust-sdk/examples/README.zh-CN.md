@@ -6,35 +6,39 @@
 
 | 位置 | 作用 |
 |------|------|
-| [`tests/common/planners/`](../tests/common/planners/) | 参考 tx planner（sponsored buy、关闭空 ATA）— **仅集成测试用**，不发布 |
-| [`tests/localnet.rs`](../tests/localnet.rs) | Localnet e2e（Surfpool / `anchor test`）；无 RPC 时 skip |
+| [`tests/common/planners/`](../tests/common/planners/) | 参考 tx planner — **仅集成测试用**，不发布 |
+| [`tests/localnet.rs`](../tests/localnet.rs) | Localnet e2e；无 RPC 时 skip |
 | 本目录 | 文档索引（无库代码） |
 
-Go 对照：[`go-sdk/examples`](../../go-sdk/examples/README.zh-CN.md) 是**独立 import 路径**，不在 core 包里。
+Go 对照：[`go-sdk/examples`](../../go-sdk/examples/README.zh-CN.md)。
 
-## Minimal frame
+## Minimal frame（L0）
 
-**集成：** [`tests/localnet.rs`](../tests/localnet.rs)（`minimal_frame_localnet`）  
-**对齐：** Go `integration/localnet_test.go` → `TestMinimalFrameLocalnet`
+**集成：** `minimal_frame_localnet` · 对齐 Go / TS minimal frame 测试。
 
-## 关闭空 ATA
+## 关闭空 ATA（L1）
 
-**Planner：** [`tests/common/planners/close_empty_ata.rs`](../tests/common/planners/close_empty_ata.rs)  
-**集成：** [`tests/localnet.rs`](../tests/localnet.rs)（`close_empty_ata_*`）
+**Planner：** `close_empty_ata.rs` · **集成：** `close_empty_ata_*`
 
-余额为 0 时 `if_else(CloseAccount | Skip)`，否则跳过、整笔 tx 不 revert。
+## Dust destroy — Token-2022（L1）
+
+**Planner：** `dust_destroy.rs` · **集成：** `dust_destroy_localnet`  
+**TS：** [`dust-destroy-token2022.ts`](../../sdk/examples/dust-destroy-token2022.ts) · **Go：** `go-sdk/examples/dust_destroy.go`
+
+## Two-hop token swap（L2）
+
+**Planner：** `two_hop_swap.rs` · **集成：** `two_hop_swap_localnet`  
+**TS：** [`two-hop-token-swap.ts`](../../sdk/examples/two-hop-token-swap.ts)
+
+## Personal AMM（L2）
+
+**Planner：** `personal_amm.rs` · **集成：** `personal_amm_swap_localnet`  
+**TS：** [`personal-amm-swap.ts`](../../sdk/examples/personal-amm-swap.ts)
 
 ## Sponsored buy（L3）
 
-**Planner：** [`tests/common/planners/sponsored_buy.rs`](../tests/common/planners/sponsored_buy.rs)  
-**集成：** [`tests/localnet.rs`](../tests/localnet.rs)（`sponsored_buy_localnet`）  
-**TS  canonical：** [`tests/sponsored_buy.ts`](../../tests/sponsored_buy.ts)
-
-tx 中途读 lamports、assert、structured System transfer patch — 用 swap 增量还 sponsor 的 ATA rent + 签名费。
-
-## Dust destroy（待补）
-
-Go：[`go-sdk/examples/dust_destroy.go`](../../go-sdk/examples/dust_destroy.go)。Rust 尚未添加对应 planner。
+**Planner：** `sponsored_buy.rs` · **集成：** `sponsored_buy_localnet`  
+**TS：** [`tests/sponsored_buy.ts`](../../tests/sponsored_buy.ts)
 
 ## 本地运行
 
@@ -44,6 +48,6 @@ export ANCHOR_WALLET=~/.config/solana/id.json
 cargo test -p ifx-sdk --test localnet -- --nocapture
 ```
 
-无链单元测试：`cargo test -p ifx-sdk` 或 `npm run rust:test`。
+无链：`cargo test -p ifx-sdk` 或 `npm run rust:test`。
 
 从 `tests/common/planners/` 复制到你的服务，或直接用相同 `FrameScratch` API 重写。

@@ -6,35 +6,45 @@ English | [中文](./README.zh-CN.md)
 
 | Location | Role |
 |----------|------|
-| [`tests/common/planners/`](../tests/common/planners/) | Reference tx planners (sponsored buy, close empty ATA) — **integration-test only**, not published |
+| [`tests/common/planners/`](../tests/common/planners/) | Reference tx planners — **integration-test only**, not published |
 | [`tests/localnet.rs`](../tests/localnet.rs) | Localnet e2e (Surfpool / `anchor test`); skip when RPC unavailable |
 | This directory | Documentation index (no library code) |
 
 Go equivalent: [`go-sdk/examples`](../../go-sdk/examples/README.md) is a **separate import path**, not part of the core module.
 
-## Minimal frame
+## Minimal frame (L0)
 
 **Integration:** [`tests/localnet.rs`](../tests/localnet.rs) (`minimal_frame_localnet`)  
-**Mirrors:** Go `integration/localnet_test.go` → `TestMinimalFrameLocalnet`
+**Mirrors:** Go `integration/localnet_test.go` · TS `tests/minimal_frame.ts`
 
-## Close empty ATA
+## Close empty ATA (L1)
 
 **Planner:** [`tests/common/planners/close_empty_ata.rs`](../tests/common/planners/close_empty_ata.rs)  
-**Integration:** [`tests/localnet.rs`](../tests/localnet.rs) (`close_empty_ata_*`)
+**Integration:** `close_empty_ata_*` in [`tests/localnet.rs`](../tests/localnet.rs)
 
-`reset → let spl_token_amount → if_else(CloseAccount | Skip)` when balance is zero.
+## Dust destroy — Token-2022 (L1)
+
+**Planner:** [`tests/common/planners/dust_destroy.rs`](../tests/common/planners/dust_destroy.rs)  
+**Integration:** `dust_destroy_localnet` in [`tests/localnet.rs`](../tests/localnet.rs)  
+**Canonical TS:** [`sdk/examples/dust-destroy-token2022.ts`](../../sdk/examples/dust-destroy-token2022.ts) · Go: [`go-sdk/examples/dust_destroy.go`](../../go-sdk/examples/dust_destroy.go)
+
+## Two-hop token swap (L2)
+
+**Planner:** [`tests/common/planners/two_hop_swap.rs`](../tests/common/planners/two_hop_swap.rs)  
+**Integration:** `two_hop_swap_localnet` in [`tests/localnet.rs`](../tests/localnet.rs)  
+**Canonical TS:** [`sdk/examples/two-hop-token-swap.ts`](../../sdk/examples/two-hop-token-swap.ts)
+
+## Personal AMM (L2)
+
+**Planner:** [`tests/common/planners/personal_amm.rs`](../tests/common/planners/personal_amm.rs)  
+**Integration:** `personal_amm_swap_localnet` in [`tests/localnet.rs`](../tests/localnet.rs)  
+**Canonical TS:** [`sdk/examples/personal-amm-swap.ts`](../../sdk/examples/personal-amm-swap.ts)
 
 ## Sponsored buy (L3)
 
 **Planner:** [`tests/common/planners/sponsored_buy.rs`](../tests/common/planners/sponsored_buy.rs)  
-**Integration:** [`tests/localnet.rs`](../tests/localnet.rs) (`sponsored_buy_localnet`)  
+**Integration:** `sponsored_buy_localnet` in [`tests/localnet.rs`](../tests/localnet.rs)  
 **Canonical TS:** [`tests/sponsored_buy.ts`](../../tests/sponsored_buy.ts)
-
-Mid-tx lamports reads, assert, structured System transfer patches — repay sponsor ATA rent + tx fees from swap delta.
-
-## Dust destroy (backlog)
-
-Go: [`go-sdk/examples/dust_destroy.go`](../../go-sdk/examples/dust_destroy.go). Rust planner not added yet.
 
 ## Run locally
 

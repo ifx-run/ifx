@@ -50,6 +50,24 @@ func TestEncodeCpiStaticKindByte(t *testing.T) {
 	}
 }
 
+func TestEncodeCpiStructuredSystemTransferTagZero(t *testing.T) {
+	// systemTransfer is wire tag 0 — variant byte must not be dropped.
+	payload := []byte{0, 5}
+	c := Cpi{
+		AccountsStart:     2,
+		AccountsLen:       3,
+		StructuredPayload: payload,
+	}
+	got, err := EncodeCpi(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []byte{constants.CpiWireStructured, 2, 3, 0, 5}
+	if hex.EncodeToString(got) != hex.EncodeToString(want) {
+		t.Fatalf("got %x want %x", got, want)
+	}
+}
+
 func TestEncodeCpiStructured(t *testing.T) {
 	payload := []byte{7, 0, 3, 9}
 	c := Cpi{

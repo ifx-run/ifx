@@ -4,6 +4,8 @@
 
 Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 
+**Structured 与 RawPatched：** Structured 是 **type-safe** 路径 — 链上按下方 registry 校验 program id + ix 变体 + 字段布局。**RawPatched**（`rawCpi`）是面向 DEX / 自定义程序的 **type-unsafe** 逃生口；program id 由构造者指定，**无 Raw 白名单**（[`raw-cpi-patches.zh-CN.md`](./raw-cpi-patches.zh-CN.md) § 设计意图）。二者缺一不可；堵死 Raw 若不按字段级重复本 registry，并不能实质提升安全，只会损害通用性。
+
 链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（33 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
 
 ## Wire layout（`Cpi::Structured`）

@@ -37,8 +37,9 @@
 | **ty** / **ValueType** | 每条 record 首字节 | 原始类型 tag（`Bool`、`U64` 等） | **type** 的缩写；各变体宽度固定（见 [implementation.zh-CN.md](./implementation.zh-CN.md) §3）。 |
 | **payload** | `ty` 之后字节 | 小端数值字节 | **`Expr`**、**`RawCpiPatch`** 读 binding 时用（链上类型在 `payload_at[i] - 1` 的 `ty`）。 |
 | **authority** | `Frame.authority` | **off-curve** → 公共 scratch；**on-curve** → 私有 Frame（写操作要 signer） | on-curve 时约束 **`reset` / `let` / `close`**。[frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。 |
-| **frame_id** | PDA seed（32 字节） | 与 payer 一起推导 PDA 的用户盐 | 同一 payer 可有多个 Frame；**不**写入账户 body。create 后链下持久化 **`frame_id` + `tape_len`**。 |
-| **payer** | PDA seed | Frame rent 支付方 | Anchor `init` 惯例。 |
+| **frame_id** | PDA seed（32 字节） | 与 `payer` 组成 salt，**仅在 `ifx_create_frame` 使用** | 不写入链上。create 后持久化 **`frame` 地址**（+ `tape_len`）；`frame_id` 可丢弃。见 [design.zh-CN.md §4.1](./design.zh-CN.md#41-frame-地址即身份闭环设计)。 |
+| **frame**（地址） | Frame 账户 pubkey | **运行时身份**（reset / let / assert / CPI / close） | `planPublicFrame` / `planNewFrame` 返回的 `scratch.frame`。非 create 指令不 re-check seeds（刻意设计）。 |
+| **payer** | PDA seed | create 时付 rent 的账户 | Anchor `init` 惯例；后续指令不需要再传。 |
 
 ### 为什么不用 memory / slot / register？
 
@@ -87,7 +88,7 @@
 | **`StructuredCpiPatch`** | flat Borsh enum（33 variant） | 官方 System / SPL / Token-2022 / Stake ix + typed payload | variant tag **0–32** 为 Borsh blob 首字节；嵌套 payload 在 enum 内。 |
 | **嵌套 patch payload** | 如 `AmountDecimalsPatch` | ix `data` 中哪些字段来自 Frame、哪些为 wire 字面量 | **`StructuredCpiPatch`** 内的子 enum；Rust 模块 **`structured_cpi_payload`**。 |
 | **`structuredCpi()`** | SDK builder | 官方 `TransactionInstruction` → structured wire 步 | 账户推导与 **`rawCpi()`** 相同；patch 用 **`structuredCpiPatch.*`**。 |
-| **`rawCpi()` / `rawCpiPatch()`** | SDK 辅助 | **RawPatched** 模板 + 字节 patch | 非 registry program 的逃生口。 |
+| **`rawCpi()` / `rawCpiPatch()`** | SDK 辅助 | **RawPatched** 模板 + 字节 patch | 非 registry 的 **type-unsafe** 逃生口（DEX、自定义）；program id 由构造者指定 — [raw-cpi-patches.zh-CN.md](./raw-cpi-patches.zh-CN.md)。 |
 | **`IfElseArm`** | `Skip` / `Revert` / `Cpi[]` | 分支一侧结果 | **Arm** = 条件分支的一臂。每 arm 最多 **254** 个顺序 **`Cpi`** 步。 |
 | **`remaining_accounts`** | 账户 meta 切片 | 指令 struct 之外的附加账户 | Anchor/Solana 惯例。 |
 
@@ -119,7 +120,7 @@
 | **`indexCapForTapeLen`** | `min(256, floor(tapeLen / 2))` | 与链上 **`index_cap_for_tape_len`** 一致。 |
 | **`DecodedFrame`** | 反序列化后的 Frame 账户 | 可读 **`tape`**、**`payload_at`**、**`generation`**、**`readValue(binding)`**。 |
 | **`letBuilder`** | 多条 binding 合并为一条 **`ifx_let`** | 自动 **`remaining_accounts`** 去重与排序。 |
-| **`rawCpi` / `rawCpiPatch`** | **RawPatched** 的 SDK 封装 | **`rawCpi(template, { patches })`** — 模板 `data` 字节覆盖。官方 registry ix 用 **`structuredCpi()`**。 |
+| **`rawCpi` / `rawCpiPatch`** | **RawPatched** 的 SDK 封装 | **`rawCpi(template, { patches })`** — 模板 `data` 字节覆盖；构造者自担 program/layout 风险。官方 registry ix 用 **`structuredCpi()`**。 |
 | **`structuredCpi` / `structuredCpiPatch`** | Structured CPI 构造 | **`structuredCpi(splIx, { patch })`** — 从 instruction 推导账户；patch 选官方 layout。 |
 | **`staticCpi`** | 已知 ix 包成 **`ifx_if_else`** 静态步 | 空 **`patches`**；无条件时优先 **`tx.add(ix)`**。 |
 | **`$N`**（日志） | 伪代码中的 binding index | 见 [debugging.zh-CN.md](./debugging.zh-CN.md)：`let $0: u64 = …`。 |
