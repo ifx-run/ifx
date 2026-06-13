@@ -124,7 +124,7 @@ impl FrameScratch {
     }
 
     pub fn ix_let_single(&self, value: &ScratchValue) -> Result<Instruction, ScratchError> {
-        let args = let_args_from_bindings(&[value.binding.clone()]);
+        let args = let_args_from_bindings(std::slice::from_ref(&value.binding));
         build_ix_let(
             self.frame,
             self.authority,

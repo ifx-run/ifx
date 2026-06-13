@@ -23,6 +23,7 @@ pub fn decode_typed(ty: ValueType, bytes: &[u8]) -> Result<TypedValue> {
 
 /// Anchor `Result` adapter for [`TypedValue::as_bool`](ifx_core::layout::TypedValue::as_bool).
 pub trait TypedValueResultExt {
+    #[allow(clippy::wrong_self_convention)]
     fn as_bool(self) -> Result<bool>;
 }
 

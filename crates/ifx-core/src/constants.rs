@@ -62,10 +62,11 @@ mod tests {
     #[test]
     fn integration_defaults() {
         assert_eq!(DEFAULT_TAPE_LEN, 512);
-        assert!(RECOMMENDED_TAPE_LEN_MIN <= DEFAULT_TAPE_LEN);
-        assert!(DEFAULT_TAPE_LEN <= RECOMMENDED_TAPE_LEN_MAX);
-        assert!(RECOMMENDED_TAPE_LEN_MAX <= MAX_FRAME_TAPE_LEN);
         assert_eq!(MAX_ASSERT_MULTI_CONDS, 255);
-        assert!(RECOMMENDED_ASSERT_MULTI_MAX <= MAX_ASSERT_MULTI_CONDS);
+        // Documented ordering invariants — compile-time so a bad edit fails `cargo test`.
+        const _: () = assert!(RECOMMENDED_TAPE_LEN_MIN <= DEFAULT_TAPE_LEN);
+        const _: () = assert!(DEFAULT_TAPE_LEN <= RECOMMENDED_TAPE_LEN_MAX);
+        const _: () = assert!(RECOMMENDED_TAPE_LEN_MAX <= MAX_FRAME_TAPE_LEN);
+        assert_eq!(RECOMMENDED_ASSERT_MULTI_MAX, 10);
     }
 }

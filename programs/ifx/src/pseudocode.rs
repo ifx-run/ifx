@@ -700,10 +700,8 @@ impl PatchLogSink for LinePatchLogSink<'_> {
             if !self.buf.push_str(", patch ") {
                 return false;
             }
-        } else {
-            if !self.buf.push_str(" patch ") {
-                return false;
-            }
+        } else if !self.buf.push_str(" patch ") {
+            return false;
         }
         self.first = false;
         self.buf.push_str(field)

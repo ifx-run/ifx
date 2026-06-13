@@ -422,14 +422,14 @@ fn resolve_freeze_auth(
 }
 
 fn require_system_program(program_id: &Pubkey) -> Result<()> {
-    if !(program_id == &system_program::ID) {
+    if program_id != &system_program::ID {
         return Err(StructuredCpiError::InvalidProgram);
     }
     Ok(())
 }
 
 fn require_token_program(program_id: &Pubkey, expected: &Pubkey) -> Result<()> {
-    if !(program_id == expected) {
+    if program_id != expected {
         return Err(StructuredCpiError::InvalidProgram);
     }
     Ok(())
@@ -440,7 +440,7 @@ fn require_token_2022_program(program_id: &Pubkey) -> Result<()> {
 }
 
 fn require_stake_program(program_id: &Pubkey) -> Result<()> {
-    if !(program_id.to_bytes() == STAKE_PROGRAM_ID.to_bytes()) {
+    if program_id.to_bytes() != STAKE_PROGRAM_ID.to_bytes() {
         return Err(StructuredCpiError::InvalidProgram);
     }
     Ok(())
