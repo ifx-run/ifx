@@ -258,6 +258,10 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | Two-hop A→USDC→B, read intermediate token balance, patch hop 2 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, structured CPI patches |
 
+### Mainnet reference ([ifx-run/ifx-pumpfun-ext](https://github.com/ifx-run/ifx-pumpfun-ext))
+
+Separate repo in the **ifx-run** org (not part of this tree): Pump.fun bonding-curve v2 buy / sell / two-hop swap, conditional ATA close, platform fee, and SOL sponsor — **one v0 mainnet tx** built with `@ifx-run/sdk`. Shows integrator-owned pieces that stay **outside** the SDK (`rawCpiPatch` offsets, v0 size / ALT policy, business planners); boundary notes in [SDK integrator feedback](./docs/sdk-integrator-feedback-plan.md). **Demo software** — not an audited production exchange.
+
 ### L1 — Destroy dust Token-2022 accounts
 
 **Rule:** raw balance `< DUST_THRESHOLD_RAW` → burn → harvest withheld (if any) → close; **`≥` threshold** → all steps skip.
