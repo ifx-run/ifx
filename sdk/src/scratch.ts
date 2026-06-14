@@ -6,7 +6,11 @@ import {
   type Commitment,
 } from "@solana/web3.js";
 
-import { DEFAULT_IFX_PROGRAM_ID, indexCapForTapeLen } from "./constants";
+import {
+  DEFAULT_IFX_PROGRAM_ID,
+  DEFAULT_TAPE_LEN,
+  indexCapForTapeLen,
+} from "./constants";
 import { publicFrameAuthority } from "./frame-authority";
 import { planRecordOffsets, recordByteLength } from "./tape-layout";
 import { decodeFrameAccount, type DecodedFrame, framePda } from "./layout";
@@ -54,6 +58,13 @@ export type PlanPublicFrameParams = Omit<
   CreateIxCreateFrameParams,
   "authority"
 >;
+
+/** Params for {@link FrameScratch.forPublicFrame} — planner on an already provisioned public Frame. */
+export type ForPublicFrameParams = {
+  framePubkey: PublicKey;
+  programId?: PublicKey;
+  tapeLen?: number;
+};
 
 /** Options for {@link FrameScratch.fetchDecodedFrame}. */
 export type FrameScratchReadOpts = {
@@ -166,6 +177,23 @@ export class FrameScratch {
         programId
       ),
     });
+  }
+
+  /**
+   * Planner for an **existing** public Frame (`authority === frame` PDA).
+   * Use {@link planPublicFrame} once to create the account; then this for every business tx.
+   */
+  static forPublicFrame(params: ForPublicFrameParams): FrameScratch {
+    const programId = params.programId ?? DEFAULT_IFX_PROGRAM_ID;
+    const tapeLen = params.tapeLen ?? DEFAULT_TAPE_LEN;
+    return new FrameScratch(
+      params.framePubkey,
+      tapeLen,
+      0,
+      0,
+      programId,
+      params.framePubkey
+    );
   }
 
   /** `ifx_create_frame` when you already have a {@link FrameScratch} planner. */
@@ -504,13 +532,16 @@ export class FrameScratch {
     const bindingIndex = this.nextIndex;
     if (this.indexCap !== undefined && bindingIndex >= this.indexCap) {
       throw new Error(
-        `scratch binding index cap reached (${bindingIndex} >= ${this.indexCap}); use a larger frame tape`
+        `scratch binding index cap reached (binding #${bindingIndex} >= ${this.indexCap}); ` +
+          `${this.nextIndex} bindings planned — increase tapeLen (indexCap scales with tape) or reset`
       );
     }
+    const recordLen = recordByteLength(valueType);
     const { endCursor } = planRecordOffsets(this.cursor, valueType);
     if (this.tapeLen !== undefined && endCursor > this.tapeLen) {
       throw new Error(
-        `scratch would exceed tape (${endCursor} > ${this.tapeLen}); reset or use a larger frame (+${recordByteLength(valueType)} B per binding)`
+        `scratch would exceed tape (cursor ${this.cursor} + ${recordLen} B → ${endCursor} > tapeLen ${this.tapeLen}, binding #${bindingIndex}); ` +
+          `${this.nextIndex} bindings planned — ixReset() or create a larger Frame`
       );
     }
     this.cursor = endCursor;

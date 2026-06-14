@@ -80,6 +80,15 @@ class FrameScratch {
             authority: (0, frame_authority_1.publicFrameAuthority)(params.payer, params.frameId, programId),
         });
     }
+    /**
+     * Planner for an **existing** public Frame (`authority === frame` PDA).
+     * Use {@link planPublicFrame} once to create the account; then this for every business tx.
+     */
+    static forPublicFrame(params) {
+        const programId = params.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
+        const tapeLen = params.tapeLen ?? constants_1.DEFAULT_TAPE_LEN;
+        return new FrameScratch(params.framePubkey, tapeLen, 0, 0, programId, params.framePubkey);
+    }
     /** `ifx_create_frame` when you already have a {@link FrameScratch} planner. */
     static ixCreateFrame(params) {
         return (0, ix_1.createIxCreateFrame)(params);
@@ -309,11 +318,14 @@ class FrameScratch {
         const valueType = (0, typed_1.tyForIfxTy)(ty);
         const bindingIndex = this.nextIndex;
         if (this.indexCap !== undefined && bindingIndex >= this.indexCap) {
-            throw new Error(`scratch binding index cap reached (${bindingIndex} >= ${this.indexCap}); use a larger frame tape`);
+            throw new Error(`scratch binding index cap reached (binding #${bindingIndex} >= ${this.indexCap}); ` +
+                `${this.nextIndex} bindings planned — increase tapeLen (indexCap scales with tape) or reset`);
         }
+        const recordLen = (0, tape_layout_1.recordByteLength)(valueType);
         const { endCursor } = (0, tape_layout_1.planRecordOffsets)(this.cursor, valueType);
         if (this.tapeLen !== undefined && endCursor > this.tapeLen) {
-            throw new Error(`scratch would exceed tape (${endCursor} > ${this.tapeLen}); reset or use a larger frame (+${(0, tape_layout_1.recordByteLength)(valueType)} B per binding)`);
+            throw new Error(`scratch would exceed tape (cursor ${this.cursor} + ${recordLen} B → ${endCursor} > tapeLen ${this.tapeLen}, binding #${bindingIndex}); ` +
+                `${this.nextIndex} bindings planned — ixReset() or create a larger Frame`);
         }
         this.cursor = endCursor;
         this.nextIndex += 1;

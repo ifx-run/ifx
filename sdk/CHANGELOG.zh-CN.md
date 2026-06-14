@@ -4,9 +4,25 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** npm 版本 **`0.1.0`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.0** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
+**状态：** npm 版本 **`0.1.1`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.1** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-06-14
+
+### 新增
+
+- **`LetAccountInput` duck typing：** 修复多份 `@solana/web3.js` 下 `instanceof PublicKey` 失败。
+- **Binding 类型别名：** `U64Binding`、`BoolBinding`、`PubkeyBinding` 等。
+- **`FrameScratch.forPublicFrame({ framePubkey, programId?, tapeLen? })`：** 已有公共 Frame 的 planner。
+- **`decodeIfxInstruction` / `ifxIxHint`：** Ifx 指令 discriminator 解码。
+- **`parseIfxLogs` / `firstIfxErrorInLogs`：** simulation 日志 Ifx 错误解析。
+
+### 变更
+
+- **Tape / binding 规划期报错：** 更清晰（binding 序号、cursor、reset / 加大 Frame 建议）。
+
+**无链上 / wire 变更** — 自 `0.1.0` 安全 patch 升级，无需 redeploy program。
 
 ## [0.1.0] - 2026-06-13
 

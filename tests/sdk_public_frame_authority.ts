@@ -48,4 +48,15 @@ describe("public frame authority", () => {
     expect(authority.equals(frame)).to.be.true;
     expect(isPublicFrameAuthority(authority, frame)).to.be.true;
   });
+
+  it("forPublicFrame sets authority to frame for existing public Frame", () => {
+    const frame = PublicKey.unique();
+    const scratch = FrameScratch.forPublicFrame({ framePubkey: frame });
+    expect(scratch.frame.equals(frame)).to.be.true;
+    expect(scratch.authority.equals(frame)).to.be.true;
+    expect(isPublicFrameAuthority(scratch.authority, scratch.frame)).to.be.true;
+    expect(scratch.tapeLen).to.equal(512);
+    expect(scratch.cursor).to.equal(0);
+    expect(scratch.nextIndex).to.equal(0);
+  });
 });

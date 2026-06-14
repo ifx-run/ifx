@@ -40,6 +40,20 @@ func TestPlanPublicFrameSetsFrameAuthority(t *testing.T) {
 	}
 }
 
+func TestForPublicFrameSetsFrameAuthority(t *testing.T) {
+	frame := solana.NewWallet().PublicKey()
+	s := ForPublicFrame(frame, constants.LocalnetProgramID, intPtr(512))
+	if !s.Authority.Equals(frame) {
+		t.Fatalf("authority %s != frame %s", s.Authority, frame)
+	}
+	if !s.Frame.Equals(frame) {
+		t.Fatal("frame mismatch")
+	}
+	if s.Cursor != 0 || s.NextIndex != 0 {
+		t.Fatalf("cursor/index not reset")
+	}
+}
+
 func TestLetLamportsRemainingIndex(t *testing.T) {
 	frame := solana.NewWallet().PublicKey()
 	user := solana.NewWallet().PublicKey()

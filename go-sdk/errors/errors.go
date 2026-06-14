@@ -95,6 +95,11 @@ var nameByCode = map[int]string{
 	AssertFailedMulti:            "AssertFailedMulti",
 }
 
+// CodeForName returns the numeric Anchor code for a known error name.
+func CodeForName(name string) (int, bool) {
+	return codeByName(name)
+}
+
 // Name returns the Ifx error name for a numeric Anchor code, if known.
 func Name(code int) (string, bool) {
 	n, ok := nameByCode[code]

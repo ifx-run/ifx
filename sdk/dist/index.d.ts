@@ -19,6 +19,8 @@ export * from "./let-builder";
 export * from "./structured-cpi-patch";
 export * from "./structured-cpi";
 export * from "./codec";
+export * from "./decode-ix";
+export * from "./parse-logs";
 export * from "./ix";
 export * from "./spl";
 export * from "./sysvar";

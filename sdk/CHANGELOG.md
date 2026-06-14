@@ -4,9 +4,25 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** npm release **`0.1.0`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.0**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
+**Status:** npm release **`0.1.1`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.1**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-06-14
+
+### Added
+
+- **`LetAccountInput` duck typing:** `toLetAccountMeta` accepts any pubkey-like object (`toBase58` + `toBytes`/`toBuffer`) — fixes duplicate `@solana/web3.js` `instanceof PublicKey` failures ([#integrator feedback](../docs/sdk-integrator-feedback-plan.md)).
+- **Binding type aliases:** `U64Binding`, `BoolBinding`, `PubkeyBinding`, etc.
+- **`FrameScratch.forPublicFrame({ framePubkey, programId?, tapeLen? })`:** planner for an already provisioned public Frame (`authority === frame`).
+- **`decodeIfxInstruction` / `ifxIxHint`:** 1-byte Ifx ix discriminator decode for tx inspection.
+- **`parseIfxLogs` / `firstIfxErrorInLogs`:** extract Ifx error names and instruction failure indices from simulation logs.
+
+### Changed
+
+- **Tape / binding planner errors:** clearer messages (binding index, cursor delta, suggested reset / larger Frame).
+
+**No on-chain / wire changes** — safe patch upgrade from `0.1.0`; program redeploy not required.
 
 ## [0.1.0] - 2026-06-13
 

@@ -10,6 +10,12 @@ import { LetIxBuilder } from "./let-builder";
 export type { CreateIxCreateFrameParams } from "./ix";
 /** Params for {@link FrameScratch.planPublicFrame} — `authority` is set to {@link publicFrameAuthority}. */
 export type PlanPublicFrameParams = Omit<CreateIxCreateFrameParams, "authority">;
+/** Params for {@link FrameScratch.forPublicFrame} — planner on an already provisioned public Frame. */
+export type ForPublicFrameParams = {
+    framePubkey: PublicKey;
+    programId?: PublicKey;
+    tapeLen?: number;
+};
 /** Options for {@link FrameScratch.fetchDecodedFrame}. */
 export type FrameScratchReadOpts = {
     commitment?: Commitment;
@@ -53,6 +59,11 @@ export declare class FrameScratch {
      * Reset and let remain open to anyone (scratch semantics).
      */
     static planPublicFrame(params: PlanPublicFrameParams): PlanNewFrameResult;
+    /**
+     * Planner for an **existing** public Frame (`authority === frame` PDA).
+     * Use {@link planPublicFrame} once to create the account; then this for every business tx.
+     */
+    static forPublicFrame(params: ForPublicFrameParams): FrameScratch;
     /** `ifx_create_frame` when you already have a {@link FrameScratch} planner. */
     static ixCreateFrame(params: CreateIxCreateFrameParams): TransactionInstruction;
     /** `ifx_close_frame` for this planner's frame PDA. */

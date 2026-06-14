@@ -34,6 +34,8 @@ __exportStar(require("./let-builder"), exports);
 __exportStar(require("./structured-cpi-patch"), exports);
 __exportStar(require("./structured-cpi"), exports);
 __exportStar(require("./codec"), exports);
+__exportStar(require("./decode-ix"), exports);
+__exportStar(require("./parse-logs"), exports);
 __exportStar(require("./ix"), exports);
 __exportStar(require("./spl"), exports);
 __exportStar(require("./sysvar"), exports);

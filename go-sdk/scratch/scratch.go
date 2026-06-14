@@ -113,6 +113,15 @@ func PlanPublicFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 	return PlanNewFrame(p)
 }
 
+// ForPublicFrame returns a planner for an existing public Frame (authority == frame PDA).
+// Use PlanPublicFrame once to create the account; then ForPublicFrame for each business tx.
+func ForPublicFrame(framePK, programID solana.PublicKey, tapeLen *int) *FrameScratch {
+	if programID.IsZero() {
+		programID = constants.DefaultProgramID
+	}
+	return NewFrameScratch(framePK, tapeLen, programID, framePK)
+}
+
 // LetBuilder starts a multi-binding ifx_let batch.
 func (s *FrameScratch) LetBuilder() *LetBuilder {
 	return &LetBuilder{
@@ -264,7 +273,10 @@ func (s *FrameScratch) plan(b binding.Node, letRemaining []typed.AccountMeta) (t
 	}
 	bindingIndex := s.NextIndex
 	if s.IndexCap != nil && int(bindingIndex) >= *s.IndexCap {
-		return typed.ScratchValue{}, fmt.Errorf("scratch binding index cap reached (%d >= %d)", bindingIndex, *s.IndexCap)
+		return typed.ScratchValue{}, fmt.Errorf(
+			"scratch binding index cap reached (binding #%d >= %d); %d bindings planned — increase tapeLen or reset",
+			bindingIndex, *s.IndexCap, s.NextIndex,
+		)
 	}
 	_, _, endCursor, err := frame.PlanRecordOffsets(s.Cursor, tag)
 	if err != nil {
@@ -272,7 +284,10 @@ func (s *FrameScratch) plan(b binding.Node, letRemaining []typed.AccountMeta) (t
 	}
 	if s.TapeLen != nil && int(endCursor) > *s.TapeLen {
 		recLen, _ := frame.RecordByteLength(tag)
-		return typed.ScratchValue{}, fmt.Errorf("scratch would exceed tape (%d > %d); need +%d B per binding", endCursor, *s.TapeLen, recLen)
+		return typed.ScratchValue{}, fmt.Errorf(
+			"scratch would exceed tape (cursor %d + %d B → %d > tapeLen %d, binding #%d); %d bindings planned — reset or use a larger Frame",
+			s.Cursor, recLen, endCursor, *s.TapeLen, bindingIndex, s.NextIndex,
+		)
 	}
 	s.Cursor = endCursor
 	s.NextIndex++

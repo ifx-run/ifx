@@ -53,6 +53,7 @@ pub mod binding;
 pub mod constants;
 pub mod cpi;
 pub mod decode;
+pub mod decode_ix;
 pub mod error;
 pub mod expr;
 pub mod frame;
@@ -61,6 +62,7 @@ pub mod if_else;
 pub mod ix;
 pub mod let_bindings;
 pub mod let_builder;
+pub mod parse_logs;
 pub mod patched_cpi;
 #[cfg(test)]
 mod parity;
@@ -77,6 +79,7 @@ pub use cpi::{
     CpiWireBuildResult,
 };
 pub use decode::{decode_frame_account, DecodedFrame};
+pub use decode_ix::{decode_ifx_instruction, ifx_ix_hint, DecodedIfxInstruction, IfxIxName};
 pub use error::ScratchError;
 pub use frame::{encode_create_frame_args, frame_pda};
 pub use frame_authority::{
@@ -90,6 +93,9 @@ pub use ix::{
     let_args_from_bindings, CreateFrameParams, CreateFrameResult, IxOpts,
 };
 pub use let_builder::{LetBuilder, LetBuilderFinish};
+pub use parse_logs::{
+    first_ifx_error_in_logs, parse_ifx_logs, ParsedIfxLog, ParsedIfxLogKind,
+};
 pub use patched_cpi::{
     build_raw_cpi, build_static_cpi, build_structured_cpi, frame_value, raw_cpi_patch,
     structured_system_transfer, structured_token_transfer, system_transfer_template,

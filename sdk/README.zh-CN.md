@@ -21,13 +21,13 @@ Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
 ## 安装
 
-**当前版本：** **`0.1.0`**（默认主网；与 `ifx-sdk@0.1.0`、`go-sdk@v0.1.0` 对齐）。
+**当前版本：** **`0.1.1`**（默认主网；与 `ifx-sdk@0.1.1`、`go-sdk@v0.1.1` 对齐）。
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
 
-锁定版本：`npm install @ifx-run/sdk@0.1.0`
+锁定版本：`npm install @ifx-run/sdk@0.1.1`
 
 ## 创建 Frame，再使用
 
@@ -130,10 +130,11 @@ tx.add(letBuilder.buildIx());
 - **要落盘：** 后面的 `ifx_assert`、`ifx_patched_cpi` 的 `RawCpiPatch`、或更晚的 `ifx_let` 里还会用到的值。
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
-- **`FrameScratch.planPublicFrame(...)`**：**默认** — 公共 scratch。每个原子单元开头 **`ixReset()`** 即可 **上生产** — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md) §3.4。
-- **`FrameScratch.planNewFrame(...)`**：可选 — 需 **`close`**、§3.7 预签边角、或纵深防御；公共 Frame + `ixReset` 纪律下多数生产不必用。
-- **Frame 地址（闭环）**：`frame_id` 仅用于 **create** 派生 PDA。Tx 1 后持久化 **`scratch.frame`**（pubkey）+ `tapeLen`，不必存 `frame_id`。`reset` / `let` / `close` 只传地址；链上 **不** re-check seeds（[design.zh-CN.md §4.1](../docs/design.zh-CN.md#41-frame-地址即身份闭环设计)）。
-- **`new FrameScratch(..., authority?)`**：Tx 2 重建 planner；传入已持久化的 **`framePk`**。公共 Frame 的 `authority` 为 Frame PDA（仅当从 `payer`+`frameId` 重算时才需 `publicFrameAuthority`）。`programId` 默认 devnet；localnet 传 `IFX_LOCALNET_PROGRAM_ID`。
+- **`FrameScratch.planPublicFrame(...)`**：一次性 create；`authority` = Frame PDA。
+- **`FrameScratch.forPublicFrame({ framePubkey, ... })`**：**生产路径** — 已有公共 Frame 的 planner（`authority === frame`）。
+- **`FrameScratch.planNewFrame(...)`**：可选 — 需 **`close`**、§3.7 预签边角、或纵深防御。
+- **Frame 地址（闭环）**：`frame_id` 仅用于 **create** 派生 PDA。Tx 1 后持久化 **`scratch.frame`** + `tapeLen`。
+- **`forPublicFrame` 或 `new FrameScratch(...)`**：Tx 2 重建 planner；公共 Frame **优先 `forPublicFrame`**，勿手写 `authority = frame`。
 - **`FrameScratch.fromFrame` / `refreshFromChain`**：仅 **测试与本地调试**（如同 repo 的 `tests/`）；**不要**用于生产业务路径。
 
 ### SPL Token 与 Token-2022（应用层）

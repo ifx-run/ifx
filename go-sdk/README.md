@@ -17,10 +17,10 @@ Prefer `FrameScratch` in application code; use `ix.BuildCreateFrame` and friends
 
 ## Install
 
-**Current release:** **`v0.1.0`** (mainnet default; aligned with `@ifx-run/sdk@0.1.0` and `ifx-sdk@0.1.0`).
+**Current release:** **`v0.1.1`** (mainnet default; aligned with `@ifx-run/sdk@0.1.1` and `ifx-sdk@0.1.1`).
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+go get github.com/ifx-run/ifx/go-sdk@v0.1.1
 ```
 
 Module path: `github.com/ifx-run/ifx/go-sdk/...`
@@ -84,7 +84,8 @@ Fixed `tapeLen` at create (no extend/shrink). See [errors.md](../docs/errors.md)
 |--------|-----|
 | `PlanNewFrame` | New Frame: `Scratch` + `IxCreate` + PDA |
 | `PlanPublicFrame` | `authority` = Frame PDA (non-closeable; public scratch) |
-| `NewFrameScratch(frame, &tapeLen, programID, authority)` | New session on an existing Frame (production path) |
+| `ForPublicFrame(frame, programID, &tapeLen)` | Existing public Frame planner (`authority == frame`) |
+| `NewFrameScratch(frame, &tapeLen, programID, authority)` | New session on an existing Frame (private or custom authority) |
 
 Public Frame check after decode (tests / debug only): `frameauthority.IsPublicFrameAuthority(decoded.Authority, frame)`.
 

@@ -106,6 +106,16 @@ impl FrameScratch {
         })
     }
 
+    /// Planner for an **existing** public Frame (`authority == frame` PDA).
+    pub fn for_public_frame(
+        frame: Pubkey,
+        tape_len: Option<u32>,
+        program_id: Option<Pubkey>,
+    ) -> Self {
+        let program_id = program_id.unwrap_or(DEFAULT_IFX_PROGRAM_ID);
+        Self::new(frame, tape_len, Some(program_id), frame)
+    }
+
     pub fn ix_opts(&self) -> IxOpts {
         IxOpts {
             program_id: Some(self.program_id),
@@ -290,6 +300,16 @@ mod tests {
         assert_eq!(plan.ix_create.data[0], IX_DISC_CREATE_FRAME);
         let auth = Pubkey::try_from(&plan.ix_create.data[1 + 32..1 + 64]).unwrap();
         assert_eq!(auth, plan.frame);
+    }
+
+    #[test]
+    fn for_public_frame_sets_frame_authority() {
+        let frame = Pubkey::new_unique();
+        let s = FrameScratch::for_public_frame(frame, Some(512), Some(IFX_LOCALNET_PROGRAM_ID));
+        assert_eq!(s.authority, frame);
+        assert_eq!(s.frame, frame);
+        assert_eq!(s.cursor, 0);
+        assert_eq!(s.next_index, 0);
     }
 
     #[test]

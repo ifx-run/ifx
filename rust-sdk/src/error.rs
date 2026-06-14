@@ -22,7 +22,7 @@ impl fmt::Display for ScratchError {
             Self::IndexCapReached { index, cap } => {
                 write!(
                     f,
-                    "scratch binding index cap reached ({index} >= {cap}); use a larger frame tape"
+                    "scratch binding index cap reached (binding #{index} >= {cap}); increase tapeLen or reset"
                 )
             }
             Self::TapeExceeded {
@@ -31,7 +31,7 @@ impl fmt::Display for ScratchError {
                 record_len,
             } => write!(
                 f,
-                "scratch would exceed tape ({end_cursor} > {tape_len}); need +{record_len} B per binding"
+                "scratch would exceed tape (needs +{record_len} B, end cursor {end_cursor} > tapeLen {tape_len}); reset or use a larger Frame"
             ),
             Self::InvalidTapeLen => write!(f, "tape_len out of range"),
             Self::InvalidFrameId => write!(f, "frame_id must be 32 bytes"),

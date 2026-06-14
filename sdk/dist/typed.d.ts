@@ -26,6 +26,14 @@ export type TypedExpr<T extends IfxTy> = Expr & {
  * Inline `TypedExpr<"bool">` or a persisted `ScratchValue<"bool">`.
  */
 export type Cond = TypedExpr<"bool"> | ScratchValue<"bool">;
+/** Common binding aliases for cross-module planners (integrator-friendly). */
+export type BoolBinding = ScratchValue<"bool">;
+export type U8Binding = ScratchValue<"u8">;
+export type U16Binding = ScratchValue<"u16">;
+export type U32Binding = ScratchValue<"u32">;
+export type U64Binding = ScratchValue<"u64">;
+export type I64Binding = ScratchValue<"i64">;
+export type PubkeyBinding = ScratchValue<"pubkey">;
 /** Operand for `expr.*` combinators. */
 export type ExprInput<T extends IfxTy> = ScratchValue<T> | TypedExpr<T>;
 export declare function scratchValue<T extends IfxTy>(binding: LetBinding, ref: Value, letRemaining?: readonly AccountMeta[], knownTy?: T): ScratchValue<T>;

@@ -34,7 +34,7 @@ ifx-core  ◄──  ifx (program)     ← on-chain execution
     └──  ifx-sdk (rust-sdk/)    ← off-chain tx planning (NOT ifx program)
 ```
 
-**`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk@0.1.0` + `idl/ifx.json`) and Go (`go-sdk@v0.1.0` + bundled IDL): wire truth in a shared library, not the deployed program binary. Pin **`0.1.0`** across all three clients on the same git revision.
+**`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk@0.1.1` + `idl/ifx.json`) and Go (`go-sdk@v0.1.1` + bundled IDL): wire truth in a shared library, not the deployed program binary. Pin **`0.1.1`** across all three clients on the same git revision.
 
 ### `ifx-core` features (incremental)
 
@@ -151,7 +151,7 @@ When `patches` is non-empty, bytes copy from `Frame::tape` (via `payload_at[sour
 
 ```toml
 [dependencies]
-ifx-sdk = { version = "0.1.0", features = ["layout"] }  # crates.io: ifx-sdk + ifx-core@0.1.0
+ifx-sdk = { version = "0.1.1", features = ["layout"] }  # crates.io: ifx-sdk + ifx-core@0.1.0
 # or during development:
 ifx-core = { path = "../ifx/crates/ifx-core", features = ["wire", "layout"] }
 ```

@@ -21,13 +21,13 @@ Sign, send, fetch accounts with your existing **Anchor Provider / wallet / `conn
 
 ## Install
 
-**Current release:** **`0.1.0`** (mainnet default; aligned with `ifx-sdk@0.1.0` and `go-sdk@v0.1.0`).
+**Current release:** **`0.1.1`** (mainnet default; aligned with `ifx-sdk@0.1.1` and `go-sdk@v0.1.1`).
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
 
-Pin exact: `npm install @ifx-run/sdk@0.1.0`
+Pin exact: `npm install @ifx-run/sdk@0.1.1`
 
 ## Create a frame, then use it
 
@@ -130,10 +130,11 @@ At create: `tapeLen` up to **65_535** on-chain; **prefer `DEFAULT_TAPE_LEN` (512
 - **Persist:** Values later read by `ifx_assert`, `ifx_patched_cpi` `RawCpiPatch`, or later `ifx_let` (`ScratchValue` / `expr.*`).
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
-- **`FrameScratch.planPublicFrame(...)`:** **default** — `authority` = Frame PDA ({@link publicFrameAuthority}); **public scratch** (anyone can `reset`/`let`; not `close`). **Production** when each atomic unit starts with **`ixReset()`** — [frame-authority.md](../docs/frame-authority.md) §3.4.
+- **`FrameScratch.planPublicFrame(...)`:** **default** — one-time create; `authority` = Frame PDA ({@link publicFrameAuthority}).
+- **`FrameScratch.forPublicFrame({ framePubkey, ... })`:** **production** — planner on an **existing** public Frame (`authority === frame`); use after Frame pool provisioning.
 - **`FrameScratch.planNewFrame(...)`:** optional — **`close`**, §3.7 pre-sign edge, or defense-in-depth; not required for typical production if public Frame + `ixReset` discipline holds.
 - **Frame address (closed loop):** `frame_id` is only for **create** PDA derivation. After Tx 1, persist **`scratch.frame`** (pubkey) + `tapeLen` — not `frame_id`. `reset` / `let` / `close` pass the address only; on-chain does **not** re-check seeds ([design.md §4.1](../docs/design.md#41-frame-address-identity-closed-loop)).
-- **`new FrameScratch(framePk, tapeLen?, cursor?, nextIndex?, programId?, authority?)`:** rebuild in Tx 2 when scratch is not in memory; pass the persisted **`framePk`**. For public Frames, `authority` = Frame PDA (`publicFrameAuthority` only needed when re-deriving from `payer`+`frameId`). `programId` defaults to devnet; localnet: `IFX_LOCALNET_PROGRAM_ID`.
+- **`new FrameScratch(framePk, tapeLen?, ...)`** or **`forPublicFrame`:** rebuild in Tx 2 when scratch is not in memory; pass the persisted **`framePk`**. Prefer **`forPublicFrame`** for public Frames instead of manual `authority = frame`.
 - **`FrameScratch.fromFrame` / `refreshFromChain`:** **tests and local debug only** — not production paths.
 
 ### SPL Token & Token-2022 (application layer)

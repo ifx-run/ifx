@@ -17,10 +17,10 @@ Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/s
 
 ## 安装
 
-**当前版本：** **`v0.1.0`**（默认主网；与 `@ifx-run/sdk@0.1.0`、`ifx-sdk@0.1.0` 对齐）。
+**当前版本：** **`v0.1.1`**（默认主网；与 `@ifx-run/sdk@0.1.1`、`ifx-sdk@0.1.1` 对齐）。
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.0
+go get github.com/ifx-run/ifx/go-sdk@v0.1.1
 ```
 
 模块路径：`github.com/ifx-run/ifx/go-sdk/...`
@@ -172,8 +172,9 @@ letIx, err := b.BuildIx()
 | 方法 | 用途 |
 |------|------|
 | `PlanNewFrame` | 新 Frame：`Scratch` + `IxCreate` + PDA |
-| `PlanPublicFrame` | `authority` = Frame PDA（不可关闭；公共 scratch） |
-| `NewFrameScratch(frame, &tapeLen, programID, authority)` | 已有 Frame 上开新 session（生产路径） |
+| `PlanPublicFrame` | 一次性 create；`authority` = Frame PDA（不可关闭；公共 scratch） |
+| `ForPublicFrame(frame, programID, &tapeLen)` | 已有公共 Frame 的 planner（`authority == frame`） |
+| `NewFrameScratch(frame, &tapeLen, programID, authority)` | 已有 Frame 上开新 session（私有或自定义 authority） |
 
 公共 Frame 校验：`frameauthority.IsPublicFrameAuthority(decoded.Authority, frame)`。
 
