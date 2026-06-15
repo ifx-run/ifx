@@ -258,9 +258,14 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | Two-hop A→USDC→B, read intermediate token balance, patch hop 2 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | Mid-tx reads, assert hard-fail, structured CPI patches |
 
-### Mainnet reference ([ifx-run/ifx-pumpfun-ext](https://github.com/ifx-run/ifx-pumpfun-ext))
+### Mainnet reference integrations ([ifx-run](https://github.com/ifx-run) org)
 
-Separate repo in the **ifx-run** org (not part of this tree): Pump.fun bonding-curve v2 buy / sell / two-hop swap, conditional ATA close, platform fee, and SOL sponsor — **one v0 mainnet tx** built with `@ifx-run/sdk`. Shows integrator-owned pieces that stay **outside** the SDK (`rawCpiPatch` offsets, v0 size / ALT policy, business planners); boundary notes in [SDK integrator feedback](./docs/sdk-integrator-feedback-plan.md). **Demo software** — not an audited production exchange.
+Separate repos (not part of this tree). **Demo software** — not audited production exchanges. Both illustrate integrator-owned pieces that stay **outside** the SDK (`rawCpiPatch` / pool layout, v0 size / ALT policy, business planners); boundary notes in [SDK integrator feedback](./docs/sdk-integrator-feedback-plan.md).
+
+| Repo | SDK | Highlights |
+|------|-----|------------|
+| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding-curve v2 buy / sell / two-hop swap, conditional ATA close, platform fee, SOL sponsor — one v0 mainnet tx |
+| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** direct swap + SOL-bridge routes, dynamic platform fee, sponsored gas, smart ATA close, v0 + ALT with 1232 B size gate |
 
 ### L1 — Destroy dust Token-2022 accounts
 

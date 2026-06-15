@@ -256,9 +256,14 @@ Guardrail 示例（无 program 变更）：[lamports delta](./sdk/examples/guard
 | **L2** | [two-hop-token-swap.ts](./sdk/examples/two-hop-token-swap.ts) | 两跳 A→USDC→B、读中间 token 余额、patch 第二跳 |
 | **L3** | [sponsored_buy.ts](./tests/sponsored_buy.ts) | tx 中途读、assert 硬失败、structured CPI patch |
 
-### Mainnet 参考实现（[ifx-run/ifx-pumpfun-ext](https://github.com/ifx-run/ifx-pumpfun-ext)）
+### Mainnet 参考实现（[ifx-run](https://github.com/ifx-run) 组织）
 
-**ifx-run** 组织内独立仓库（不在本 tree）：Pump.fun bonding curve v2 买卖 / 两跳 swap、条件关 ATA、平台费、SOL sponsor — 单笔 **mainnet v0** 交易，用 `@ifx-run/sdk` 编排。展示 **SDK 之外** 由集成方维护的部分（`rawCpiPatch` offset、v0 体积 / ALT 策略、业务 planner）；边界见 [SDK 集成方反馈](./docs/sdk-integrator-feedback-plan.zh-CN.md)。**演示软件** — 非审计过的生产交易所。
+独立仓库（不在本 tree）。**演示软件** — 非审计过的生产交易所。二者均展示 **SDK 之外** 由集成方维护的部分（`rawCpiPatch` / 池子布局、v0 体积 / ALT 策略、业务 planner）；边界见 [SDK 集成方反馈](./docs/sdk-integrator-feedback-plan.zh-CN.md)。
+
+| 仓库 | SDK | 要点 |
+|------|-----|------|
+| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding curve v2 买卖 / 两跳 swap、条件关 ATA、平台费、SOL sponsor — 单笔 mainnet v0 |
+| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** 直连 swap + SOL 桥接路由、动态平台费、sponsor 代付、smart close、v0 + ALT 与 1232 B 体积门控 |
 
 ### L1 — 销毁 dust Token-2022 账户
 
