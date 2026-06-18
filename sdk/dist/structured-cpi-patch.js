@@ -41,11 +41,15 @@ const freezeAuthTag = {
     someValue: 1,
     someLiteral: 2,
 };
+const unwrapLamportsTag = {
+    all: 0,
+    amount: 1,
+};
 const pubkeyValueTag = {
     fromFrame: 0,
     literal: 1,
 };
-/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–33 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 exports.STRUCTURED_CPI_PATCH_WIRE = {
     /** (0) System `Transfer` — dynamic lamports. */
     systemTransfer: 0,
@@ -113,6 +117,8 @@ exports.STRUCTURED_CPI_PATCH_WIRE = {
     stakeDeactivate: 31,
     /** (32) Stake `DelegateStake` — no dynamic fields. */
     stakeDelegateStake: 32,
+    /** (33) SPL Token `UnwrapLamports` — `UnwrapLamportsPatch`. */
+    tokenUnwrapLamports: 33,
 };
 function asValue(source) {
     if (typeof source === "object" && source !== null && "index" in source) {
@@ -295,6 +301,17 @@ function encodeFreezeAuthPatch(freeze) {
             ]);
     }
 }
+function encodeUnwrapLamportsPatch(patch) {
+    switch (patch.tag) {
+        case "all":
+            return Buffer.from([unwrapLamportsTag.all]);
+        case "amount":
+            return Buffer.concat([
+                Buffer.from([unwrapLamportsTag.amount]),
+                writeValueIndex(patch.amount),
+            ]);
+    }
+}
 function encodeInitializeMintPatch(patch) {
     return Buffer.concat([
         writeValueIndex(patch.decimals),
@@ -349,6 +366,8 @@ function encodeStructuredCpiPatchBody(patch) {
         case "stakeDeactivate":
         case "stakeDelegateStake":
             return Buffer.alloc(0);
+        case "tokenUnwrapLamports":
+            return encodeUnwrapLamportsPatch(patch.unwrapLamports);
     }
 }
 /** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
@@ -472,7 +491,7 @@ function initializeMintBuilder(tag) {
         initializeMint: buildInitializeMintPatch(args),
     });
 }
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–33). */
 exports.structuredCpiPatch = {
     systemTransfer(lamports) {
         return { tag: "systemTransfer", lamports: asValue(lamports) };
@@ -604,6 +623,20 @@ exports.structuredCpiPatch = {
     },
     stakeDelegateStake() {
         return { tag: "stakeDelegateStake" };
+    },
+    tokenUnwrapLamports: {
+        all() {
+            return {
+                tag: "tokenUnwrapLamports",
+                unwrapLamports: { tag: "all" },
+            };
+        },
+        amount(amount) {
+            return {
+                tag: "tokenUnwrapLamports",
+                unwrapLamports: { tag: "amount", amount: asValue(amount) },
+            };
+        },
     },
     /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
     tokenAmount(amount) {

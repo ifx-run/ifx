@@ -369,3 +369,17 @@ func (structuredCpiPatch) StakeDeactivate() PatchInput {
 func (structuredCpiPatch) StakeDelegateStake() PatchInput {
 	return PatchInput{WireTag: constants.StructuredPatchStakeDelegateStake}
 }
+
+func (structuredCpiPatch) TokenUnwrapLamportsAll() PatchInput {
+	return PatchInput{
+		WireTag: constants.StructuredPatchTokenUnwrapLamports,
+		Payload: UnwrapLamportsPatch{Tag: unwrapLamportsAll},
+	}
+}
+
+func (structuredCpiPatch) TokenUnwrapLamportsAmount(amount FrameValue) PatchInput {
+	return PatchInput{
+		WireTag: constants.StructuredPatchTokenUnwrapLamports,
+		Payload: UnwrapLamportsPatch{Tag: unwrapLamportsAmount, Amount: amount},
+	}
+}

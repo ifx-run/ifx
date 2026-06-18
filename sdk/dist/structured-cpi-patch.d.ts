@@ -7,7 +7,7 @@
 import type { ScratchValue } from "./scratch";
 import type { IfxTy } from "./typed";
 import type { Value } from "./types";
-/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–33 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 export declare const STRUCTURED_CPI_PATCH_WIRE: {
     /** (0) System `Transfer` — dynamic lamports. */
     readonly systemTransfer: 0;
@@ -75,6 +75,8 @@ export declare const STRUCTURED_CPI_PATCH_WIRE: {
     readonly stakeDeactivate: 31;
     /** (32) Stake `DelegateStake` — no dynamic fields. */
     readonly stakeDelegateStake: 32;
+    /** (33) SPL Token `UnwrapLamports` — `UnwrapLamportsPatch`. */
+    readonly tokenUnwrapLamports: 33;
 };
 export type StructuredCpiPatchWireTag = (typeof STRUCTURED_CPI_PATCH_WIRE)[keyof typeof STRUCTURED_CPI_PATCH_WIRE];
 export type ValueInput = Value | ScratchValue<IfxTy>;
@@ -181,6 +183,17 @@ export type FreezeAuthPatch = {
 } | {
     tag: "someLiteral";
     bytes: Buffer;
+};
+/** SPL `UnwrapLamports` sub-layout: entire balance vs Frame amount. */
+export type UnwrapLamportsPatch = 
+/** Transfer entire source lamport balance (`COption::None`). */
+{
+    tag: "all";
+}
+/** Lamport amount from Frame (`COption::Some`). */
+ | {
+    tag: "amount";
+    amount: Value;
 };
 /** SPL `InitializeMint*` dynamic fields (decimals, mint authority, freeze). */
 export type InitializeMintPatch = {
@@ -352,6 +365,11 @@ export type StructuredCpiPatch =
 /** (32) Stake `DelegateStake` — no dynamic fields. */
  | {
     tag: "stakeDelegateStake";
+}
+/** (33) SPL Token `UnwrapLamports` — `UnwrapLamportsPatch`. */
+ | {
+    tag: "tokenUnwrapLamports";
+    unwrapLamports: UnwrapLamportsPatch;
 };
 export declare function structuredCpiPatchWireTag(patch: StructuredCpiPatch): number;
 /** Full Borsh `StructuredCpiPatch` bytes (variant tag + nested payload). */
@@ -361,7 +379,7 @@ export declare function encodeStructuredCpiPatch(patch: StructuredCpiPatch): Buf
  * variant tag (it lived in `Cpi::Structured` before `accounts_start`).
  */
 export declare function encodeStructuredCpiPatchPayload(patch: StructuredCpiPatch): Buffer;
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–33). */
 export declare const structuredCpiPatch: {
     systemTransfer(lamports: ValueInput): StructuredCpiPatch;
     systemCreateAccount: {
@@ -460,6 +478,10 @@ export declare const structuredCpiPatch: {
     stakeSplit(lamports: ValueInput): StructuredCpiPatch;
     stakeDeactivate(): StructuredCpiPatch;
     stakeDelegateStake(): StructuredCpiPatch;
+    tokenUnwrapLamports: {
+        all(): StructuredCpiPatch;
+        amount(amount: ValueInput): StructuredCpiPatch;
+    };
     /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
     tokenAmount(amount: ValueInput): StructuredCpiPatch;
     /** @deprecated Use {@link structuredCpiPatch.tokenInitializeMint2}. */

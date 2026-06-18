@@ -6,7 +6,7 @@ Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 
 **Structured 与 RawPatched：** Structured 是 **type-safe** 路径 — 链上按下方 registry 校验 program id + ix 变体 + 字段布局。**RawPatched**（`rawCpi`）是面向 DEX / 自定义程序的 **type-unsafe** 逃生口；program id 由构造者指定，**无 Raw 白名单**（[`raw-cpi-patches.zh-CN.md`](./raw-cpi-patches.zh-CN.md) § 设计意图）。二者缺一不可；堵死 Raw 若不按字段级重复本 registry，并不能实质提升安全，只会损害通用性。
 
-链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（33 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
+链上与 SDK 统一使用 **`StructuredCpiPatch`** flat enum（34 个官方 ix variant + typed payload）；嵌套类型如 `AmountDecimalsPatch` 与 ix variant 一一对应，编译期不可错配。
 
 ## Wire layout（`Cpi::Structured`）
 
@@ -15,7 +15,7 @@ Wire：`Cpi::Structured { accounts, patch }` — **不传 ix data 模板**。
 ```
 
 - **`accounts_start` / `accounts_len`：** `remaining_accounts` 切片（与 Static / RawPatched 相同）。
-- **`StructuredCpiPatch`：** 完整 Borsh enum — 首字节为 variant tag **0–32**（见下表）；嵌套 sub-enum 与 `Value` 字段紧随其后。
+- **`StructuredCpiPatch`：** 完整 Borsh enum — 首字节为 variant tag **0–33**（见下表）；嵌套 sub-enum 与 `Value` 字段紧随其后。
 - **`Value` wire：** 单字节 = Frame binding index（无旧版 `[0][index]` 前缀）。
 
 TS codec：**`encodeStructuredCpiPatch`**（含 variant tag）。**`encodeStructuredCpiPatchPayload`** 已 deprecated（仅 body，0.4 前 layout）。
@@ -47,9 +47,9 @@ structuredCpi(transferCheckedIx, {
 
 RawPatched 仍用于 DEX / 非 registry layout。
 
-Variant tag **0–32** 为 Borsh enum 索引（SDK 中 `STRUCTURED_CPI_PATCH_WIRE`）— **不是** account slice 之前的独立字节。
+Variant tag **0–33** 为 Borsh enum 索引（SDK 中 `STRUCTURED_CPI_PATCH_WIRE`）— **不是** account slice 之前的独立字节。
 
-## Variant 注册表（wire tag 0–32）
+## Variant 注册表（wire tag 0–33）
 
 SPL 指令 **discriminator** 为官方 ix `data` 首字节（u8 enum）。Token-2022 TransferFee 扩展使用独立程序与 discriminator。
 
@@ -88,8 +88,11 @@ SPL 指令 **discriminator** 为官方 ix `data` 首字节（u8 enum）。Token-
 | `30` | Stake | `Split` | 3 (bincode u32) | `lamports: Value` |
 | `31` | Stake | `Deactivate` | 5 (bincode u32) | — |
 | `32` | Stake | `DelegateStake` | 2 (bincode u32) | — |
+| `33` | SPL Token | `UnwrapLamports` | 45 | `UnwrapLamportsPatch` |
 
 Stake ix data 为 **bincode** `u32` variant + 可选 `u64`（与 SPL 单字节 discriminator 不同）。
+
+`UnwrapLamports` ix data：`[45]` + `COption<u64>`（`0` = 全额；`1` + u64 LE = 指定 lamports）。仅 **legacy SPL Token program id**（p-token 同 id）。
 
 ### 嵌套 payload
 
@@ -101,6 +104,7 @@ Stake ix data 为 **bincode** `u32` variant + 可选 `u64`（与 SPL 单字节 d
 | `SetTransferFeePatch` | `bpsOnly` `0` · `maxOnly` `1` · `both` `2` | Token-2022 fee 配置 |
 | `PubkeyValue` | `fromFrame` `0` · `literal` `1` | Mint authority / freeze pubkey |
 | `FreezeAuthPatch` | `none` `0` · `someValue` `1` · `someLiteral` `2` | InitializeMint* 可选 freeze |
+| `UnwrapLamportsPatch` | `all` `0` · `amount` `1` | p-token `UnwrapLamports` 可选 lamports |
 
 规范实现：`programs/ifx/src/state/structured_cpi_patch.rs`、`structured_cpi_payload.rs`。
 
@@ -118,6 +122,16 @@ const built = structuredCpi(
     freeze: { tag: "none" },
   })
 ).build();
+```
+
+UnwrapLamports（p-token / SPL Token，动态 amount 或全额）：
+
+```typescript
+const lamports = scratch.letSplTokenAmount(wsolAta);
+const built = structuredCpi(unwrapTemplateIx, {
+  patch: structuredCpiPatch.tokenUnwrapLamports.amount(lamports),
+}).build();
+// 全额：structuredCpiPatch.tokenUnwrapLamports.all()
 ```
 
 集成测试：`tests/ifx_structured_cpi_initialize_mint.ts`。

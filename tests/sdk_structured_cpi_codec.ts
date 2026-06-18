@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   createInitializeMint2Instruction,
   createTransferCheckedInstruction,
@@ -26,6 +26,31 @@ import {
   stakeDeactivateInstruction,
   stakeWithdrawInstruction,
 } from "./helpers/stake";
+
+function tokenUnwrapLamportsInstruction(
+  source: PublicKey,
+  destination: PublicKey,
+  authority: PublicKey,
+  amount?: bigint
+): TransactionInstruction {
+  const data =
+    amount === undefined
+      ? Buffer.from([45, 0])
+      : (() => {
+          const amt = Buffer.alloc(8);
+          amt.writeBigUInt64LE(amount);
+          return Buffer.concat([Buffer.from([45, 1]), amt]);
+        })();
+  return {
+    programId: TOKEN_PROGRAM_ID,
+    keys: [
+      { pubkey: source, isSigner: false, isWritable: true },
+      { pubkey: destination, isSigner: false, isWritable: true },
+      { pubkey: authority, isSigner: true, isWritable: false },
+    ],
+    data,
+  };
+}
 
 describe("sdk structured CPI codec", () => {
   it("encodeStructuredCpiPatchPayload amountOnly matches nested Borsh body", () => {
@@ -132,7 +157,7 @@ describe("sdk structured CPI codec", () => {
     const wireKeys = Object.keys(STRUCTURED_CPI_PATCH_WIRE) as Array<
       keyof typeof STRUCTURED_CPI_PATCH_WIRE
     >;
-    expect(wireKeys).to.have.length(33);
+    expect(wireKeys).to.have.length(34);
     for (const key of wireKeys) {
       expect(structuredCpiPatch).to.have.property(key);
     }
@@ -217,5 +242,74 @@ describe("sdk structured CPI codec", () => {
     expect(built.cpi.kind).to.equal("structured");
     const wire = encodeCpi(built.cpi);
     expect(wire.subarray(3, 5)).to.deep.equal(Buffer.from([29, 0]));
+  });
+
+  it("encodeStructuredCpiPatch tokenUnwrapLamports all matches nested Borsh", () => {
+    const patch = structuredCpiPatch.tokenUnwrapLamports.all();
+    expect(encodeStructuredCpiPatchPayload(patch)).to.deep.equal(
+      Buffer.from([0])
+    );
+    expect(encodeStructuredCpiPatch(patch)).to.deep.equal(
+      Buffer.from([STRUCTURED_CPI_PATCH_WIRE.tokenUnwrapLamports, 0])
+    );
+  });
+
+  it("inferStructuredCpiPatchTag rejects token-2022 unwrap lamports", () => {
+    const source = PublicKey.unique();
+    const dest = PublicKey.unique();
+    const authority = PublicKey.unique();
+    const tpl = tokenUnwrapLamportsInstruction(source, dest, authority);
+    expect(
+      inferStructuredCpiPatchTag({
+        ...tpl,
+        programId: TOKEN_2022_PROGRAM_ID,
+      })
+    ).to.equal(null);
+  });
+
+  it("encodeStructuredCpiPatch tokenUnwrapLamports amount matches nested Borsh", () => {
+    const patch = structuredCpiPatch.tokenUnwrapLamports.amount(
+      asValue({ index: 2 })
+    );
+    expect(encodeStructuredCpiPatchPayload(patch)).to.deep.equal(
+      Buffer.from([1, 2])
+    );
+    expect(encodeStructuredCpiPatch(patch)).to.deep.equal(
+      Buffer.from([STRUCTURED_CPI_PATCH_WIRE.tokenUnwrapLamports, 1, 2])
+    );
+    expect(structuredCpiPatchWireTag(patch)).to.equal(
+      STRUCTURED_CPI_PATCH_WIRE.tokenUnwrapLamports
+    );
+  });
+
+  it("inferStructuredCpiPatchTag resolves token unwrap lamports", () => {
+    const source = PublicKey.unique();
+    const dest = PublicKey.unique();
+    const authority = PublicKey.unique();
+    const allTpl = tokenUnwrapLamportsInstruction(source, dest, authority);
+    expect(inferStructuredCpiPatchTag(allTpl)).to.equal("tokenUnwrapLamports");
+
+    const amountTpl = tokenUnwrapLamportsInstruction(
+      source,
+      dest,
+      authority,
+      5n
+    );
+    expect(inferStructuredCpiPatchTag(amountTpl)).to.equal(
+      "tokenUnwrapLamports"
+    );
+  });
+
+  it("structuredCpi builder infers token unwrap lamports patch tag", () => {
+    const source = PublicKey.unique();
+    const dest = PublicKey.unique();
+    const authority = PublicKey.unique();
+    const template = tokenUnwrapLamportsInstruction(source, dest, authority, 9n);
+    const built = structuredCpi(template, {
+      unwrapLamports: { tag: "amount", amount: asValue({ index: 0 }) },
+    }).build();
+    expect(built.cpi.kind).to.equal("structured");
+    const wire = encodeCpi(built.cpi);
+    expect(wire.subarray(3, 6)).to.deep.equal(Buffer.from([33, 1, 0]));
   });
 });

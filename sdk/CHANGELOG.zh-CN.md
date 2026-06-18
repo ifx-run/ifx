@@ -8,6 +8,10 @@
 
 ## [Unreleased]
 
+### 新增
+
+- **`StructuredCpiPatch` tag 33：** SPL Token / p-token `UnwrapLamports` — `structuredCpiPatch.tokenUnwrapLamports.all()` / `.amount()`；可从 legacy token program 模板推断（disc `45`）。**Wire breaking** — 需与本 SDK 对齐的 Ifx program 重新部署。
+
 ## [0.1.1] - 2026-06-14
 
 ### 新增

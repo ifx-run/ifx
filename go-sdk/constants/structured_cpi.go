@@ -42,10 +42,11 @@ const (
 	StructuredPatchStakeSplit           // (30) Split — dynamic lamports
 	StructuredPatchStakeDeactivate      // (31) Deactivate — unit
 	StructuredPatchStakeDelegateStake   // (32) DelegateStake — unit
+	StructuredPatchTokenUnwrapLamports  // (33) UnwrapLamports — UnwrapLamportsPatch
 )
 
 // StructuredCpiPatchCount is the number of StructuredCpiPatch wire variants.
-const StructuredCpiPatchCount = 33
+const StructuredCpiPatchCount = 34
 
 // Cpi wire step kind (matches on-chain Cpi tag).
 const (

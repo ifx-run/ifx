@@ -82,6 +82,15 @@ pub enum FreezeAuthPatch {
     SomeLiteral([u8; 32]),
 }
 
+/// SPL `UnwrapLamports` (p-token / SIMD-0266): optional lamport amount (`COption<u64>`).
+#[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnwrapLamportsPatch {
+    /// Transfer entire source balance (`[45, 0]`).
+    All,
+    /// Lamport amount from Frame (`[45, 1, u64]`).
+    Amount(Value),
+}
+
 /// SPL `InitializeMint*` — dynamic `decimals`; optional freeze via [`FreezeAuthPatch`].
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InitializeMintPatch {
@@ -113,6 +122,15 @@ impl InitializeMintPatch {
         sink.patch_binding("decimals", self.decimals)
             && append_pubkey_value_log(sink, "mint_authority", &self.mint_authority)
             && append_freeze_auth_log(sink, &self.freeze)
+    }
+}
+
+impl UnwrapLamportsPatch {
+    pub fn append_log_bindings(&self, sink: &mut impl PatchLogSink) -> bool {
+        match self {
+            Self::All => true,
+            Self::Amount(v) => sink.patch_binding("amount", *v),
+        }
     }
 }
 

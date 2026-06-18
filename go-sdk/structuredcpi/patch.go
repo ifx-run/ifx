@@ -107,6 +107,17 @@ type InitializeMintPatch struct {
 	Freeze        FreezeAuthPatch
 }
 
+// UnwrapLamportsPatch encodes SPL Token `UnwrapLamports` optional amount.
+type UnwrapLamportsPatch struct {
+	Tag    uint8 // 0 all, 1 amount from Frame
+	Amount FrameValue
+}
+
+const (
+	unwrapLamportsAll = iota
+	unwrapLamportsAmount
+)
+
 func writeValueIndex(buf []byte, v FrameValue) []byte {
 	return append(buf, v.Index)
 }
@@ -301,8 +312,25 @@ func EncodePatchPayload(wireTag uint8, payload interface{}) ([]byte, error) {
 	case constants.StructuredPatchStakeDeactivate,
 		constants.StructuredPatchStakeDelegateStake:
 		return nil, nil
+	case constants.StructuredPatchTokenUnwrapLamports:
+		p, ok := payload.(UnwrapLamportsPatch)
+		if !ok {
+			return nil, fmt.Errorf("patch tag %d expects UnwrapLamportsPatch", wireTag)
+		}
+		return encodeUnwrapLamports(p)
 	default:
 		return nil, fmt.Errorf("unsupported structured patch wire tag %d", wireTag)
+	}
+}
+
+func encodeUnwrapLamports(p UnwrapLamportsPatch) ([]byte, error) {
+	switch p.Tag {
+	case unwrapLamportsAll:
+		return []byte{unwrapLamportsAll}, nil
+	case unwrapLamportsAmount:
+		return []byte{unwrapLamportsAmount, p.Amount.Index}, nil
+	default:
+		return nil, fmt.Errorf("unknown UnwrapLamportsPatch tag %d", p.Tag)
 	}
 }
 

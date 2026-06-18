@@ -21,6 +21,8 @@ const SPL_IX = {
     initializeMultisig2: 19,
     initializeMint2: 20,
     amountToUiAmount: 23,
+    /** p-token `UnwrapLamports` (SPL Token program only). */
+    unwrapLamports: 45,
     /** Token-2022 extension prefix (`TokenInstruction::TransferFeeExtension`). */
     transferFeeExtension: 26,
 };
@@ -105,6 +107,8 @@ function inferTokenFamily(programId, data) {
         case SPL_IX.initializeMultisig:
         case SPL_IX.initializeMultisig2:
             return `${prefix}InitializeMultisig`;
+        case SPL_IX.unwrapLamports:
+            return token ? "tokenUnwrapLamports" : null;
         default:
             return null;
     }

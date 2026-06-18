@@ -1,13 +1,13 @@
 //! Unified structured CPI patch — one Borsh enum per official ix layout.
 //!
 //! Nested inside [`super::Cpi::Structured`] after `accounts_start` / `accounts_len`.
-//! Variant order is the wire discriminant (`0`–`32`) — see SDK `STRUCTURED_CPI_PATCH_WIRE`.
+//! Variant order is the wire discriminant (`0`–`33`) — see SDK `STRUCTURED_CPI_PATCH_WIRE`.
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use super::structured_cpi_payload::{
     AmountDecimalsFeePatch, AmountDecimalsPatch, InitializeMintPatch, LamportsSpacePatch,
-    PatchLogSink, SetTransferFeePatch,
+    PatchLogSink, SetTransferFeePatch, UnwrapLamportsPatch,
 };
 use super::value::Value;
 
@@ -87,10 +87,12 @@ pub enum StructuredCpiPatch {
     StakeDeactivate,
     /// Stake `DelegateStake` (2): no dynamic fields.
     StakeDelegateStake,
+    /// SPL Token `UnwrapLamports` (45): optional lamport amount via [`UnwrapLamportsPatch`].
+    TokenUnwrapLamports(UnwrapLamportsPatch),
 }
 
 impl StructuredCpiPatch {
-    pub const COUNT: u8 = 33;
+    pub const COUNT: u8 = 34;
 
     pub fn log_label(&self) -> &'static str {
         match self {
@@ -127,6 +129,7 @@ impl StructuredCpiPatch {
             Self::StakeSplit { .. } => "stake:split",
             Self::StakeDeactivate => "stake:deactivate",
             Self::StakeDelegateStake => "stake:delegate_stake",
+            Self::TokenUnwrapLamports(_) => "token:unwrap_lamports",
         }
     }
 
@@ -157,6 +160,7 @@ impl StructuredCpiPatch {
             Self::TokenInitializeMultisig { m } | Self::Token2022InitializeMultisig { m } => {
                 sink.patch_binding("m", *m)
             }
+            Self::TokenUnwrapLamports(shape) => shape.append_log_bindings(sink),
             Self::Token2022TransferCheckedWithFee(shape) => shape.append_log_bindings(sink),
             Self::Token2022SetTransferFee(shape) => shape.append_log_bindings(sink),
             Self::TokenInitializeMint(shape)
@@ -174,17 +178,33 @@ impl StructuredCpiPatch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::wire::structured_cpi_payload::AmountDecimalsPatch;
+    use crate::wire::structured_cpi_payload::{AmountDecimalsPatch, UnwrapLamportsPatch};
 
     #[test]
     fn patch_count_unchanged() {
-        assert_eq!(StructuredCpiPatch::COUNT, 33);
+        assert_eq!(StructuredCpiPatch::COUNT, 34);
     }
 
     use borsh::BorshSerialize;
 
     fn encode_patch<T: BorshSerialize>(patch: &T) -> Vec<u8> {
         borsh::to_vec(patch).unwrap()
+    }
+
+    #[test]
+    fn unwrap_lamports_borsh_roundtrip() {
+        let all = StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::All);
+        let wire = encode_patch(&all);
+        let back: StructuredCpiPatch = borsh::from_slice(&wire).unwrap();
+        assert_eq!(back, all);
+
+        let amount =
+            StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::Amount(Value {
+                index: 2,
+            }));
+        let wire = encode_patch(&amount);
+        let back: StructuredCpiPatch = borsh::from_slice(&wire).unwrap();
+        assert_eq!(back, amount);
     }
 
     #[test]

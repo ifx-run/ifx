@@ -5,7 +5,7 @@ mod tests {
     use anchor_lang::AnchorSerialize;
     use ifx_core::wire::structured_cpi_payload::{
         AmountDecimalsFeePatch, AmountDecimalsPatch, FreezeAuthPatch, InitializeMintPatch,
-        LamportsSpacePatch, PubkeyValue, SetTransferFeePatch,
+        LamportsSpacePatch, PubkeyValue, SetTransferFeePatch, UnwrapLamportsPatch,
     };
     use ifx_core::wire::structured_cpi_patch::StructuredCpiPatch;
     use ifx_core::wire::{Cpi, Expr, IfElseArm, Value};
@@ -28,7 +28,7 @@ mod tests {
         }
     }
 
-    /// Mirrors Go `structuredPatchWireKeys` / TS `STRUCTURED_CPI_PATCH_WIRE` (33 variants, tags 0–32).
+    /// Mirrors Go `structuredPatchWireKeys` / TS `STRUCTURED_CPI_PATCH_WIRE` (34 variants, tags 0–33).
     fn all_sample_structured_patches() -> Vec<(&'static str, StructuredCpiPatch)> {
         vec![
             (
@@ -221,6 +221,12 @@ mod tests {
             ),
             ("stakeDeactivate", StructuredCpiPatch::StakeDeactivate),
             ("stakeDelegateStake", StructuredCpiPatch::StakeDelegateStake),
+            (
+                "tokenUnwrapLamports",
+                StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::Amount(
+                    frame_value(0),
+                )),
+            ),
         ]
     }
 

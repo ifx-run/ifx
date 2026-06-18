@@ -44,12 +44,17 @@ const freezeAuthTag = {
   someLiteral: 2,
 } as const;
 
+const unwrapLamportsTag = {
+  all: 0,
+  amount: 1,
+} as const;
+
 const pubkeyValueTag = {
   fromFrame: 0,
   literal: 1,
 } as const;
 
-/** Wire tag 0–32 (matches on-chain `StructuredCpiPatch::wire_tag`). */
+/** Wire tag 0–33 (matches on-chain `StructuredCpiPatch::wire_tag`). */
 export const STRUCTURED_CPI_PATCH_WIRE = {
   /** (0) System `Transfer` — dynamic lamports. */
   systemTransfer: 0,
@@ -117,6 +122,8 @@ export const STRUCTURED_CPI_PATCH_WIRE = {
   stakeDeactivate: 31,
   /** (32) Stake `DelegateStake` — no dynamic fields. */
   stakeDelegateStake: 32,
+  /** (33) SPL Token `UnwrapLamports` — `UnwrapLamportsPatch`. */
+  tokenUnwrapLamports: 33,
 } as const;
 
 export type StructuredCpiPatchWireTag =
@@ -175,6 +182,13 @@ export type FreezeAuthPatch =
   | { tag: "none" }
   | { tag: "someValue"; pubkey: Value }
   | { tag: "someLiteral"; bytes: Buffer };
+
+/** SPL `UnwrapLamports` sub-layout: entire balance vs Frame amount. */
+export type UnwrapLamportsPatch =
+  /** Transfer entire source lamport balance (`COption::None`). */
+  | { tag: "all" }
+  /** Lamport amount from Frame (`COption::Some`). */
+  | { tag: "amount"; amount: Value };
 
 /** SPL `InitializeMint*` dynamic fields (decimals, mint authority, freeze). */
 export type InitializeMintPatch = {
@@ -250,7 +264,9 @@ export type StructuredCpiPatch =
   /** (31) Stake `Deactivate` — no dynamic fields. */
   | { tag: "stakeDeactivate" }
   /** (32) Stake `DelegateStake` — no dynamic fields. */
-  | { tag: "stakeDelegateStake" };
+  | { tag: "stakeDelegateStake" }
+  /** (33) SPL Token `UnwrapLamports` — `UnwrapLamportsPatch`. */
+  | { tag: "tokenUnwrapLamports"; unwrapLamports: UnwrapLamportsPatch };
 
 function writeU64(n: bigint): Buffer {
   const b = Buffer.alloc(8);
@@ -435,6 +451,18 @@ function encodeFreezeAuthPatch(freeze: FreezeAuthPatch): Buffer {
   }
 }
 
+function encodeUnwrapLamportsPatch(patch: UnwrapLamportsPatch): Buffer {
+  switch (patch.tag) {
+    case "all":
+      return Buffer.from([unwrapLamportsTag.all]);
+    case "amount":
+      return Buffer.concat([
+        Buffer.from([unwrapLamportsTag.amount]),
+        writeValueIndex(patch.amount),
+      ]);
+  }
+}
+
 function encodeInitializeMintPatch(patch: InitializeMintPatch): Buffer {
   return Buffer.concat([
     writeValueIndex(patch.decimals),
@@ -490,6 +518,8 @@ function encodeStructuredCpiPatchBody(patch: StructuredCpiPatch): Buffer {
     case "stakeDeactivate":
     case "stakeDelegateStake":
       return Buffer.alloc(0);
+    case "tokenUnwrapLamports":
+      return encodeUnwrapLamportsPatch(patch.unwrapLamports);
   }
 }
 
@@ -687,7 +717,7 @@ function initializeMintBuilder(tag: InitializeMintPatchTag) {
     }) as StructuredCpiPatch;
 }
 
-/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–32). */
+/** Builders for every wire tag in {@link STRUCTURED_CPI_PATCH_WIRE} (0–33). */
 export const structuredCpiPatch = {
   systemTransfer(lamports: ValueInput): StructuredCpiPatch {
     return { tag: "systemTransfer", lamports: asValue(lamports) };
@@ -821,6 +851,20 @@ export const structuredCpiPatch = {
   },
   stakeDelegateStake(): StructuredCpiPatch {
     return { tag: "stakeDelegateStake" };
+  },
+  tokenUnwrapLamports: {
+    all(): StructuredCpiPatch {
+      return {
+        tag: "tokenUnwrapLamports",
+        unwrapLamports: { tag: "all" },
+      };
+    },
+    amount(amount: ValueInput): StructuredCpiPatch {
+      return {
+        tag: "tokenUnwrapLamports",
+        unwrapLamports: { tag: "amount", amount: asValue(amount) },
+      };
+    },
   },
   /** @deprecated Use {@link structuredCpiPatch.tokenTransfer}. */
   tokenAmount(amount: ValueInput): StructuredCpiPatch {

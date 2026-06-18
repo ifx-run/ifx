@@ -85,6 +85,10 @@ func InferWireTag(programID solana.PublicKey, data []byte) (uint8, bool) {
 		return mapToken(constants.StructuredPatchTokenInitializeMint2, constants.StructuredPatchToken2022InitializeMint2), true
 	case 23:
 		return mapToken(constants.StructuredPatchTokenAmountToUiAmount, constants.StructuredPatchToken2022AmountToUiAmount), true
+	case 45:
+		if !prefix2022 {
+			return constants.StructuredPatchTokenUnwrapLamports, true
+		}
 	case 26:
 		if prefix2022 && len(data) >= 2 {
 			switch data[1] {

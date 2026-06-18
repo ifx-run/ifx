@@ -22,6 +22,8 @@ const SPL_IX = {
   initializeMultisig2: 19,
   initializeMint2: 20,
   amountToUiAmount: 23,
+  /** p-token `UnwrapLamports` (SPL Token program only). */
+  unwrapLamports: 45,
   /** Token-2022 extension prefix (`TokenInstruction::TransferFeeExtension`). */
   transferFeeExtension: 26,
 } as const;
@@ -121,6 +123,8 @@ function inferTokenFamily(
     case SPL_IX.initializeMultisig:
     case SPL_IX.initializeMultisig2:
       return `${prefix}InitializeMultisig` as StructuredCpiPatchTagName;
+    case SPL_IX.unwrapLamports:
+      return token ? ("tokenUnwrapLamports" as StructuredCpiPatchTagName) : null;
     default:
       return null;
   }

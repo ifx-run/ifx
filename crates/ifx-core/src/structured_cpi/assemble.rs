@@ -16,7 +16,7 @@ use super::frame::StructuredCpiFrame;
 use crate::layout::ValueBytes;
 use crate::wire::structured_cpi_payload::{
     AmountDecimalsFeePatch, AmountDecimalsPatch, FreezeAuthPatch, InitializeMintPatch,
-    LamportsSpacePatch, PubkeyValue, SetTransferFeePatch,
+    LamportsSpacePatch, PubkeyValue, SetTransferFeePatch, UnwrapLamportsPatch,
 };
 use crate::wire::{StructuredCpiPatch, Value, ValueType};
 
@@ -249,6 +249,9 @@ pub fn assemble_structured_cpi(
             require_stake_program(program_id)?;
             Ok(pack_stake_unit(2))
         }
+        StructuredCpiPatch::TokenUnwrapLamports(shape) => {
+            pack_token_unwrap_lamports(program_id, resolve_unwrap_lamports(frame, shape)?)
+        }
     }
 }
 
@@ -300,6 +303,29 @@ fn resolve_initialize_mint(
             freeze_authority,
         },
     })
+}
+
+fn resolve_unwrap_lamports(
+    frame: &impl StructuredCpiFrame,
+    patch: &UnwrapLamportsPatch,
+) -> Result<COption<u64>> {
+    match patch {
+        UnwrapLamportsPatch::All => Ok(COption::None),
+        UnwrapLamportsPatch::Amount(v) => Ok(COption::Some(read_u64(frame, v)?)),
+    }
+}
+
+fn pack_token_unwrap_lamports(program_id: &Pubkey, amount: COption<u64>) -> Result<Vec<u8>> {
+    require_token_program(program_id, &spl_token::ID)?;
+    let mut data = vec![45u8];
+    match amount {
+        COption::None => data.push(0),
+        COption::Some(lamports) => {
+            data.push(1);
+            data.extend_from_slice(&lamports.to_le_bytes());
+        }
+    }
+    Ok(data)
 }
 
 fn resolve_lamports_space(
@@ -491,6 +517,7 @@ fn read_pubkey(frame: &impl StructuredCpiFrame, source: &Value) -> Result<Pubkey
 mod tests {
     use super::*;
     use crate::layout::ValueBytes;
+    use crate::wire::structured_cpi_payload::UnwrapLamportsPatch;
     use crate::wire::StructuredCpiPatch;
 
     struct MockFrame {
@@ -554,7 +581,7 @@ mod tests {
 
     #[test]
     fn patch_count_unchanged() {
-        assert_eq!(StructuredCpiPatch::COUNT, 33);
+        assert_eq!(StructuredCpiPatch::COUNT, 34);
     }
 
     #[test]
@@ -667,5 +694,32 @@ mod tests {
         let stake_id = Pubkey::new_from_array(STAKE_PROGRAM_ID.to_bytes());
         let data = assemble_structured_cpi(&patch, &stake_id, &frame).unwrap();
         assert_eq!(data, pack_stake_unit(5));
+    }
+
+    #[test]
+    fn token_unwrap_lamports_all_matches_coption_layout() {
+        let frame = MockFrame::with_slots(&[]);
+        let patch = StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::All);
+        let data =
+            assemble_structured_cpi(&patch, &spl_token::ID, &frame).unwrap();
+        assert_eq!(data, vec![45, 0]);
+    }
+
+    #[test]
+    fn token_unwrap_lamports_amount_matches_coption_layout() {
+        let frame = MockFrame::with_slots(&[(ValueType::U64, &42u64.to_le_bytes())]);
+        let patch = StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::Amount(v(0)));
+        let data =
+            assemble_structured_cpi(&patch, &spl_token::ID, &frame).unwrap();
+        assert_eq!(data, vec![45, 1, 42, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn token_unwrap_lamports_rejects_token_2022_program_id() {
+        let frame = MockFrame::with_slots(&[]);
+        let patch = StructuredCpiPatch::TokenUnwrapLamports(UnwrapLamportsPatch::All);
+        let err = assemble_structured_cpi(&patch, &spl_token_2022::ID, &frame)
+            .unwrap_err();
+        assert!(matches!(err, StructuredCpiError::InvalidProgram));
     }
 }

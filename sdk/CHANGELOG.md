@@ -8,6 +8,10 @@ All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep 
 
 ## [Unreleased]
 
+### Added
+
+- **`StructuredCpiPatch` tag 33:** SPL Token / p-token `UnwrapLamports` — `structuredCpiPatch.tokenUnwrapLamports.all()` / `.amount()`; infer from legacy token program ix templates (disc `45`). **Wire-breaking** — requires Ifx program redeploy aligned with this SDK.
+
 ## [0.1.1] - 2026-06-14
 
 ### Added

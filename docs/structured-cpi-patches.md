@@ -17,7 +17,7 @@ Dynamic fields use [`Value`](../../programs/ifx/src/state/types.rs) (Frame bindi
 ```
 
 - **`accounts_start` / `accounts_len`:** slice into `remaining_accounts` (same as Static / RawPatched).
-- **`StructuredCpiPatch`:** full Borsh enum — first byte is variant tag **0–32** (see registry below); nested sub-enums and `Value` fields follow.
+- **`StructuredCpiPatch`:** full Borsh enum — first byte is variant tag **0–33** (see registry below); nested sub-enums and `Value` fields follow.
 - **`Value` on wire:** single byte = Frame binding index (no legacy `[0][index]` prefix).
 
 TS codec: **`encodeStructuredCpiPatch`** (includes variant tag). **`encodeStructuredCpiPatchPayload`** is deprecated (body only, pre-0.4 layout).
@@ -40,9 +40,9 @@ Full glossary: [glossary.md](./glossary.md) §4–5.
 | `1` | RawPatched | DEX / variable layouts / escape hatch |
 | `2` | Structured | `StructuredCpiPatch` (this doc) |
 
-Patch variant tags **0–32** match Borsh enum indices in `STRUCTURED_CPI_PATCH_WIRE` (SDK) — they are **not** a separate byte before the account slice.
+Patch variant tags **0–33** match Borsh enum indices in `STRUCTURED_CPI_PATCH_WIRE` (SDK) — they are **not** a separate byte before the account slice.
 
-## Variant registry (wire tags 0–32)
+## Variant registry (wire tags 0–33)
 
 SPL ix **discriminators** are the first byte of official instruction `data` (u8 enum). Token-2022 TransferFee extension uses its own program + discriminators.
 
@@ -81,8 +81,11 @@ SPL ix **discriminators** are the first byte of official instruction `data` (u8 
 | `30` | Stake | `Split` | 3 (bincode u32) | `lamports: Value` |
 | `31` | Stake | `Deactivate` | 5 (bincode u32) | — |
 | `32` | Stake | `DelegateStake` | 2 (bincode u32) | — |
+| `33` | SPL Token | `UnwrapLamports` | 45 | `UnwrapLamportsPatch` |
 
 Stake ix `data` uses **bincode** `u32` variant + optional `u64` (not SPL’s single-byte discriminator).
+
+`UnwrapLamports` ix data: `[45]` + `COption<u64>` (`0` = full balance; `1` + u64 LE = explicit lamports). **Legacy SPL Token program id only** (p-token shares the id).
 
 ### Nested payloads
 
@@ -94,6 +97,7 @@ Stake ix `data` uses **bincode** `u32` variant + optional `u64` (not SPL’s sin
 | `SetTransferFeePatch` | `bpsOnly` `0` · `maxOnly` `1` · `both` `2` | Token-2022 fee config |
 | `PubkeyValue` | `fromFrame` `0` · `literal` `1` | Mint authority / freeze pubkey |
 | `FreezeAuthPatch` | `none` `0` · `someValue` `1` · `someLiteral` `2` | Optional freeze on InitializeMint* |
+| `UnwrapLamportsPatch` | `all` `0` · `amount` `1` | p-token `UnwrapLamports` optional lamports |
 
 Canonical source: `programs/ifx/src/state/structured_cpi_patch.rs`, `structured_cpi_payload.rs`.
 
@@ -140,6 +144,16 @@ structuredCpi(initIx, {
     freeze: { tag: "none" },
   },
 }).build();
+```
+
+UnwrapLamports（p-token / SPL Token，动态 amount 或全额）：
+
+```typescript
+const lamports = scratch.letSplTokenAmount(wsolAta);
+const built = structuredCpi(unwrapTemplateIx, {
+  patch: structuredCpiPatch.tokenUnwrapLamports.amount(lamports),
+}).build();
+// 全额：structuredCpiPatch.tokenUnwrapLamports.all()
 ```
 
 See `sdk/src/structured-cpi-patch.ts` and `sdk/src/structured-cpi.ts`.
