@@ -2,7 +2,7 @@ English | [中文](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.
 
 # Security Policy
 
-> Keep this file consistent with `security_txt!` in `programs/ifx/src/lib.rs`.
+> Keep this file consistent with `security_txt!` in `programs/ifx/src/lib.rs` and [`metadata/security.json`](../metadata/security.json).
 
 > **中文全文：** [安全政策（中文）](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.zh-CN.md)
 

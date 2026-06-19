@@ -18,6 +18,7 @@ Ifx is a **non-profit open-source** project. We follow **Solana ecosystem offici
 |-------|---------------------|-------------------|
 | **Verified builds** | [Verifying Programs](https://solana.com/docs/programs/verified-builds) · [solana-verify](https://github.com/solana-foundation/solana-verifiable-build) | Deterministic Docker build; on-chain verification PDA; Explorer / Solscan “Verified” |
 | **security.txt** | Same guide § security.txt · [solana-security-txt](https://crates.io/crates/solana-security-txt) · `cargo install query-security-txt` | Standard contact + policy embedded in `.so`; format validation before deploy |
+| **Program Metadata** | [program-metadata](https://github.com/solana-program/program-metadata) · `metadata/security.json` | Solana Explorer program name / logo / Security tab (on-chain PDA; separate from binary security.txt) |
 | **Anchor security patterns** | [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security) | Account constraints, signer/authority, invariants to test |
 | **PDA derivation** | [PDA Derivation](https://solana.com/docs/core/pda/pda-derivation) | Canonical bump; seed limits; substitution risks |
 | **Anchor framework** | [Anchor introduction](https://solana.com/docs/programs/anchor/index) | Constraint macros, account validation helpers |
@@ -32,6 +33,7 @@ Solana Foundation also tracks **ecosystem** pre-deployment analysis (Scout, Rada
 | Item | Status | Where |
 |------|--------|--------|
 | `security_txt!` in program binary | Done | `programs/ifx/src/lib.rs` |
+| Explorer metadata manifest | Done (upload by upgrade authority) | [`metadata/security.json`](../metadata/security.json) |
 | Disclosure policy (GitHub Advisories only) | Done | [SECURITY.md](./SECURITY.md) |
 | Local `security.txt` format check | Done | `npm run security-txt:check` → `scripts/check-security-txt.sh` |
 | Program ID ↔ keypair consistency | Done | `npm run keys:verify` (also in `pretest`) |

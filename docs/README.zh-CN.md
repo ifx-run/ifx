@@ -25,7 +25,7 @@
 | [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | 维护者 | Stake 域调研 |
 | [client-sdks.zh-CN.md](./client-sdks.zh-CN.md) | 集成者 / 维护者 | **Go SDK（P0）**、Rust SDK（P1）分阶段计划 |
 | [program-security.zh-CN.md](./program-security.zh-CN.md) | 维护者 / 集成者 | Solana 官方安全清单 + Ifx 预检 |
-| [mainnet-verification.zh-CN.md](./mainnet-verification.zh-CN.md) | 发布 / 运维 | Solscan Verified、security.txt 部署 |
+| [mainnet-verification.zh-CN.md](./mainnet-verification.zh-CN.md) | 发布 / 运维 | Solscan Verified、security.txt、Explorer Program Metadata |
 | [SECURITY.zh-CN.md](./SECURITY.zh-CN.md) | 安全研究者 | 漏洞披露（GitHub Advisories） |
 
 权威来源：`programs/ifx/src/`。

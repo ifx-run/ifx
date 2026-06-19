@@ -18,6 +18,7 @@ Ifx 是**非盈利开源**项目。下文按 **Solana 生态官方**文档中的
 |------|-----------------|------|
 | **Verified builds** | [Verifying Programs](https://solana.com/docs/programs/verified-builds) · [solana-verify](https://github.com/solana-foundation/solana-verifiable-build) | Docker 确定性构建；链上 verification PDA；Explorer / Solscan「Verified」 |
 | **security.txt** | 同上文档 security.txt 章节 · [solana-security-txt](https://crates.io/crates/solana-security-txt) · `cargo install query-security-txt` | 在 `.so` 内嵌联系人与 policy；部署前格式校验 |
+| **Program Metadata** | [program-metadata](https://github.com/solana-program/program-metadata) · `metadata/security.json` | Solana Explorer 程序名 / logo / Security 页（链上 PDA，与二进制 security.txt 独立） |
 | **Anchor 安全模式** | [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security) | 账户约束、signer/authority、应用不变量 |
 | **PDA 推导** | [PDA Derivation](https://solana.com/docs/core/pda/pda-derivation) | 规范 bump；seed 上限；账户替换风险 |
 | **Anchor 框架** | [Anchor 介绍](https://solana.com/docs/programs/anchor/index) | 约束宏、账户校验辅助 |
@@ -32,6 +33,7 @@ Solana Foundation 在[论坛 RFP](https://forum.solana.com/t/pre-deployment-prog
 | 项 | 状态 | 位置 |
 |----|------|------|
 | 程序内 `security_txt!` | 已完成 | `programs/ifx/src/lib.rs` |
+| Explorer metadata 清单 | 已完成（须由 upgrade authority 上传） | [`metadata/security.json`](../metadata/security.json) |
 | 披露政策（仅 GitHub Advisories） | 已完成 | [SECURITY.zh-CN.md](./SECURITY.zh-CN.md) |
 | 本地 `security.txt` 格式检查 | 已完成 | `npm run security-txt:check` |
 | Program ID ↔ keypair 一致 | 已完成 | `npm run keys:verify`（`pretest` 含） |

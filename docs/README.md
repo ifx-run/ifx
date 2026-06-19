@@ -25,7 +25,7 @@ Design and implementation docs live here. The repo root [README.md](../README.md
 | [domains/stake.zh-CN.md](./domains/stake.zh-CN.md) | Maintainers | Stake domain survey |
 | [client-sdks.md](./client-sdks.md) | Integrators / maintainers | **Go SDK (P0)**, Rust SDK (P1) phased plan |
 | [program-security.md](./program-security.md) | Maintainers / integrators | Official Solana security checklist + Ifx preflight |
-| [mainnet-verification.md](./mainnet-verification.md) | Release / ops | Solscan Verified, security.txt deploy |
+| [mainnet-verification.md](./mainnet-verification.md) | Release / ops | Solscan Verified, security.txt, Explorer Program Metadata |
 | [SECURITY.md](./SECURITY.md) | Security researchers | Vulnerability disclosure (GitHub Advisories) |
 
 Source of truth: `programs/ifx/src/`.

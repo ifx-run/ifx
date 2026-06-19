@@ -54,7 +54,52 @@ npm run security-txt:check
 
 ---
 
-## 二、Program Verified（Solscan 显示 Verified）
+## 二、Program Metadata（Solana Explorer 程序名与 logo）
+
+Solana Explorer 页头的 **程序名与图标**来自链上 [Program Metadata](https://github.com/solana-program/program-metadata)（seed = `security`），**不是**二进制 `security_txt!`。未上传时 Explorer 显示灰色 Solana 占位图标。
+
+### 1. 仓库文件
+
+| 路径 | 作用 |
+|------|------|
+| [`metadata/security.json`](../metadata/security.json) | 上传用的 JSON（含 `logo` URL） |
+| [`assets/icon.png`](../assets/icon.png) | 图标本体；`logo` 指向其 GitHub raw URL |
+
+字段须与 §一 的 `security_txt!` 及 [SECURITY.zh-CN.md](./SECURITY.zh-CN.md) 一致。详见 [`metadata/README.zh-CN.md`](../metadata/README.zh-CN.md)。
+
+### 2. 上传到主网
+
+须使用 **program upgrade authority** keypair（canonical metadata）：
+
+```bash
+npx @solana-program/program-metadata@latest write security \
+  ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj \
+  ./metadata/security.json \
+  --keypair keys/mainnet-program-keypair.json \
+  --rpc https://api.mainnet-beta.solana.com
+```
+
+验证：
+
+```bash
+npx @solana-program/program-metadata@latest fetch security \
+  ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj \
+  --rpc https://api.mainnet-beta.solana.com
+```
+
+在 [Explorer](https://explorer.solana.com/address/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) 打开 **Program Security** 标签确认 name / logo。图标刷新可能有缓存延迟。
+
+**Devnet：** 将 program id 换为 `ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`，`--keypair keys/devnet-program-keypair.json`，RPC 加 `?cluster=devnet` 或使用 devnet RPC。
+
+### 3. 发布时注意
+
+- `logo` 必须是 **公网 HTTPS URL**（不能是本地路径）；合并到 `main` 后再上传，确保 raw URL 可访问
+- 每次发版若改 `version` / `source_release`，重新 `write security` 更新链上 metadata
+- Solscan 主要读二进制 security.txt；Explorer logo **仅**依赖本节 metadata
+
+---
+
+## 三、Program Verified（Solscan 显示 Verified）
 
 ### 原则
 
@@ -72,9 +117,10 @@ npm run security-txt:check
 
 - [ ] 使用**独立主网** program keypair（勿与 `keys/localnet-program-keypair.json` 混用，除非刻意同一 ID）
 - [ ] 更新 `declare_id!`、`Anchor.toml`、`idl/`、SDK 中的 **主网 Program ID**
-- [ ] 确认 `security_txt!` 与 [SECURITY.zh-CN.md](./SECURITY.zh-CN.md) 一致
+- [ ] 确认 `security_txt!` 与 [SECURITY.zh-CN.md](./SECURITY.zh-CN.md) 及 [`metadata/security.json`](../metadata/security.json) 一致
 - [ ] `anchor build --verifiable` 或 `solana-verify build`（与文档命令一致）
 - [ ] `solana program deploy` 使用上述产物
+- [ ] 上传 Program Metadata（§二）：`write security` → Explorer 确认 logo
 - [ ] `solana-verify verify-from-repo -u mainnet-beta --program-id <ID> https://github.com/ifx-run/ifx`
 - [ ] 按官方文档完成 PDA / `remote submit-job`（公开验证索引可能周期性重验，可能有延迟）
 - [ ] 在 Solscan 打开主网 Program → 确认 **Verification** / **Security** 页
@@ -85,15 +131,16 @@ npm run security-txt:check
 
 ---
 
-## 三、常见误解
+## 四、常见误解
 
 - **Verified ≠ 已审计 / 无漏洞**，仅表示链上与公开源码构建一致
 - **security.txt True ≠ 安全**，仅表示有标准披露渠道
+- **Explorer logo ≠ 二进制 security.txt** — logo 来自 §二 的 Program Metadata
 - Localnet 验证**不能**代替主网；Solscan 读的是主网（或对应 cluster）上的 program
 
 ---
 
-## 四、本仓库相关脚本
+## 五、本仓库相关脚本
 
 | 命令 | 作用 |
 |------|------|

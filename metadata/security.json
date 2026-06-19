@@ -1,0 +1,15 @@
+{
+  "name": "Ifx Program",
+  "logo": "https://raw.githubusercontent.com/ifx-run/ifx/main/assets/icon.png",
+  "description": "Reusable on-chain transaction orchestration for Solana — same-tx reads, conditional CPI, and swap settlement without per-flow wrapper programs.",
+  "project_url": "https://github.com/ifx-run/ifx",
+  "sdk": "https://www.npmjs.com/package/@ifx-run/sdk",
+  "contacts": [
+    "link:https://github.com/ifx-run/ifx/security/advisories"
+  ],
+  "policy": "https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md",
+  "preferred_languages": ["en", "zh"],
+  "source_code": "https://github.com/ifx-run/ifx",
+  "source_release": "v0.1.1",
+  "version": "0.1.1"
+}
