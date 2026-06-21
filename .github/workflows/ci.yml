@@ -116,9 +116,13 @@ jobs:
       - name: Install Anchor
         run: |
           set -euxo pipefail
-          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          # avm no longer builds on Rust 1.89; install with 1.91 only. Do not use workspace CARGO_TARGET_DIR here.
+          unset CARGO_TARGET_DIR
+          rustup toolchain install 1.91.0 --profile minimal
+          rustup run 1.91.0 cargo install --git https://github.com/solana-foundation/anchor avm --locked --force
           avm install "${ANCHOR_VERSION}"
           avm use "${ANCHOR_VERSION}"
+          echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
           anchor --version
 
       - name: Install Surfpool CLI
