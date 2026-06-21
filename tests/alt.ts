@@ -10,7 +10,7 @@ import {
   type TransactionInstruction,
 } from "@solana/web3.js";
 
-import { logLocalTx } from "./helpers";
+import { logLocalTx, waitForSignature } from "./helpers";
 
 /**
  * Preflight / simulate 与链上 lookup 均应在 LUT 条目对当前 slot「已激活」之后进行。
@@ -18,6 +18,8 @@ import { logLocalTx } from "./helpers";
  */
 /** Local/surfpool: `finalized` confirm 在 transaction 出块模式下易无限挂起；`confirmed` 足够驱动 LUT 激活。 */
 const LUT_COMMITMENT = "confirmed" as const;
+/** Surfpool / CI: block-height confirm can expire under load; poll signature status instead. */
+const TX_CONFIRM_DEADLINE_MS = process.env.CI ? 180_000 : 120_000;
 /** extend 单笔 legacy tx 能塞下的地址上限（官方文档 ~20） */
 const MAX_ADDRESSES_PER_EXTEND = 20;
 
@@ -51,8 +53,7 @@ async function sendAndConfirmFinalized(
   instructions: TransactionInstruction[],
   label: string
 ): Promise<string> {
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash(LUT_COMMITMENT);
+  const { blockhash } = await connection.getLatestBlockhash(LUT_COMMITMENT);
   const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: blockhash });
   for (const ix of instructions) tx.add(ix);
   tx.sign(payer);
@@ -60,10 +61,7 @@ async function sendAndConfirmFinalized(
   const signature = await connection.sendRawTransaction(raw, {
     skipPreflight: false,
   });
-  await connection.confirmTransaction(
-    { signature, blockhash, lastValidBlockHeight },
-    LUT_COMMITMENT
-  );
+  await waitForSignature(connection, signature, TX_CONFIRM_DEADLINE_MS);
   if (process.env.IFX_LOG_TX !== "0") {
     logLocalTx(signature, label, { bytes: raw.length, kind: "legacy" });
   }
@@ -216,8 +214,7 @@ export async function sendAndConfirmV0(
     await waitForSlotAfter(connection, lut.state.lastExtendedSlot);
   }
 
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash(LUT_COMMITMENT);
+  const { blockhash } = await connection.getLatestBlockhash(LUT_COMMITMENT);
   const message = new TransactionMessage({
     payerKey: feePayer.publicKey,
     recentBlockhash: blockhash,
@@ -242,10 +239,7 @@ export async function sendAndConfirmV0(
     skipPreflight: false,
     preflightCommitment: LUT_COMMITMENT,
   });
-  await connection.confirmTransaction(
-    { signature, blockhash, lastValidBlockHeight },
-    LUT_COMMITMENT
-  );
+  await waitForSignature(connection, signature, TX_CONFIRM_DEADLINE_MS);
   if (process.env.IFX_LOG_TX !== "0") {
     logLocalTx(signature, label, { bytes: raw.length, kind: "v0" });
   }
