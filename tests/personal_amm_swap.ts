@@ -8,13 +8,15 @@ import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
 import {
   createAssociatedTokenAccountInstruction,
-  createMint,
+  createInitializeMintInstruction,
+  createMintToInstruction,
   getAssociatedTokenAddressSync,
-  mintTo,
+  getMinimumBalanceForRentExemptMint,
+  MINT_SIZE,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { Keypair, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 
 import { FrameScratch } from "../sdk/src";
@@ -45,6 +47,43 @@ describe("personal AMM swap (program-free wallet pool)", () => {
   anchor.setProvider(provider);
   const payer = (provider.wallet as anchor.Wallet).payer;
 
+  async function createMintLocal(label: string) {
+    const mint = Keypair.generate();
+    const lamports = await getMinimumBalanceForRentExemptMint(provider.connection);
+    const tx = new Transaction().add(
+      SystemProgram.createAccount({
+        fromPubkey: payer.publicKey,
+        newAccountPubkey: mint.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      }),
+      createInitializeMintInstruction(
+        mint.publicKey,
+        DECIMALS,
+        payer.publicKey,
+        null,
+        TOKEN_PROGRAM_ID
+      )
+    );
+    tx.feePayer = payer.publicKey;
+    await sendAndConfirmSignersOnly(provider, tx, [payer, mint], label);
+    return mint.publicKey;
+  }
+
+  async function mintToLocal(
+    mint: PublicKey,
+    destination: PublicKey,
+    amount: bigint,
+    label: string
+  ) {
+    const tx = new Transaction().add(
+      createMintToInstruction(mint, destination, payer.publicKey, amount)
+    );
+    tx.feePayer = payer.publicKey;
+    await sendAndConfirmSignersOnly(provider, tx, [payer], label);
+  }
+
   async function setupPoolAndUser() {
     const user = Keypair.generate();
     const pool = Keypair.generate();
@@ -73,20 +112,8 @@ describe("personal AMM swap (program-free wallet pool)", () => {
       await confirmSignature(provider.connection, sig);
     }
 
-    const mintTokenA = await createMint(
-      provider.connection,
-      payer,
-      payer.publicKey,
-      null,
-      DECIMALS
-    );
-    const mintTokenB = await createMint(
-      provider.connection,
-      payer,
-      payer.publicKey,
-      null,
-      DECIMALS
-    );
+    const mintTokenA = await createMintLocal("setup · personal-amm mint TOKEN_A");
+    const mintTokenB = await createMintLocal("setup · personal-amm mint TOKEN_B");
 
     const userTokenAAta = getAssociatedTokenAddressSync(
       mintTokenA,
@@ -149,30 +176,9 @@ describe("personal AMM swap (program-free wallet pool)", () => {
       "setup · personal-amm mint ATAs and fund pool"
     );
 
-    await mintTo(
-      provider.connection,
-      payer,
-      mintTokenA,
-      poolTokenAAta,
-      payer,
-      Number(POOL_TOKEN_A)
-    );
-    await mintTo(
-      provider.connection,
-      payer,
-      mintTokenB,
-      poolTokenBAta,
-      payer,
-      Number(POOL_TOKEN_B)
-    );
-    await mintTo(
-      provider.connection,
-      payer,
-      mintTokenA,
-      userTokenAAta,
-      payer,
-      Number(USER_TOKEN_A)
-    );
+    await mintToLocal(mintTokenA, poolTokenAAta, POOL_TOKEN_A, "setup · fund pool TOKEN_A");
+    await mintToLocal(mintTokenB, poolTokenBAta, POOL_TOKEN_B, "setup · fund pool TOKEN_B");
+    await mintToLocal(mintTokenA, userTokenAAta, USER_TOKEN_A, "setup · fund user TOKEN_A");
 
     return {
       user,

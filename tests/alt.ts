@@ -10,7 +10,7 @@ import {
   type TransactionInstruction,
 } from "@solana/web3.js";
 
-import { logLocalTx, waitForSignature } from "./helpers";
+import { logLocalTx, TX_CONFIRM_DEADLINE_MS, waitForSignature } from "./helpers";
 
 /**
  * Preflight / simulate 与链上 lookup 均应在 LUT 条目对当前 slot「已激活」之后进行。
@@ -18,8 +18,6 @@ import { logLocalTx, waitForSignature } from "./helpers";
  */
 /** Local/surfpool: `finalized` confirm 在 transaction 出块模式下易无限挂起；`confirmed` 足够驱动 LUT 激活。 */
 const LUT_COMMITMENT = "confirmed" as const;
-/** Surfpool / CI: block-height confirm can expire under load; poll signature status instead. */
-const TX_CONFIRM_DEADLINE_MS = process.env.CI ? 180_000 : 120_000;
 /** extend 单笔 legacy tx 能塞下的地址上限（官方文档 ~20） */
 const MAX_ADDRESSES_PER_EXTEND = 20;
 
