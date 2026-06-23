@@ -44,6 +44,23 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 # ANCHOR_PROVIDER_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY npm run deploy:devnet
 ```
 
+**部署失败后续传 buffer**（先 `write-buffer` 再 `deploy --buffer`）：
+
+```bash
+# 列出 deploy 钱包名下的 buffer：
+solana program show --buffers --keypair ~/.keys/ifx-devnet-deploy.json --url devnet
+
+IFX_PROGRAM_BUFFER=<BUFFER_PUBKEY> \
+IFX_BUFFER_WRITE=1 \
+ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json \
+npm run deploy:devnet
+
+# buffer 已写满 — 仅 deploy：
+IFX_PROGRAM_BUFFER=<BUFFER_PUBKEY> IFX_SKIP_BUILD=1 \
+ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json \
+npm run deploy:devnet
+```
+
 `Anchor.toml` 里的 `wallet` 仅供本地 `anchor test`；**`deploy:devnet` 必须显式设置 `ANCHOR_WALLET`。**
 
 SDK：省略 `programId` 即主网。Devnet / localnet / 自定义 cluster：传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID` 或 `IxOpts.programId`。

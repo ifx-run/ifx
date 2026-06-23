@@ -14,6 +14,7 @@
 #   IFX_PROGRAM_BUFFER — reuse an existing upload buffer (anchor program deploy --buffer)
 #   IFX_BUFFER_WRITE=1 — write/resume target/deploy/ifx.so into that buffer before deploy
 #   IFX_SKIP_BUILD=1 — skip keys sync + build (deploy-from-buffer only; requires IFX_PROGRAM_BUFFER)
+#   IFX_SOLANA_USE_RPC=1 — default; write-buffer / deploy use --use-rpc (proxy-safe). Set 0 for TPU upload.
 # Usage:
 #   ANCHOR_PROVIDER_URL=https://your-mainnet-rpc ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json sh scripts/deploy-mainnet.sh
 #   IFX_PROGRAM_BUFFER=1RDK... IFX_SKIP_BUILD=1 IFX_SKIP_BALANCE_CHECK=1 ... sh scripts/deploy-mainnet.sh
@@ -102,30 +103,48 @@ deploy_mainnet_program() {
         echo "missing $PROGRAM_SO — build first or unset IFX_BUFFER_WRITE" >&2
         exit 1
       fi
-      echo "write-buffer → $IFX_PROGRAM_BUFFER"
-      solana program write-buffer "$PROGRAM_SO" \
-        --buffer "$IFX_PROGRAM_BUFFER" \
-        --url "$RPC_URL" \
-        --keypair "$DEPLOY_WALLET"
+      write_program_buffer
     fi
     # Deploy from on-chain buffer only — do not pass local .so (avoids re-upload / ELF mismatch).
+    if ifx_solana_use_rpc_enabled; then
+      anchor program deploy \
+        --provider.cluster mainnet \
+        --provider.wallet "$DEPLOY_WALLET" \
+        --program-keypair "$MAINNET_KEYPAIR" \
+        --program-id "$MAINNET_ID" \
+        --buffer "$IFX_PROGRAM_BUFFER" \
+        --no-idl \
+        -- --use-rpc
+    else
+      anchor program deploy \
+        --provider.cluster mainnet \
+        --provider.wallet "$DEPLOY_WALLET" \
+        --program-keypair "$MAINNET_KEYPAIR" \
+        --program-id "$MAINNET_ID" \
+        --buffer "$IFX_PROGRAM_BUFFER" \
+        --no-idl
+    fi
+    return 0
+  fi
+
+  if ifx_solana_use_rpc_enabled; then
     anchor program deploy \
       --provider.cluster mainnet \
       --provider.wallet "$DEPLOY_WALLET" \
       --program-keypair "$MAINNET_KEYPAIR" \
       --program-id "$MAINNET_ID" \
-      --buffer "$IFX_PROGRAM_BUFFER" \
-      --no-idl
-    return 0
+      --no-idl \
+      "$PROGRAM_SO" \
+      -- --use-rpc
+  else
+    anchor program deploy \
+      --provider.cluster mainnet \
+      --provider.wallet "$DEPLOY_WALLET" \
+      --program-keypair "$MAINNET_KEYPAIR" \
+      --program-id "$MAINNET_ID" \
+      --no-idl \
+      "$PROGRAM_SO"
   fi
-
-  anchor program deploy \
-    --provider.cluster mainnet \
-    --provider.wallet "$DEPLOY_WALLET" \
-    --program-keypair "$MAINNET_KEYPAIR" \
-    --program-id "$MAINNET_ID" \
-    --no-idl \
-    "$PROGRAM_SO"
 }
 
 apply_mainnet_proxy
