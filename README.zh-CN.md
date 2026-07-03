@@ -7,6 +7,7 @@
 [English](./README.md) | 中文
 
 [![License](https://img.shields.io/github/license/ifx-run/ifx)](./LICENSE)
+[![CI](https://github.com/ifx-run/ifx/actions/workflows/ci.yml/badge.svg)](https://github.com/ifx-run/ifx/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@ifx-run/sdk?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
 [![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)

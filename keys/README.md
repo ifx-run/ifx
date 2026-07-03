@@ -47,6 +47,23 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 # 部署失败：sh scripts/restore-program-keys.sh  或  npm run keys:restore
 ```
 
+**Resume a failed deploy** (reuse upload buffer; rewrite ELF then deploy):
+
+```bash
+# List buffers owned by the deploy wallet:
+solana program show --buffers --keypair ~/.keys/ifx-devnet-deploy.json --url devnet
+
+IFX_PROGRAM_BUFFER=<BUFFER_PUBKEY> \
+IFX_BUFFER_WRITE=1 \
+ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json \
+npm run deploy:devnet
+
+# Buffer already fully written — deploy only:
+IFX_PROGRAM_BUFFER=<BUFFER_PUBKEY> IFX_SKIP_BUILD=1 \
+ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json \
+npm run deploy:devnet
+```
+
 `Anchor.toml` `[provider].wallet` is for local `anchor test` only; **`deploy:devnet` ignores it unless you set `ANCHOR_WALLET`.**
 
 SDK: omitted `programId` targets mainnet. Devnet / localnet / custom cluster: pass `IFX_DEVNET_PROGRAM_ID` or `IFX_LOCALNET_PROGRAM_ID` or `IxOpts.programId`.

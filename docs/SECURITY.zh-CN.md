@@ -2,7 +2,7 @@
 
 # 安全政策
 
-> 须与 `programs/ifx/src/lib.rs` 中 `security_txt!` 字段保持一致。
+> 须与 `programs/ifx/src/lib.rs` 中 `security_txt!` 及 [`metadata/security.json`](../metadata/security.json) 字段保持一致。
 
 > **English:** [Security Policy](https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md)
 

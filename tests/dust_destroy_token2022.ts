@@ -11,13 +11,13 @@ import {
   createAssociatedTokenAccountInstruction,
   createInitializeMint2Instruction,
   createInitializeTransferFeeConfigInstruction,
+  createMintToInstruction,
   createTransferCheckedWithFeeInstruction,
   getAccount,
   getAssociatedTokenAddressSync,
   getMinimumBalanceForRentExemptMintWithExtensions,
   getMintLen,
   getTransferFeeAmount,
-  mintTo,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
@@ -47,6 +47,28 @@ const TRANSFER_FEE_CONFIG = {
   maximumFee: BigInt(1_000_000),
   epoch: BigInt(0),
 };
+
+async function mintToToken2022(
+  provider: anchor.AnchorProvider,
+  payer: Keypair,
+  mint: PublicKey,
+  destination: PublicKey,
+  amount: bigint,
+  label: string
+): Promise<void> {
+  const tx = new Transaction().add(
+    createMintToInstruction(
+      mint,
+      destination,
+      payer.publicKey,
+      amount,
+      [],
+      TOKEN_2022_PROGRAM_ID
+    )
+  );
+  tx.feePayer = payer.publicKey;
+  await sendAndConfirmSignersOnly(provider, tx, [payer], label);
+}
 
 async function createTransferFeeMint(
   provider: anchor.AnchorProvider,
@@ -140,16 +162,13 @@ async function seedWithheldOnAta(
   }
 
   const fundAmount = preFeeAmount + fee + BigInt(10_000);
-  await mintTo(
-    provider.connection,
+  await mintToToken2022(
+    provider,
     payer,
     mint,
     source,
-    payer,
     fundAmount,
-    [],
-    undefined,
-    TOKEN_2022_PROGRAM_ID
+    "setup · fund payer source ATA (Token-2022)"
   );
 
   const xferTx = new Transaction().add(
@@ -251,16 +270,13 @@ describe("dust destroy token2022 (L1 example)", () => {
       "setup · dust test owner Token-2022 ATA"
     );
 
-    await mintTo(
-      provider.connection,
+    await mintToToken2022(
+      provider,
       payer,
       mint,
       tokenAccount,
-      payer,
-      balance,
-      [],
-      undefined,
-      TOKEN_2022_PROGRAM_ID
+      BigInt(balance),
+      "setup · fund owner dust ATA (Token-2022)"
     );
 
     if (options?.seedWithheld) {

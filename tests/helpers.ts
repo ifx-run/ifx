@@ -22,6 +22,9 @@ import {
 
 const DEFAULT_LOCAL_RPC = "http://127.0.0.1:8899";
 
+/** Surfpool / CI: poll signature status instead of block-height confirm (expires under load). */
+export const TX_CONFIRM_DEADLINE_MS = process.env.CI ? 180_000 : 120_000;
+
 /** Reuse for provisioning txs you can skip in Solscan. */
 export const LABEL_SETUP_CREATE_FRAME = "setup · create Frame PDA";
 
@@ -191,18 +194,13 @@ export function vanityKeypair(role: VanityRole): Keypair {
   );
 }
 
-/** Confirm a signature via block-height strategy (replaces deprecated `confirmTransaction(sig)`). */
+/** Poll until signature reaches confirmed/finalized (Surfpool-safe; avoids block-height expiry). */
 export async function confirmSignature(
   connection: Connection,
   signature: TransactionSignature,
-  commitment: Commitment = "confirmed"
+  _commitment: Commitment = "confirmed"
 ): Promise<void> {
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash(commitment);
-  await connection.confirmTransaction(
-    { signature, blockhash, lastValidBlockHeight },
-    commitment
-  );
+  await waitForSignature(connection, signature, TX_CONFIRM_DEADLINE_MS);
 }
 
 /** Poll until `signature` reaches `confirmed` / `finalized` (Surfpool-safe, longer than Anchor default). */
@@ -336,7 +334,7 @@ export async function sendAndConfirm(
     signature = signedTxSignature(signed);
   }
 
-  await waitForSignature(connection, signature);
+  await waitForSignature(connection, signature, TX_CONFIRM_DEADLINE_MS);
   if (shouldLogTx()) {
     logLocalTx(signature, label, {
       bytes: legacyTxSerializedBytes(tx),
@@ -371,7 +369,7 @@ export async function sendAndConfirmSignersOnly(
   const sig = await connection.sendRawTransaction(raw, {
     skipPreflight: false,
   });
-  await waitForSignature(connection, sig);
+  await waitForSignature(connection, sig, TX_CONFIRM_DEADLINE_MS);
   if (shouldLogTx()) {
     logLocalTx(sig, label, { bytes: raw.length, kind: "legacy" });
   }
@@ -385,7 +383,23 @@ export async function sendAndConfirmTransaction(
   label: string,
   signers?: (Signer | Keypair)[]
 ): Promise<string> {
-  const sig = await provider.sendAndConfirm(tx, signers);
+  const connection = provider.connection;
+  if (!tx.feePayer) {
+    tx.feePayer = provider.wallet.publicKey;
+  }
+  if (!tx.recentBlockhash) {
+    const { blockhash } = await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+  }
+  if (signers?.length) {
+    tx.partialSign(...signers);
+  }
+  const signed = await provider.wallet.signTransaction(tx);
+  const raw = signed.serialize();
+  const sig = await connection.sendRawTransaction(raw, {
+    skipPreflight: false,
+  });
+  await waitForSignature(connection, sig, TX_CONFIRM_DEADLINE_MS);
   if (shouldLogTx()) {
     logLocalTx(sig, label, {
       bytes: legacyTxSerializedBytes(tx),

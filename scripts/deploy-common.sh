@@ -1,6 +1,33 @@
-# Shared deploy helpers (balance pre-check).
+# Shared deploy helpers (balance pre-check, buffer write, RPC upload flags).
 # shellcheck shell=sh
 # Requires: DEPLOY_WALLET, RPC_URL, PROGRAM_SO
+
+# BSD awk (macOS) does not accept `1e9`; use integer divisor.
+format_sol_from_lamports() {
+  awk "BEGIN {printf \"%.3f\", $1/1000000000}"
+}
+
+# Default on: upload via JSON-RPC (works through HTTP proxy). TPU pubsub often times out behind 127.0.0.1:7890.
+ifx_solana_use_rpc_enabled() {
+  [ "${IFX_SOLANA_USE_RPC:-1}" != 0 ]
+}
+
+write_program_buffer() {
+  if ifx_solana_use_rpc_enabled; then
+    echo "write-buffer (--use-rpc) → $IFX_PROGRAM_BUFFER"
+    solana program write-buffer "$PROGRAM_SO" \
+      --buffer "$IFX_PROGRAM_BUFFER" \
+      --url "$RPC_URL" \
+      --keypair "$DEPLOY_WALLET" \
+      --use-rpc
+  else
+    echo "write-buffer → $IFX_PROGRAM_BUFFER"
+    solana program write-buffer "$PROGRAM_SO" \
+      --buffer "$IFX_PROGRAM_BUFFER" \
+      --url "$RPC_URL" \
+      --keypair "$DEPLOY_WALLET"
+  fi
+}
 
 check_deploy_wallet_balance() {
   FUND_HINT="${1:-Fund the deploy wallet (not the program address), then retry.}"
@@ -38,12 +65,12 @@ check_deploy_wallet_balance() {
   if [ "$BALANCE" -lt "$MIN" ]; then
     SHORT=$((MIN - BALANCE))
     echo "deploy wallet balance too low for program deploy/upgrade:" >&2
-    echo "  wallet:  ${BALANCE} lamports ($(awk "BEGIN {printf \"%.3f\", $BALANCE/1e9}") SOL)" >&2
-    echo "  need:    ~${MIN} lamports (~$(awk "BEGIN {printf \"%.3f\", $MIN/1e9}") SOL incl. buffer rent)" >&2
-    echo "  short:   ~${SHORT} lamports (~$(awk "BEGIN {printf \"%.3f\", $SHORT/1e9}") SOL)" >&2
+    echo "  wallet:  ${BALANCE} lamports ($(format_sol_from_lamports "$BALANCE") SOL)" >&2
+    echo "  need:    ~${MIN} lamports (~$(format_sol_from_lamports "$MIN") SOL incl. buffer rent)" >&2
+    echo "  short:   ~${SHORT} lamports (~$(format_sol_from_lamports "$SHORT") SOL)" >&2
     echo "" >&2
     echo "$FUND_HINT" >&2
     exit 1
   fi
-  echo "deploy wallet balance OK: $(awk "BEGIN {printf \"%.3f\", $BALANCE/1e9}") SOL"
+  echo "deploy wallet balance OK: $(format_sol_from_lamports "$BALANCE") SOL"
 }

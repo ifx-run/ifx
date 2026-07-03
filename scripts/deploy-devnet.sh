@@ -5,13 +5,20 @@
 #   ANCHOR_WALLET   — fee payer (must NOT be ~/.config/solana/id.json)
 #
 # Optional:
+#   ANCHOR_PROVIDER_URL — devnet RPC (defaults to api.devnet.solana.com)
+#   IFX_SKIP_BALANCE_CHECK=1 — skip getBalance pre-check
 #   IFX_PROXY — default http://127.0.0.1:7890; IFX_NO_PROXY=1 to disable
 #   UPGRADE_AUTHORITY — keypair that can extend/upgrade (default: ANCHOR_WALLET)
 #   IFX_PROGRAM_EXTEND_HEADROOM — extra bytes on extend (default: 65536)
+#   IFX_PROGRAM_BUFFER — reuse an existing upload buffer (anchor program deploy --buffer)
+#   IFX_BUFFER_WRITE=1 — write/resume target/deploy/ifx.so into that buffer before deploy
+#   IFX_SKIP_BUILD=1 — skip keys sync + build (deploy-from-buffer only; requires IFX_PROGRAM_BUFFER)
+#   IFX_SOLANA_USE_RPC=1 — default; write-buffer / deploy use --use-rpc (proxy-safe). Set 0 for TPU upload.
 #
 # Usage:
 #   ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 #   ANCHOR_PROVIDER_URL=https://... ANCHOR_WALLET=~/.keys/... sh scripts/deploy-devnet.sh
+#   IFX_PROGRAM_BUFFER=2a3nc... IFX_SKIP_BUILD=1 ANCHOR_WALLET=~/.keys/... sh scripts/deploy-devnet.sh
 set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -92,6 +99,58 @@ ensure_program_data_capacity() {
     --keypair "$UPGRADE_AUTH"
 }
 
+deploy_devnet_program() {
+  if [ -n "${IFX_PROGRAM_BUFFER:-}" ]; then
+    echo "deploy: reusing upload buffer $IFX_PROGRAM_BUFFER"
+    if [ "${IFX_BUFFER_WRITE:-}" = 1 ]; then
+      if [ ! -f "$PROGRAM_SO" ]; then
+        echo "missing $PROGRAM_SO — build first or unset IFX_BUFFER_WRITE" >&2
+        exit 1
+      fi
+      write_program_buffer
+    fi
+    # Deploy from on-chain buffer only — do not pass local .so (avoids re-upload / ELF mismatch).
+    if ifx_solana_use_rpc_enabled; then
+      anchor program deploy \
+        --provider.cluster devnet \
+        --provider.wallet "$DEPLOY_WALLET" \
+        --program-keypair "$DEVNET_KEYPAIR" \
+        --program-id "$DEVNET_ID" \
+        --buffer "$IFX_PROGRAM_BUFFER" \
+        --no-idl \
+        -- --use-rpc
+    else
+      anchor program deploy \
+        --provider.cluster devnet \
+        --provider.wallet "$DEPLOY_WALLET" \
+        --program-keypair "$DEVNET_KEYPAIR" \
+        --program-id "$DEVNET_ID" \
+        --buffer "$IFX_PROGRAM_BUFFER" \
+        --no-idl
+    fi
+    return 0
+  fi
+
+  if ifx_solana_use_rpc_enabled; then
+    anchor program deploy \
+      --provider.cluster devnet \
+      --provider.wallet "$DEPLOY_WALLET" \
+      --program-keypair "$DEVNET_KEYPAIR" \
+      --program-id "$DEVNET_ID" \
+      --no-idl \
+      "$PROGRAM_SO" \
+      -- --use-rpc
+  else
+    anchor program deploy \
+      --provider.cluster devnet \
+      --provider.wallet "$DEPLOY_WALLET" \
+      --program-keypair "$DEVNET_KEYPAIR" \
+      --program-id "$DEVNET_ID" \
+      --no-idl \
+      "$PROGRAM_SO"
+  fi
+}
+
 apply_devnet_proxy
 require_deploy_wallet
 check_devnet_keypair
@@ -99,17 +158,21 @@ check_devnet_rpc
 
 trap restore_localnet EXIT
 
-IFX_CLUSTER=devnet sh scripts/sync-program-keys.sh
-anchor keys sync --provider.cluster devnet
-anchor build --no-idl
-ensure_program_data_capacity
+if [ "${IFX_SKIP_BUILD:-}" = 1 ]; then
+  if [ -z "${IFX_PROGRAM_BUFFER:-}" ]; then
+    echo "IFX_SKIP_BUILD=1 requires IFX_PROGRAM_BUFFER" >&2
+    exit 1
+  fi
+  load_devnet_program_id
+  echo "build: skipped (IFX_SKIP_BUILD=1)"
+else
+  IFX_CLUSTER=devnet sh scripts/sync-program-keys.sh
+  anchor keys sync --provider.cluster devnet
+  anchor build --no-idl
+  ensure_program_data_capacity
+fi
+
 check_deploy_wallet_balance "Devnet faucet (repeat if rate-limited): solana airdrop 2 $(solana-keygen pubkey "$DEPLOY_WALLET") --url devnet"
-anchor program deploy \
-  --provider.cluster devnet \
-  --provider.wallet "$DEPLOY_WALLET" \
-  --program-keypair "$DEVNET_KEYPAIR" \
-  --program-id "$DEVNET_ID" \
-  --no-idl \
-  "$PROGRAM_SO"
+deploy_devnet_program
 
 echo "deploy:devnet OK ($DEVNET_ID)"

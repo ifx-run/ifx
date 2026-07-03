@@ -16,7 +16,7 @@
     "create-public-frame": "npx ts-node --project tsconfig.scripts.json scripts/create-public-frame-512.ts",
     "audit:phase0": "sh scripts/audit-phase0.sh",
     "idl:generate": "npm run keys:sync && anchor build && cp target/idl/ifx.json idl/ifx.json",
-    "idl:sync": "cp idl/ifx.json target/idl/ifx.json && cp idl/ifx.json sdk/src/idl/ifx.json && anchor idl type idl/ifx.json -o target/types/ifx.ts && anchor idl type idl/ifx.json -o sdk/src/idl/ifx.ts",
+    "idl:sync": "mkdir -p target/idl target/types && cp idl/ifx.json target/idl/ifx.json && cp idl/ifx.json sdk/src/idl/ifx.json && anchor idl type idl/ifx.json -o target/types/ifx.ts && anchor idl type idl/ifx.json -o sdk/src/idl/ifx.ts",
     "examples:typecheck": "tsc -p tsconfig.examples.json",
     "pretest": "npm run keys:sync && npm run keys:verify && npm run idl:sync && anchor build --no-idl && CARGO_TARGET_DIR=$PWD/target cargo build-sbf -- -p ifx && cd sdk && npm run build && cd .. && npm run examples:typecheck",
     "sdk:pack": "npm run idl:sync && cd sdk && npm run rebuild && npm pack",
