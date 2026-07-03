@@ -4,6 +4,14 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 Go SDK (`github.com/ifx-run/ifx/go-sdk`) changes. Aligned with `@ifx-run/sdk` and `ifx-sdk` on the same git tag.
 
+## [Unreleased]
+
+## [0.1.2] - 2026-07-03
+
+### Added
+
+- **`StructuredCpiPatch` tag 33:** SPL Token / p-token `UnwrapLamports` — `StructuredCpiPatch.TokenUnwrapLamportsAll()` / `.TokenUnwrapLamportsAmount()`; infer from legacy token program ix templates (disc `45`). **Wire-breaking** — requires Ifx program redeploy aligned with this SDK.
+
 ## [0.1.1] - 2026-06-14
 
 ### Added

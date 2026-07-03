@@ -21,13 +21,13 @@ Sign, send, fetch accounts with your existing **Anchor Provider / wallet / `conn
 
 ## Install
 
-**Current release:** **`0.1.1`** (mainnet default; aligned with `ifx-sdk@0.1.1` and `go-sdk@v0.1.1`).
+**Current release:** **`0.1.2`** (mainnet default; aligned with `ifx-sdk@0.1.2` and `go-sdk@v0.1.2`).
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
 
-Pin exact: `npm install @ifx-run/sdk@0.1.1`
+Pin exact: `npm install @ifx-run/sdk@0.1.2`
 
 ## Create a frame, then use it
 

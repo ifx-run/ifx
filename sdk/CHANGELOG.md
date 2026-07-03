@@ -4,9 +4,11 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** npm release **`0.1.1`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.1**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
+**Status:** npm release **`0.1.2`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.2**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
 
 ## [Unreleased]
+
+## [0.1.2] - 2026-07-03
 
 ### Added
 

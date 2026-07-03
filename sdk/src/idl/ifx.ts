@@ -8,7 +8,7 @@ export type Ifx = {
   "address": "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD",
   "metadata": {
     "name": "ifx",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },

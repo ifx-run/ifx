@@ -2,7 +2,15 @@
 
 # 更新日志
 
-Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 仍在 `ifx-core@0.1.0`（本版未改 program）。
+Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 在 `ifx-core@0.1.1`（Structured CPI tag 33）。
+
+## [Unreleased]
+
+## [0.1.2] - 2026-07-03
+
+### 新增
+
+- **`StructuredCpiPatch` tag 33：** SPL Token / p-token `UnwrapLamports` — `StructuredCpiPatch::TokenUnwrapLamports` / builders；可从 legacy token program 模板推断（disc `45`）。**Wire breaking** — 需与 `ifx-core@0.1.1` 对齐的 Ifx program 重新部署。
 
 ## [0.1.1] - 2026-06-14
 

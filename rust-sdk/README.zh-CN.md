@@ -24,7 +24,7 @@ Ifx 的 Rust 链下客户端：组装 **Ifx 指令**（`ifx_create_frame`、`ifx
 
 ## 安装
 
-**当前版本：** [**`0.1.1`**](https://crates.io/crates/ifx-sdk)（`ifx-core@0.1.0`；默认主网；与 `@ifx-run/sdk@0.1.1`、`go-sdk@v0.1.1` 对齐）。
+**当前版本：** [**`0.1.2`**](https://crates.io/crates/ifx-sdk)（`ifx-core@0.1.1`；默认主网；与 `@ifx-run/sdk@0.1.2`、`go-sdk@v0.1.2` 对齐）。
 
 ```bash
 cargo add ifx-sdk
@@ -39,8 +39,8 @@ ifx-sdk = { path = "../rust-sdk" }
 在 `Cargo.toml` 中锁定：
 
 ```toml
-ifx-sdk = { version = "0.1.1" }
-ifx-core = { version = "0.1.0" }
+ifx-sdk = { version = "0.1.2" }
+ifx-core = { version = "0.1.1" }
 ```
 
 ## 快速开始

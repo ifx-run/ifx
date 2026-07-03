@@ -12,9 +12,9 @@ Planned **off-chain SDKs** for building Ifx transactions. On-chain semantics and
 
 | Priority | SDK | Status | Notes |
 |----------|-----|--------|-------|
-| — | TypeScript | ✅ shipped | [`@ifx-run/sdk`](https://www.npmjs.com/package/@ifx-run/sdk) **`0.1.1`** |
-| **P0 — high** | **Go SDK** | ✅ shipped | [`go-sdk/`](../go-sdk/README.md) **`v0.1.1`** — planner + L0–L3 e2e; [examples](../go-sdk/examples/README.md) |
-| **P1 — medium** | **Rust SDK** | ✅ shipped | [`ifx-sdk`](https://crates.io/crates/ifx-sdk) **`0.1.1`** + `ifx-core`; [rust-integration.md](./rust-integration.md) |
+| — | TypeScript | ✅ shipped | [`@ifx-run/sdk`](https://www.npmjs.com/package/@ifx-run/sdk) **`0.1.2`** |
+| **P0 — high** | **Go SDK** | ✅ shipped | [`go-sdk/`](../go-sdk/README.md) **`v0.1.2`** — planner + L0–L3 e2e; [examples](../go-sdk/examples/README.md) |
+| **P1 — medium** | **Rust SDK** | ✅ shipped | [`ifx-sdk`](https://crates.io/crates/ifx-sdk) **`0.1.2`** + `ifx-core`; [rust-integration.md](./rust-integration.md) |
 
 **Out of scope here:** the on-chain `ifx` program crate is for maintainers / forks; integrators plan txs off-chain and do not CPI-wrap Ifx inside their own programs.
 
@@ -26,11 +26,11 @@ All three clients target **mainnet** by default (`DEFAULT_*` / `DefaultProgramID
 
 | Language | Package | Install |
 |----------|---------|---------|
-| TypeScript | `@ifx-run/sdk@0.1.1` | `npm install @ifx-run/sdk` |
-| Go | `github.com/ifx-run/ifx/go-sdk@v0.1.1` | `go get github.com/ifx-run/ifx/go-sdk@v0.1.1` |
-| Rust | `ifx-sdk@0.1.1` | `cargo add ifx-sdk@0.1.1` |
+| TypeScript | `@ifx-run/sdk@0.1.2` | `npm install @ifx-run/sdk` |
+| Go | `github.com/ifx-run/ifx/go-sdk@v0.1.2` | `go get github.com/ifx-run/ifx/go-sdk@v0.1.2` |
+| Rust | `ifx-sdk@0.1.2` | `cargo add ifx-sdk@0.1.2` |
 
-Pin the same **0.1.1** revision across languages for production. Wire golden tests live under repo `tests/` and `go-sdk/integration/`, `rust-sdk/tests/`.
+Pin the same **0.1.2** revision across languages for production. Wire golden tests live under repo `tests/` and `go-sdk/integration/`, `rust-sdk/tests/`.
 
 ---
 
@@ -40,7 +40,7 @@ Pin the same **0.1.1** revision across languages for production. Wire golden tes
 2. **Wire matches TS** — flat `Expr` Borsh tags **0–51**; `LetBinding` tags **0–67**; `Cpi` step kind **`0/1/2`**; `ifx_patched_cpi(arm: Cpi)` / `ifx_if_else(args: IfElseArgs)` use typed Anchor args (custom wire inside). Do not use Anchor’s recursive coders for deep `Expr`.
 3. **Layout matches on-chain** — `plan_record_offsets`, `index_cap_for_tape_len`, packed tape `[ty:1][payload]`; off-chain planner should fail fast before submit.
 4. **Tests** — byte-level golden parity with `tests/sdk_expr_parity.ts`, `tests/sdk_let_binding_parity.ts`, `tests/sdk_if_else_codec.ts`, etc.
-5. **IDL** — ship bundled `idl/ifx.json`; pin **SDK `0.1.1`** and program id for your cluster.
+5. **IDL** — ship bundled `idl/ifx.json`; pin **SDK `0.1.2`** and program id for your cluster.
 
 ---
 

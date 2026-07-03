@@ -24,7 +24,7 @@ Prefer `FrameScratch` in application code; use `build_ix_create_frame` and frien
 
 ## Install
 
-**Current release:** **`0.1.1`** on [crates.io](https://crates.io/crates/ifx-sdk) (`ifx-core@0.1.0`; mainnet default; aligned with `@ifx-run/sdk@0.1.1` and `go-sdk@v0.1.1`).
+**Current release:** **`0.1.2`** on [crates.io](https://crates.io/crates/ifx-sdk) (`ifx-core@0.1.1`; mainnet default; aligned with `@ifx-run/sdk@0.1.2` and `go-sdk@v0.1.2`).
 
 ```bash
 cargo add ifx-sdk
@@ -39,8 +39,8 @@ ifx-sdk = { path = "../rust-sdk" }
 Pin in `Cargo.toml`:
 
 ```toml
-ifx-sdk = { version = "0.1.1" }
-ifx-core = { version = "0.1.0" }
+ifx-sdk = { version = "0.1.2" }
+ifx-core = { version = "0.1.1" }
 ```
 
 ## Quick start

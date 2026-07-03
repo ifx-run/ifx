@@ -4,9 +4,11 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** npm 版本 **`0.1.1`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.1** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
+**状态：** npm 版本 **`0.1.2`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.2** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
 
 ## [Unreleased]
+
+## [0.1.2] - 2026-07-03
 
 ### 新增
 

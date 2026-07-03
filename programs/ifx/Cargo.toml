@@ -1,6 +1,6 @@
 [package]
 name = "ifx"
-version = "0.1.0"
+version = "0.1.1"
 description = "Created with Anchor"
 edition = "2021"
 license = "Apache-2.0"
@@ -25,7 +25,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = { workspace = true }
 borsh = { version = "1.5", features = ["derive"] }
-ifx-core = { path = "../../crates/ifx-core", version = "0.1.0", features = ["wire", "anchor-wire", "layout", "structured-cpi"] }
+ifx-core = { path = "../../crates/ifx-core", version = "0.1.1", features = ["wire", "anchor-wire", "layout", "structured-cpi"] }
 serde_json = { version = "1.0", optional = true }
 solana-security-txt = "1.1.1"
 spl-token = { workspace = true }
