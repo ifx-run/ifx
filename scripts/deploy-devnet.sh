@@ -159,6 +159,11 @@ if [ "${IFX_SKIP_BUILD:-}" = 1 ]; then
   if [ -n "${IFX_PROGRAM_BUFFER:-}" ]; then
     load_devnet_program_id
     echo "build: skipped (IFX_SKIP_BUILD=1, deploy from buffer)"
+    if [ -f "$PROGRAM_SO" ]; then
+      ensure_program_data_capacity
+    else
+      echo "warn: missing $PROGRAM_SO — skipping ProgramData extend pre-check" >&2
+    fi
   else
     if [ ! -f "$PROGRAM_SO" ]; then
       echo "IFX_SKIP_BUILD=1 requires $PROGRAM_SO or IFX_PROGRAM_BUFFER" >&2

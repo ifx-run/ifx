@@ -10,7 +10,7 @@
     {
       "name": "ifx_assert",
       "docs": [
-        "Require `cond` to evaluate to `true`; otherwise revert with [`ErrorCode::AssertFailed`].",
+        "Require `cond` to evaluate to `true`; otherwise revert with [`ErrorCode::AssertFailed`](crate::error::ErrorCode::AssertFailed).",
         "",
         "`cond` is an [`Expr`] over values already in `Frame::tape` (via prior",
         "[`ifx_let`]) or nested compare/arithmetic. Use for global guards that must",
@@ -39,7 +39,7 @@
       "name": "ifx_assert_multi",
       "docs": [
         "Require every entry in `args.conds` to evaluate to `true`; short-circuit on first failure",
-        "with [`ErrorCode::AssertFailedMulti`] (failing index in return data + pseudocode logs).",
+        "with [`ErrorCode::AssertFailedMulti`](crate::error::ErrorCode::AssertFailedMulti) (failing index in return data + pseudocode logs).",
         "",
         "`conds` is a [`U8LenVec`] of [`Expr`] over values already in `Frame::tape` (via prior",
         "[`ifx_let`]). At least one condition is required."
@@ -502,7 +502,7 @@
             "name": "conds",
             "type": {
               "defined": {
-                "name": "ifx::state::u8_len_vec::U8LenVec<ifx::state::types::Expr>",
+                "name": "ifx::state::u8_len_vec::U8LenVec<ifx_core::wire::expr::Expr>",
                 "generics": [
                   {
                     "kind": "type",
@@ -1468,7 +1468,7 @@
             "name": "bindings",
             "type": {
               "defined": {
-                "name": "ifx::state::u8_len_vec::U8LenVec<ifx::state::types::LetBinding>",
+                "name": "ifx_core::u8_len_vec::U8LenVec<ifx_core::wire::let_binding::LetBinding>",
                 "generics": [
                   {
                     "kind": "type",

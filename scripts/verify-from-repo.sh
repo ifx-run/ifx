@@ -43,6 +43,10 @@ case "$CLUSTER" in
 esac
 
 KEYPAIR="${IFX_VERIFY_KEYPAIR:-$DEFAULT_KEY}"
+case "$KEYPAIR" in
+  ~/*) KEYPAIR="$HOME/${KEYPAIR#~/}" ;;
+  ~) KEYPAIR="$HOME" ;;
+esac
 
 if ! command -v solana-verify >/dev/null 2>&1; then
   echo "missing solana-verify — install: cargo install solana-verify" >&2
@@ -62,30 +66,26 @@ if [ "${IFX_VERIFY_SKIP_PROMPT:-}" = 1 ]; then
   PROMPT_FLAG="-y"
 fi
 
+# solana-verify: -u and --url are the same flag (RPC endpoint). Do not pass both.
 if [ -n "${ANCHOR_PROVIDER_URL:-}" ]; then
-  solana-verify verify-from-repo \
-    -u "$SOLANA_CLUSTER" \
-    --url "$ANCHOR_PROVIDER_URL" \
-    --program-id "$PROGRAM_ID" \
-    --commit-hash "$COMMIT" \
-    --library-name ifx \
-    --mount-path . \
-    --keypair "$KEYPAIR" \
-    $PROMPT_FLAG \
-    "$REPO" \
-    -- $FEATURE_ARG
+  RPC_FLAG="--url"
+  RPC_VALUE="$ANCHOR_PROVIDER_URL"
 else
-  solana-verify verify-from-repo \
-    -u "$SOLANA_CLUSTER" \
-    --program-id "$PROGRAM_ID" \
-    --commit-hash "$COMMIT" \
-    --library-name ifx \
-    --mount-path . \
-    --keypair "$KEYPAIR" \
-    $PROMPT_FLAG \
-    "$REPO" \
-    -- $FEATURE_ARG
+  RPC_FLAG="-u"
+  RPC_VALUE="$SOLANA_CLUSTER"
 fi
+
+# shellcheck disable=SC2086
+solana-verify verify-from-repo \
+  $RPC_FLAG "$RPC_VALUE" \
+  --program-id "$PROGRAM_ID" \
+  --commit-hash "$COMMIT" \
+  --library-name ifx \
+  --mount-path . \
+  --keypair "$KEYPAIR" \
+  $PROMPT_FLAG \
+  "$REPO" \
+  -- $FEATURE_ARG
 
 echo "verify-from-repo: submitted for $PROGRAM_ID"
 echo "Mainnet: after PDA upload, run: solana-verify remote submit-job --program-id $PROGRAM_ID --uploader \$(solana-keygen pubkey $KEYPAIR)"

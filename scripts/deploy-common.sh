@@ -67,6 +67,10 @@ write_program_buffer() {
 # Size-only checks miss corrupt buffers (upload interrupted but account already full).
 verify_buffer_matches_program() {
   BUFFER=$1
+  if [ "${IFX_SKIP_BUFFER_VERIFY:-}" = 1 ]; then
+    echo "buffer verify: skipped (IFX_SKIP_BUFFER_VERIFY=1)"
+    return 0
+  fi
   if [ ! -f "$PROGRAM_SO" ]; then
     echo "warn: skip buffer hash check — missing $PROGRAM_SO" >&2
     return 0
@@ -77,12 +81,15 @@ verify_buffer_matches_program() {
   fi
 
   LOCAL_HASH=$(solana-verify get-executable-hash "$PROGRAM_SO" | tr -d '[:space:]')
-  TMP_SO="$(mktemp "${TMPDIR:-/tmp}/ifx-buffer-dump.XXXXXX.so")"
-  if ! solana program dump "$BUFFER" "$TMP_SO" --url "$RPC_URL" >/dev/null 2>&1; then
-    rm -f "$TMP_SO"
+  TMP_SO="$(mktemp "${TMPDIR:-/tmp}/ifx-buffer-dump.XXXXXX")"
+  DUMP_ERR="$(mktemp "${TMPDIR:-/tmp}/ifx-buffer-dump.err.XXXXXX")"
+  if ! solana program dump "$BUFFER" "$TMP_SO" --url "$RPC_URL" 2>"$DUMP_ERR"; then
     echo "buffer dump failed: $BUFFER" >&2
+    sed 's/^/  /' "$DUMP_ERR" >&2
+    rm -f "$TMP_SO" "$DUMP_ERR"
     exit 1
   fi
+  rm -f "$DUMP_ERR"
   BUFFER_HASH=$(solana-verify get-executable-hash "$TMP_SO" | tr -d '[:space:]')
   rm -f "$TMP_SO"
 
