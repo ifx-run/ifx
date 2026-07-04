@@ -4,6 +4,7 @@ version = "0.1.1"
 description = "Created with Anchor"
 edition = "2021"
 license = "Apache-2.0"
+build = "build.rs"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -11,6 +12,9 @@ name = "ifx"
 
 [features]
 default = ["no-idl"]
+# Verifiable deploy / verify-from-repo: pick exactly one cluster feature (see lib.rs declare_id!).
+devnet = []
+mainnet = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []

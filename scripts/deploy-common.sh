@@ -2,6 +2,40 @@
 # shellcheck shell=sh
 # Requires: DEPLOY_WALLET, RPC_URL, PROGRAM_SO
 
+# BPF Loader ExtendProgram: minimum additional bytes per instruction (or extend to max).
+IFX_PROGRAM_EXTEND_MIN_BYTES=10240
+
+# Return bytes to pass to `solana program extend` (>= loader minimum).
+ifx_program_extend_amount() {
+  DEFICIT=$1
+  MIN=${IFX_PROGRAM_EXTEND_MIN_BYTES:-10240}
+  if [ "$DEFICIT" -lt "$MIN" ]; then
+    echo "$MIN"
+  else
+    echo "$DEFICIT"
+  fi
+}
+
+# Extend upgradeable ProgramData when CURRENT_LEN < REQUIRED_LEN.
+run_program_data_extend() {
+  PROGRAM_ID=$1
+  UPGRADE_KEYPAIR=$2
+  CURRENT_LEN=$3
+  REQUIRED_LEN=$4
+
+  if [ "$REQUIRED_LEN" -le "$CURRENT_LEN" ]; then
+    echo "ProgramData OK: ${CURRENT_LEN} bytes (binary + headroom need ${REQUIRED_LEN})"
+    return 0
+  fi
+
+  DEFICIT=$((REQUIRED_LEN - CURRENT_LEN))
+  ADDITIONAL=$(ifx_program_extend_amount "$DEFICIT")
+  echo "ProgramData too small: ${CURRENT_LEN} < ${REQUIRED_LEN}; extending by ${ADDITIONAL} bytes (deficit ${DEFICIT})…"
+  solana program extend "$PROGRAM_ID" "$ADDITIONAL" \
+    --url "$RPC_URL" \
+    --keypair "$UPGRADE_KEYPAIR"
+}
+
 # BSD awk (macOS) does not accept `1e9`; use integer divisor.
 format_sol_from_lamports() {
   awk "BEGIN {printf \"%.3f\", $1/1000000000}"

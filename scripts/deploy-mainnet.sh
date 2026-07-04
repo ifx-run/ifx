@@ -13,6 +13,7 @@
 #   IFX_PROGRAM_EXTEND_HEADROOM — extra bytes on extend (default: 65536)
 #   IFX_PROGRAM_BUFFER — reuse an existing upload buffer (anchor program deploy --buffer)
 #   IFX_BUFFER_WRITE=1 — write/resume target/deploy/ifx.so into that buffer before deploy
+#   IFX_SKIP_VERIFIABLE=1 — use anchor build --no-idl instead of solana-verify (non-verified)
 #   IFX_SKIP_BUILD=1 — skip keys sync + build (deploy-from-buffer only; requires IFX_PROGRAM_BUFFER)
 #   IFX_SOLANA_USE_RPC=1 — default; write-buffer / deploy use --use-rpc (proxy-safe). Set 0 for TPU upload.
 # Usage:
@@ -87,12 +88,8 @@ ensure_program_data_capacity() {
     return 0
   fi
 
-  ADDITIONAL=$((REQUIRED_LEN - CURRENT_LEN))
   UPGRADE_AUTH="${UPGRADE_AUTHORITY:-$MAINNET_KEYPAIR}"
-  echo "ProgramData too small: ${CURRENT_LEN} < ${REQUIRED_LEN}; extending by ${ADDITIONAL} bytes…"
-  solana program extend "$MAINNET_ID" "$ADDITIONAL" \
-    --url "$RPC_URL" \
-    --keypair "$UPGRADE_AUTH"
+  run_program_data_extend "$MAINNET_ID" "$UPGRADE_AUTH" "$CURRENT_LEN" "$REQUIRED_LEN"
 }
 
 deploy_mainnet_program() {
@@ -163,8 +160,13 @@ if [ "${IFX_SKIP_BUILD:-}" = 1 ]; then
   echo "build: skipped (IFX_SKIP_BUILD=1)"
 else
   IFX_CLUSTER=mainnet sh scripts/sync-program-keys.sh
-  anchor keys sync --provider.cluster mainnet
-  anchor build --no-idl
+  if [ "${IFX_SKIP_VERIFIABLE:-}" = 1 ]; then
+    anchor keys sync --provider.cluster mainnet
+    echo "build: anchor build --no-idl (IFX_SKIP_VERIFIABLE=1)"
+    anchor build --no-idl
+  else
+    IFX_CLUSTER=mainnet sh scripts/build-verifiable.sh
+  fi
   npm run security-txt:check
   ensure_program_data_capacity
 fi

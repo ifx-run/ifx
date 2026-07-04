@@ -34,9 +34,6 @@ pub mod constants {
 
 use anchor_lang::prelude::*;
 
-#[cfg(not(feature = "no-entrypoint"))]
-use solana_security_txt::security_txt;
-
 pub use constants::*;
 pub use instructions::*;
 pub use state::*;
@@ -50,20 +47,21 @@ pub use state::*;
 // | Mainnet   | ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj     | IFX_MAINNET_PROGRAM_ID · keys/mainnet.program-id · SDK DEFAULT_IFX_PROGRAM_ID |
 //
 // declare_id! matches localnet for repo builds, anchor test, and Surfpool.
-// Devnet deploy temporarily runs `anchor keys sync`; `npm run keys:restore` restores localnet.
-// Off-chain: pass the cluster id on FrameScratch / IxOpts, or omit for SDK default (mainnet).
+// Devnet/mainnet verifiable deploy: `IFX_CLUSTER=… sh scripts/build-verifiable.sh` passes
+// `--features devnet|mainnet` (no `anchor keys sync` — keeps GitHub ↔ on-chain hash aligned).
+// Legacy non-verifiable deploy still uses `anchor keys sync` + `IFX_SKIP_VERIFIABLE=1`.
+#[cfg(all(not(feature = "devnet"), not(feature = "mainnet")))]
 declare_id!("ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD");
+
+#[cfg(all(feature = "devnet", not(feature = "mainnet")))]
+declare_id!("ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc");
+
+#[cfg(all(feature = "mainnet", not(feature = "devnet")))]
+declare_id!("ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj");
 
 // Embedded for Solscan security.txt — see docs/mainnet-verification.md.
 #[cfg(not(feature = "no-entrypoint"))]
-security_txt! {
-    name: "Ifx Program",
-    project_url: "https://github.com/ifx-run/ifx",
-    contacts: "link:https://github.com/ifx-run/ifx/security/advisories",
-    policy: "https://github.com/ifx-run/ifx/blob/main/docs/SECURITY.md",
-    preferred_languages: "en,zh",
-    source_code: "https://github.com/ifx-run/ifx"
-}
+include!(concat!(env!("OUT_DIR"), "/security_txt_embed.rs"));
 
 #[program]
 pub mod ifx {
