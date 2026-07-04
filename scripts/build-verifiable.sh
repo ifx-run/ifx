@@ -58,16 +58,15 @@ fi
 echo "verifiable build: cluster=${CLUSTER:-localnet} library=${LIB} release=${RELEASE} revision=${REVISION}"
 echo "docker image: Solana 3.1.10 (from [workspace.metadata.cli] in Cargo.toml)"
 
-BUILD_ARGS="--library-name $LIB"
-if [ -n "$SBF_ARGS" ]; then
-  BUILD_ARGS="$BUILD_ARGS $SBF_ARGS"
+if [ -n "$SBF_ARGS" ] && [ -n "${IFX_VERIFIABLE_BASE_IMAGE:-}" ]; then
+  solana-verify build --library-name "$LIB" "$SBF_ARGS" --base-image "$IFX_VERIFIABLE_BASE_IMAGE" "$ROOT"
+elif [ -n "$SBF_ARGS" ]; then
+  solana-verify build --library-name "$LIB" "$SBF_ARGS" "$ROOT"
+elif [ -n "${IFX_VERIFIABLE_BASE_IMAGE:-}" ]; then
+  solana-verify build --library-name "$LIB" --base-image "$IFX_VERIFIABLE_BASE_IMAGE" "$ROOT"
+else
+  solana-verify build --library-name "$LIB" "$ROOT"
 fi
-if [ -n "${IFX_VERIFIABLE_BASE_IMAGE:-}" ]; then
-  BUILD_ARGS="$BUILD_ARGS --base-image $IFX_VERIFIABLE_BASE_IMAGE"
-fi
-
-# shellcheck disable=SC2086
-solana-verify build $BUILD_ARGS "$ROOT"
 
 if [ ! -f "$SO" ]; then
   echo "missing $SO after solana-verify build" >&2
