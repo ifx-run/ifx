@@ -11,6 +11,7 @@ English | [中文](./README.zh-CN.md)
 [![npm version](https://img.shields.io/npm/v/@ifx-run/sdk?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
 [![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)
+[![Mainnet Verified](https://img.shields.io/badge/mainnet-verified-2ea043?logo=solana&logoColor=white)](https://verify.osec.io/status/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana mainnet](https://img.shields.io/badge/Solana-mainnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
@@ -398,7 +399,7 @@ Ifx is **non-profit open-source** — no bug bounty, **no paid third-party firm 
 | Practice | Ifx status |
 |----------|------------|
 | [security.txt](https://solana.com/docs/programs/verified-builds) in program binary | Embedded — report via [GitHub Security Advisories](https://github.com/ifx-run/ifx/security/advisories) |
-| [Verified builds](https://solana.com/docs/programs/verified-builds) (solana-verify) | Documented for mainnet — see [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
+| [Verified builds](https://solana.com/docs/programs/verified-builds) (solana-verify) | **Mainnet verified** — [verify.osec.io](https://verify.osec.io/status/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · [docs/mainnet-verification.md](./docs/mainnet-verification.md) |
 | Maintainer preflight | `npm run security:preflight` (build + keys verify + security.txt check) |
 | **Internal security assessments** | [audits/](./audits/README.md) — checklist ([SECURITY-CHECKLIST.md](./audits/SECURITY-CHECKLIST.md)) aligned with [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security); workflow in [AUDIT-WORKFLOW.md](./audits/AUDIT-WORKFLOW.md); Phase 0 gate: `npm run audit:phase0` |
 | **Latest published review** | [2026-06-13 at `8a42766`](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) — **63 ✅ / 11 ⚠️ documented trade-offs / 0 ❌** on `programs/ifx` only; 158 npm tests incl. Structured CPI, Stake lets, and [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |

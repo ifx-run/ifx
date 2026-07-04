@@ -11,6 +11,7 @@
 [![npm version](https://img.shields.io/npm/v/@ifx-run/sdk?label=npm)](https://www.npmjs.com/package/@ifx-run/sdk)
 [![Go SDK](https://img.shields.io/badge/go--sdk-github.com%2Fifx--run%2Fifx%2Fgo--sdk-00ADD8?logo=go&logoColor=white)](./go-sdk/)
 [![ifx-sdk](https://img.shields.io/crates/v/ifx-sdk?logo=rust)](https://crates.io/crates/ifx-sdk)
+[![Mainnet Verified](https://img.shields.io/badge/mainnet-verified-2ea043?logo=solana&logoColor=white)](https://verify.osec.io/status/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana mainnet](https://img.shields.io/badge/Solana-mainnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj)
 [![Solana devnet](https://img.shields.io/badge/Solana-devnet-9945FF?logo=solana&logoColor=white)](https://solscan.io/account/ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc?cluster=devnet)
 [![GitHub](https://img.shields.io/github/stars/ifx-run/ifx?style=social)](https://github.com/ifx-run/ifx)
@@ -396,7 +397,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 | 实践 | Ifx 状态 |
 |------|----------|
 | 程序内 [security.txt](https://solana.com/docs/programs/verified-builds) | 已嵌入 — 通过 [GitHub Security Advisories](https://github.com/ifx-run/ifx/security/advisories) 报告 |
-| [Verified builds](https://solana.com/docs/programs/verified-builds)（solana-verify） | 主网流程已文档化 — [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
+| [Verified builds](https://solana.com/docs/programs/verified-builds)（solana-verify） | **主网已 verified** — [verify.osec.io](https://verify.osec.io/status/ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj) · [docs/mainnet-verification.zh-CN.md](./docs/mainnet-verification.zh-CN.md) |
 | 维护者预检 | `npm run security:preflight`（构建 + keys 校验 + security.txt 检查） |
 | **内部安全评估** | [audits/](./audits/README.zh-CN.md) — 清单 [SECURITY-CHECKLIST.zh-CN.md](./audits/SECURITY-CHECKLIST.zh-CN.md) 对齐 [Bootcamp: Security](https://solana.com/developers/bootcamp/program-patterns/security)；流程见 [AUDIT-WORKFLOW.zh-CN.md](./audits/AUDIT-WORKFLOW.zh-CN.md)；Phase 0：`npm run audit:phase0` |
 | **最新已发布审查** | [2026-06-13 @ `8a42766`](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md) — 仅 `programs/ifx`：**63 ✅ / 11 ⚠️ 已文档化取舍 / 0 ❌**；158 个 npm 测试，含 Structured CPI、Stake lets 与 [`tests/ifx_negative.ts`](./tests/ifx_negative.ts) |
