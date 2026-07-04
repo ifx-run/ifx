@@ -44,7 +44,7 @@ ANCHOR_WALLET=~/.keys/ifx-devnet-deploy.json sh scripts/deploy-devnet.sh
 # ANCHOR_PROVIDER_URL=https://devnet.helius-rpc.com/?api-key=YOUR_KEY npm run deploy:devnet
 ```
 
-**部署失败后续传 buffer**（先 `write-buffer` 再 `deploy --buffer`）：
+**部署失败后续传 buffer**（先 `write-buffer` 再 `deploy --buffer`）。完整分步流程见 **[docs/deploy-playbook.zh-CN.md](../docs/deploy-playbook.zh-CN.md)**。
 
 ```bash
 # 列出 deploy 钱包名下的 buffer：
@@ -99,7 +99,7 @@ IFX_SKIP_BALANCE_CHECK=1 ANCHOR_PROVIDER_URL=https://你的-rpc ANCHOR_WALLET=~/
 
 `Anchor.toml` 里的 `wallet` 仅供本地 `anchor test`；**`deploy:mainnet` 必须显式设置 `ANCHOR_WALLET` 与 `ANCHOR_PROVIDER_URL`（推荐）。**
 
-部署后见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。
+部署后见 [docs/mainnet-verification.zh-CN.md](../docs/mainnet-verification.zh-CN.md)。分步 buffer 流程见 [docs/deploy-playbook.zh-CN.md](../docs/deploy-playbook.zh-CN.md)。
 
 **部署失败后续传 buffer**（先 `write-buffer` 再 `deploy --buffer`）：
 

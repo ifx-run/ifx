@@ -12,6 +12,8 @@
     "deploy:devnet": "sh scripts/deploy-devnet.sh",
     "deploy:mainnet": "sh scripts/deploy-mainnet.sh",
     "build:verifiable": "sh scripts/build-verifiable.sh",
+    "build:verifiable:devnet": "IFX_CLUSTER=devnet sh scripts/build-verifiable.sh",
+    "build:verifiable:mainnet": "IFX_CLUSTER=mainnet sh scripts/build-verifiable.sh",
     "verify:devnet": "sh scripts/verify-from-repo.sh devnet",
     "verify:mainnet": "sh scripts/verify-from-repo.sh mainnet",
     "security-txt:check": "sh scripts/check-security-txt.sh",

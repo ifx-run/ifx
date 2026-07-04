@@ -66,15 +66,42 @@ function main() {
     path.join(root, "programs/ifx/src/lib.rs"),
     "utf8"
   );
-  if (!libRs.includes(`declare_id!("${keys.localnet}")`)) {
-    errors.push(
-      `lib.rs declare_id! must be localnet ${keys.localnet} (run: npm run keys:restore)`
-    );
-  }
-  if (libRs.includes(`declare_id!("${keys.devnet}")`)) {
-    errors.push(
-      `lib.rs still has devnet declare_id! ${keys.devnet} (run: npm run keys:restore)`
-    );
+
+  const cfgGatedDeclareIds =
+    libRs.includes('not(feature = "devnet")') &&
+    libRs.includes('feature = "devnet"') &&
+    libRs.includes('feature = "mainnet"');
+
+  if (cfgGatedDeclareIds) {
+    const localnetCfg =
+      '#[cfg(all(not(feature = "devnet"), not(feature = "mainnet")))]';
+    const devnetCfg =
+      '#[cfg(all(feature = "devnet", not(feature = "mainnet")))]';
+    const mainnetCfg =
+      '#[cfg(all(feature = "mainnet", not(feature = "devnet")))]';
+    for (const [label, cfg, id] of [
+      ["localnet", localnetCfg, keys.localnet],
+      ["devnet", devnetCfg, keys.devnet],
+      ["mainnet", mainnetCfg, keys.mainnet],
+    ]) {
+      if (!libRs.includes(cfg)) {
+        errors.push(`lib.rs missing ${label} declare_id! cfg gate`);
+      }
+      if (!libRs.includes(`declare_id!("${id}")`)) {
+        errors.push(`lib.rs missing ${label} declare_id! ${id}`);
+      }
+    }
+  } else {
+    if (!libRs.includes(`declare_id!("${keys.localnet}")`)) {
+      errors.push(
+        `lib.rs declare_id! must be localnet ${keys.localnet} (run: npm run keys:restore)`
+      );
+    }
+    if (libRs.includes(`declare_id!("${keys.devnet}")`)) {
+      errors.push(
+        `lib.rs still has devnet declare_id! ${keys.devnet} (run: npm run keys:restore)`
+      );
+    }
   }
 
   const anchorToml = fs.readFileSync(PATHS.anchorToml, "utf8");

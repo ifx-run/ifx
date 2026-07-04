@@ -14,7 +14,7 @@
 #   IFX_PROGRAM_BUFFER — reuse an existing upload buffer (anchor program deploy --buffer)
 #   IFX_BUFFER_WRITE=1 — write/resume target/deploy/ifx.so into that buffer before deploy
 #   IFX_SKIP_VERIFIABLE=1 — use anchor build --no-idl instead of solana-verify (non-verified)
-#   IFX_SKIP_BUILD=1 — skip keys sync + build (deploy-from-buffer only; requires IFX_PROGRAM_BUFFER)
+#   IFX_SKIP_BUILD=1 — skip build; deploy existing target/deploy/ifx.so, or IFX_PROGRAM_BUFFER if set
 #   IFX_SOLANA_USE_RPC=1 — default; write-buffer / deploy use --use-rpc (proxy-safe). Set 0 for TPU upload.
 # Usage:
 #   ANCHOR_PROVIDER_URL=https://your-mainnet-rpc ANCHOR_WALLET=~/.keys/ifx-mainnet-deploy.json sh scripts/deploy-mainnet.sh
@@ -102,7 +102,7 @@ deploy_mainnet_program() {
       fi
       write_program_buffer
     fi
-    # Deploy from on-chain buffer only — do not pass local .so (avoids re-upload / ELF mismatch).
+    verify_buffer_matches_program "$IFX_PROGRAM_BUFFER"
     if ifx_solana_use_rpc_enabled; then
       anchor program deploy \
         --provider.cluster mainnet \
@@ -152,12 +152,19 @@ check_mainnet_rpc
 trap restore_localnet EXIT
 
 if [ "${IFX_SKIP_BUILD:-}" = 1 ]; then
-  if [ -z "${IFX_PROGRAM_BUFFER:-}" ]; then
-    echo "IFX_SKIP_BUILD=1 requires IFX_PROGRAM_BUFFER" >&2
-    exit 1
+  if [ -n "${IFX_PROGRAM_BUFFER:-}" ]; then
+    load_mainnet_program_id
+    echo "build: skipped (IFX_SKIP_BUILD=1, deploy from buffer)"
+  else
+    if [ ! -f "$PROGRAM_SO" ]; then
+      echo "IFX_SKIP_BUILD=1 requires $PROGRAM_SO or IFX_PROGRAM_BUFFER" >&2
+      exit 1
+    fi
+    IFX_CLUSTER=mainnet sh scripts/sync-program-keys.sh
+    load_mainnet_program_id
+    echo "build: skipped (IFX_SKIP_BUILD=1, using $PROGRAM_SO)"
+    ensure_program_data_capacity
   fi
-  load_mainnet_program_id
-  echo "build: skipped (IFX_SKIP_BUILD=1)"
 else
   IFX_CLUSTER=mainnet sh scripts/sync-program-keys.sh
   if [ "${IFX_SKIP_VERIFIABLE:-}" = 1 ]; then

@@ -63,6 +63,40 @@ write_program_buffer() {
   fi
 }
 
+# Before deploy --buffer: dump on-chain ELF and compare executable hash to local .so.
+# Size-only checks miss corrupt buffers (upload interrupted but account already full).
+verify_buffer_matches_program() {
+  BUFFER=$1
+  if [ ! -f "$PROGRAM_SO" ]; then
+    echo "warn: skip buffer hash check — missing $PROGRAM_SO" >&2
+    return 0
+  fi
+  if ! command -v solana-verify >/dev/null 2>&1; then
+    echo "warn: skip buffer hash check — missing solana-verify" >&2
+    return 0
+  fi
+
+  LOCAL_HASH=$(solana-verify get-executable-hash "$PROGRAM_SO" | tr -d '[:space:]')
+  TMP_SO="$(mktemp "${TMPDIR:-/tmp}/ifx-buffer-dump.XXXXXX.so")"
+  if ! solana program dump "$BUFFER" "$TMP_SO" --url "$RPC_URL" >/dev/null 2>&1; then
+    rm -f "$TMP_SO"
+    echo "buffer dump failed: $BUFFER" >&2
+    exit 1
+  fi
+  BUFFER_HASH=$(solana-verify get-executable-hash "$TMP_SO" | tr -d '[:space:]')
+  rm -f "$TMP_SO"
+
+  if [ "$LOCAL_HASH" != "$BUFFER_HASH" ]; then
+    echo "buffer ELF does not match local program (upload corrupt or stale buffer):" >&2
+    echo "  local:  $LOCAL_HASH ($PROGRAM_SO)" >&2
+    echo "  buffer: $BUFFER_HASH ($BUFFER)" >&2
+    echo "" >&2
+    echo "Close the buffer and upload again, or re-upload with IFX_BUFFER_WRITE=1 to a new buffer." >&2
+    exit 1
+  fi
+  echo "buffer ELF OK: matches $PROGRAM_SO"
+}
+
 check_deploy_wallet_balance() {
   FUND_HINT="${1:-Fund the deploy wallet (not the program address), then retry.}"
 
