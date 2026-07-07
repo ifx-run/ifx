@@ -131,7 +131,7 @@ tx.add(letBuilder.buildIx());
 - **不要落盘：** 仅为书写方便的中间量；改在同一条 `letEval` 里写嵌套 `Expr`，或把比较写进 `ifx_assert`。
 
 - **`FrameScratch.planPublicFrame(...)`**：一次性 create；`authority` = Frame PDA。
-- **`FrameScratch.forPublicFrame({ framePubkey, ... })`**：**生产路径** — 已有公共 Frame 的 planner（`authority === frame`）。
+- **`FrameScratch.forPublicFrame({ framePubkey, ... })`**：**生产路径** — 已有公共 Frame 的 planner（`authority === frame`）。主网推荐池（`tapeLen=1024`）见 [frame-authority.zh-CN.md §6.0](../docs/frame-authority.zh-CN.md#60-主网公共-frame-池推荐)。
 - **`FrameScratch.planNewFrame(...)`**：可选 — 需 **`close`**、§3.7 预签边角、或纵深防御。
 - **Frame 地址（闭环）**：`frame_id` 仅用于 **create** 派生 PDA。Tx 1 后持久化 **`scratch.frame`** + `tapeLen`。
 - **`forPublicFrame` 或 `new FrameScratch(...)`**：Tx 2 重建 planner；公共 Frame **优先 `forPublicFrame`**，勿手写 `authority = frame`。

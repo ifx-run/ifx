@@ -91,6 +91,16 @@ Index addressing and `payload_at` are **shipped** — see [implementation.md](./
 
 **Integrator checklist:** use `planPublicFrame` / `planNewFrame` once → persist `frame` pubkey → all later txs use `FrameScratch` methods or `createIx*` with that pubkey only. To reclaim rent, `ixCloseFrame` also needs only `frame` + `authority` signer — no `frame_id`.
 
+**Mainnet public Frame pool (`tape_len = 1024`):**
+
+```
+Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu
+FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY
+FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
+```
+
+Test-only (`tape_len = 512`): `6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn` — see [frame-authority.md §6.0](./frame-authority.md#60-mainnet-public-frame-pool-recommended).
+
 ---
 
 ## 5. Data loading

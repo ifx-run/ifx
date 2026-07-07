@@ -31,11 +31,40 @@
 | 项 | 说明 |
 | --- | --- |
 | **状态** | [Devnet](#网络与-sdk) + **[Mainnet](#网络与-sdk)** 已部署（`ifxmwW…`）；**无第三方付费审计**；[最新内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，`8a42766`） |
-| **公共 Frame（主网）** | `6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn` · `tapeLen=512` · [Solscan](https://solscan.io/account/6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn) · 后端编排用公共 scratch — **每笔业务 tx 开头 `ixReset()`**（需独立会话时可 [自建 Frame](./scripts/create-public-frame-512.ts)） |
+| **公共 Frame（主网）** | 三个生产地址 · `tapeLen=1024` — 见下方 [主网公共 Frame](#主网公共-frame生产) · 规范 [frame-authority §6.0](./docs/frame-authority.zh-CN.md#60-主网公共-frame-池推荐) · **每笔业务 tx 开头 `ixReset()`** |
 | **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.2`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
 | **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.2`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.2` |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.2`** · `cargo add ifx-sdk@0.1.2` |
 | **Cursor / AI agent** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
+
+### 主网公共 Frame（生产）
+
+Program：`ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj` · **`tapeLen = 1024`**（直接复制地址即可）：
+
+```
+Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu
+FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY
+FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
+```
+
+```ts
+import { PublicKey } from "@solana/web3.js";
+import { FrameScratch } from "@ifx-run/sdk";
+
+export const MAINNET_PUBLIC_FRAMES = [
+  new PublicKey("Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu"),
+  new PublicKey("FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY"),
+  new PublicKey("FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR"),
+] as const;
+export const MAINNET_PUBLIC_FRAME_TAPE_LEN = 1024;
+
+const scratch = FrameScratch.forPublicFrame({
+  frame: MAINNET_PUBLIC_FRAMES[0],
+  tapeLen: MAINNET_PUBLIC_FRAME_TAPE_LEN,
+});
+```
+
+Explorer：[Fr8dvc…](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu) · [FrWkfy…](https://solscan.io/account/FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY) · [FrX9mV…](https://solscan.io/account/FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR) · 测试专用 Frame 见 [frame-authority §6.0](./docs/frame-authority.zh-CN.md#测试专用勿用于生产)
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js

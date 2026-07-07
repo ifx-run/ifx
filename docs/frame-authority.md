@@ -220,6 +220,66 @@ Patched / structured CPI steps use **`invoke`**, not **`invoke_signed`**. Templa
 
 ## 6. Integrator patterns
 
+### 6.0 Mainnet public Frame pool (recommended)
+
+These **public** Frames are already provisioned on Ifx mainnet (`ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`) (`authority` = Frame PDA, off-curve). Integrators **do not** call `ifx_create_frame` — persist **`frame` address + `tapeLen`**, rebuild with `FrameScratch.forPublicFrame`, and **`ixReset()` at the start of every business tx** (§3.4).
+
+#### Production (recommended) — `tape_len = 1024`, `index_cap = 256`
+
+**Copy-paste — Frame addresses (one per line):**
+
+```
+Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu
+FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY
+FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
+```
+
+**Copy-paste — config JSON:**
+
+```json
+{
+  "programId": "ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj",
+  "tapeLen": 1024,
+  "frames": [
+    "Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu",
+    "FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY",
+    "FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR"
+  ]
+}
+```
+
+| Slot | Frame address | Explorer (optional) |
+|------|---------------|---------------------|
+| 1 | `Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu` | [Solscan](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu) |
+| 2 | `FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY` | [Solscan](https://solscan.io/account/FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY) |
+| 3 | `FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR` | [Solscan](https://solscan.io/account/FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR) |
+
+For multi-tenant or concurrent orchestration, **round-robin** across the three addresses to reduce `reset` contention on a single Frame; a single flow can pin one address.
+
+```ts
+import { FrameScratch } from "@ifx-run/sdk";
+
+const scratch = FrameScratch.forPublicFrame({
+  frame: new PublicKey("Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu"),
+  tapeLen: 1024,
+});
+tx.add(scratch.ixReset());
+```
+
+Provision similar Frames: `npm run create-public-frames-fr-1024` ([`scripts/grind-public-frames-f.ts`](../scripts/grind-public-frames-f.ts)).
+
+#### Test-only (not for production)
+
+**Copy-paste — test Frame address:**
+
+```
+6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn
+```
+
+`tape_len = 512` · address starts with **`6`** · **repo tests and legacy harness only** · [Solscan](https://solscan.io/account/6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn)
+
+New integrations should use the three **`Fr…` production addresses** above; `6RNv…` remains for existing test fixtures.
+
 ### 6.1 Default — public Frame (production with `reset`)
 
 ```ts

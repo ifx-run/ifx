@@ -131,7 +131,7 @@ At create: `tapeLen` up to **65_535** on-chain; **prefer `DEFAULT_TAPE_LEN` (512
 - **Do not persist:** Intermediate values for readability only; nest in one `letEval`, or put comparison in `ifx_assert` `Expr`.
 
 - **`FrameScratch.planPublicFrame(...)`:** **default** — one-time create; `authority` = Frame PDA ({@link publicFrameAuthority}).
-- **`FrameScratch.forPublicFrame({ framePubkey, ... })`:** **production** — planner on an **existing** public Frame (`authority === frame`); use after Frame pool provisioning.
+- **`FrameScratch.forPublicFrame({ framePubkey, ... })`:** **production** — planner on an **existing** public Frame (`authority === frame`). Mainnet recommended pool (`tapeLen=1024`): [frame-authority.md §6.0](../docs/frame-authority.md#60-mainnet-public-frame-pool-recommended).
 - **`FrameScratch.planNewFrame(...)`:** optional — **`close`**, §3.7 pre-sign edge, or defense-in-depth; not required for typical production if public Frame + `ixReset` discipline holds.
 - **Frame address (closed loop):** `frame_id` is only for **create** PDA derivation. After Tx 1, persist **`scratch.frame`** (pubkey) + `tapeLen` — not `frame_id`. `reset` / `let` / `close` pass the address only; on-chain does **not** re-check seeds ([design.md §4.1](../docs/design.md#41-frame-address-identity-closed-loop)).
 - **`new FrameScratch(framePk, tapeLen?, ...)`** or **`forPublicFrame`:** rebuild in Tx 2 when scratch is not in memory; pass the persisted **`framePk`**. Prefer **`forPublicFrame`** for public Frames instead of manual `authority = frame`.

@@ -91,6 +91,16 @@ index 寻址与 `payload_at` **已上线** — 见 [implementation.zh-CN.md](./i
 
 **集成清单：** 一次 `planPublicFrame` / `planNewFrame` → 持久化 `frame` 地址 → 之后所有业务 tx 仅用该 pubkey 调用 `FrameScratch` 或 `createIx*`。回收 rent 的 `ixCloseFrame` 同样只需 `frame` + `authority` 签名 — 不需要 `frame_id`。
 
+**主网公共 Frame 池（`tape_len = 1024`）：**
+
+```
+Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu
+FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY
+FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
+```
+
+测试专用（`tape_len = 512`）：`6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn` — 见 [frame-authority.zh-CN.md §6.0](./frame-authority.zh-CN.md#60-主网公共-frame-池推荐)。
+
 ---
 
 ## 5. 数据加载

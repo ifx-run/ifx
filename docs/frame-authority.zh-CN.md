@@ -220,6 +220,66 @@ Patched / structured CPI 用 **`invoke`**，不用 **`invoke_signed`**。内层�
 
 ## 6. 集成模式
 
+### 6.0 主网公共 Frame 池（推荐）
+
+Ifx 主网（`ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj`）上已 provision 的 **公共** Frame（`authority` = Frame PDA，off-curve）。集成方 **无需** `ifx_create_frame` — 持久化下表中的 **`frame` 地址 + `tapeLen`**，业务 tx 用 `FrameScratch.forPublicFrame` 重建 planner，**每笔业务 tx 开头 `ixReset()`**（§3.4）。
+
+#### 生产推荐（`tape_len = 1024`，`index_cap = 256`）
+
+**复制用 — Frame 地址（每行一个）：**
+
+```
+Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu
+FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY
+FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
+```
+
+**复制用 — 配置 JSON：**
+
+```json
+{
+  "programId": "ifxmwWVVZDmXN2DUVf7wtJYCXTRY4QsL5rzmNkXzxbj",
+  "tapeLen": 1024,
+  "frames": [
+    "Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu",
+    "FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY",
+    "FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR"
+  ]
+}
+```
+
+| 槽位 | Frame 地址 | Explorer（可选） |
+|------|------------|------------------|
+| 1 | `Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu` | [Solscan](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu) |
+| 2 | `FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY` | [Solscan](https://solscan.io/account/FrWkfy4TGzjZPQqgWvZ8vH2xfGj4BP1RxXzZHXTaaoWY) |
+| 3 | `FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR` | [Solscan](https://solscan.io/account/FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR) |
+
+多租户 / 并发编排时可 **轮询** 三个地址，降低同一 Frame 上 `reset` 争用；单流程固定用一个即可。
+
+```ts
+import { FrameScratch } from "@ifx-run/sdk";
+
+const scratch = FrameScratch.forPublicFrame({
+  frame: new PublicKey("Fr8dvcgrSYKjpvJd471hQD2QuEjF7656WiEuUSb54obu"),
+  tapeLen: 1024,
+});
+tx.add(scratch.ixReset());
+```
+
+自建同类 Frame：`npm run create-public-frames-fr-1024`（[`scripts/grind-public-frames-f.ts`](../scripts/grind-public-frames-f.ts)）。
+
+#### 测试专用（勿用于生产）
+
+**复制用 — 测试 Frame 地址：**
+
+```
+6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn
+```
+
+`tape_len = 512` · 地址以 **`6`** 开头 · **仅** repo 测试与历史集成验证 · [Solscan](https://solscan.io/account/6RNv1eQ7fogEW7R1QGg6dAiddEefGfYgJVtjpvgENtdn)
+
+新集成 **请使用上方三个 `Fr…` 生产地址**；`6RNv…` 保留以免破坏已有测试 harness。
+
 ### 6.1 默认 — 公共 Frame（生产：`reset` 开头）
 
 ```ts
