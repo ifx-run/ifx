@@ -65,6 +65,7 @@ export type PersonalAmmSwapPlan = {
  * `gross = floor(reserveB * amountIn / (reserveTokenA + amountIn))`;
  * `net = floor(gross * (BPS_DENOM - feeBps) / BPS_DENOM)`.
  * Matches on-chain `mulDivFloor` + `bpsMulFloor` + `asU128`.
+ * Fee factor uses `expr.u16(BPS_DENOM - feeBps)` (narrow bps operand).
  */
 export function computeSwapOutput(
   reserveTokenA: bigint,
@@ -122,7 +123,7 @@ export function planPersonalAmmSwapInstructions(
     feeBps === 0
       ? amountOutGrossU64
       : batch.letEval(
-          expr.bpsMulFloor(amountOutGrossU64, expr.u64(BPS_DENOM - feeBps))
+          expr.bpsMulFloor(amountOutGrossU64, expr.u16(BPS_DENOM - feeBps))
         );
   const minOut = batch.letConstU64(params.minOut);
   instructions.push(batch.buildIx(opts));

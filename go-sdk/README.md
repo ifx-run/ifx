@@ -17,10 +17,10 @@ Prefer `FrameScratch` in application code; use `ix.BuildCreateFrame` and friends
 
 ## Install
 
-**Current release:** **`v0.1.2`** (mainnet default; aligned with `@ifx-run/sdk@0.1.2` and `ifx-sdk@0.1.2`).
+**Current release:** **`v0.1.3`** (mainnet default; aligned with `@ifx-run/sdk@0.1.3` and `ifx-sdk@0.1.3`).
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.2
+go get github.com/ifx-run/ifx/go-sdk@v0.1.3
 ```
 
 Module path: `github.com/ifx-run/ifx/go-sdk/...`

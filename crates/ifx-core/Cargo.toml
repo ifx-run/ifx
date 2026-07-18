@@ -1,6 +1,6 @@
 [package]
 name = "ifx-core"
-version = "0.1.1"
+version = "0.1.2"
 description = "Shared wire types, constants, tape layout, and codecs for Ifx"
 edition = "2021"
 license = "Apache-2.0"

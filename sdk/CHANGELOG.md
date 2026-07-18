@@ -4,9 +4,17 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** npm release **`0.1.2`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.2**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
+**Status:** npm release **`0.1.3`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.3** and on-chain program / `ifx-core` **0.1.2**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-07-18
+
+### Changed
+
+- **`bpsMulFloor` / `bpsMulCeil`:** `bps` may be `u8`/`u16`/`u32`/`u64` (was `u64` only); result remains `u64`. Requires program redeploy (**`ifx` / `ifx-core` 0.1.2**).
+- **`mulDivFloor` / `mulDivCeil`:** divisor `c` may be any unsigned type no wider than `a`/`b` (`u64`|`u128`); `a`/`b` unchanged. Requires program redeploy.
+- **Examples:** personal AMM fee bps uses `expr.u16(...)`.
 
 ## [0.1.2] - 2026-07-03
 

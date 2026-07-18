@@ -56,6 +56,40 @@ describe("ifx flat expr ops (on-chain)", () => {
     expect(on.readU64(divC)).to.equal(4n);
   });
 
+  it("evaluates mulDiv narrow divisors and bpsMul with narrow bps", async () => {
+    const scratch = await provisionFrame();
+    const b = scratch.letBuilder();
+    const u64NarrowC = b.letEval(
+      expr.mulDivFloor(expr.u64(100), expr.u64(50), expr.u16(10))
+    );
+    const u64CeilNarrowC = b.letEval(
+      expr.mulDivCeil(expr.u64(100), expr.u64(1), expr.u8(3))
+    );
+    const u128NarrowC = b.letEval(
+      expr.mulDivFloor(expr.u128(100), expr.u128(50), expr.u32(10))
+    );
+    const bpsU16 = b.letEval(
+      expr.bpsMulFloor(expr.u64(1_000_000), expr.u16(50))
+    );
+    const bpsCeilU8 = b.letEval(
+      expr.bpsMulCeil(expr.u64(1_000_000), expr.u8(1))
+    );
+    await sendAndConfirm(
+      provider,
+      "ifx expr · narrow mulDiv / bps operands",
+      scratch.ixReset(),
+      b.buildIx()
+    );
+
+    const on = await scratch.fetchDecodedFrame(provider.connection);
+    expect(on.readU64(u64NarrowC)).to.equal(500n);
+    expect(on.readU64(u64CeilNarrowC)).to.equal(34n);
+    expect(on.readU128(u128NarrowC)).to.equal(500n);
+    expect(on.readU64(bpsU16)).to.equal(5000n);
+    // ceil(1_000_000 * 1 / 10_000) = 100
+    expect(on.readU64(bpsCeilU8)).to.equal(100n);
+  });
+
   it("evaluates saturatingSub, clamp, and select", async () => {
     const scratch = await provisionFrame();
     const b = scratch.letBuilder();

@@ -3,9 +3,17 @@ import { PublicKey } from "@solana/web3.js";
 import type { Value } from "../types";
 import type { ArithmeticTy, Cond, ExprInput, IfxTy, ScratchValue, TypedExpr } from "../typed";
 import { isScratchValue, scratchValue, taggedExpr } from "../typed";
-export type { Cond, ExprInput, IfxTy, ScratchValue, TypedExpr };
+export type { Cond, ExprInput, IfxTy, ScratchValue, TypedExpr, };
 export { isScratchValue, scratchValue, taggedExpr };
 export { toCond } from "./cond";
+/** Unsigned widths narrower than `u64` (fee bps, small denominators). */
+export type NarrowUint = "u8" | "u16" | "u32";
+/** `mulDivFloor` / `mulDivCeil` product types (`a` / `b`). */
+export type MulDivTy = "u64" | "u128";
+/** Allowed `bps` operand for `bpsMulFloor` / `bpsMulCeil`. */
+export type BpsTy = NarrowUint | "u64";
+/** Divisor `c` for `mulDiv*`: same as `T`, or any narrower unsigned. */
+export type MulDivDivisor<T extends MulDivTy> = T extends "u128" ? NarrowUint | "u64" | "u128" : NarrowUint | "u64";
 type IntegerLike = "u8" | "u16" | "u32" | "u64" | "u128" | "i8" | "i16" | "i32" | "i64" | "i128";
 type IntegerExprInput = ExprInput<IntegerLike>;
 export declare function resolveRef(s: ScratchValue<IfxTy> | Value): Value;
@@ -57,10 +65,20 @@ export declare const expr: {
     saturatingSub: <T extends ArithmeticTy>(lhs: ExprInput<T>, rhs: ExprInput<T>) => TypedExpr<T>;
     and: (lhs: Cond, rhs: Cond) => TypedExpr<"bool">;
     or: (lhs: Cond, rhs: Cond) => TypedExpr<"bool">;
-    bpsMulFloor: (amount: ExprInput<"u64">, bps: ExprInput<"u64">) => TypedExpr<"u64">;
-    bpsMulCeil: (amount: ExprInput<"u64">, bps: ExprInput<"u64">) => TypedExpr<"u64">;
-    mulDivFloor: <T extends "u64" | "u128">(a: ExprInput<T>, b: ExprInput<T>, c: ExprInput<T>) => TypedExpr<T>;
-    mulDivCeil: <T extends "u64" | "u128">(a: ExprInput<T>, b: ExprInput<T>, c: ExprInput<T>) => TypedExpr<T>;
+    /**
+     * `⌊amount × bps / 10_000⌋`. `amount` is `u64`; `bps` may be `u8`/`u16`/`u32`/`u64`
+     * (promoted on-chain). Result is always `u64`.
+     */
+    bpsMulFloor: (amount: ExprInput<"u64">, bps: ExprInput<BpsTy>) => TypedExpr<"u64">;
+    /** Like {@link expr.bpsMulFloor} with ceiling division. */
+    bpsMulCeil: (amount: ExprInput<"u64">, bps: ExprInput<BpsTy>) => TypedExpr<"u64">;
+    /**
+     * `⌊a × b / c⌋`. `a`/`b` are `u64` or `u128` (same type); `c` may be the same
+     * or any narrower unsigned (`u8`…`T`). Result type follows `a`.
+     */
+    mulDivFloor: <T extends MulDivTy>(a: ExprInput<T>, b: ExprInput<T>, c: ExprInput<MulDivDivisor<T>>) => TypedExpr<T>;
+    /** Like {@link expr.mulDivFloor} with ceiling division. */
+    mulDivCeil: <T extends MulDivTy>(a: ExprInput<T>, b: ExprInput<T>, c: ExprInput<MulDivDivisor<T>>) => TypedExpr<T>;
     clamp: <T extends ArithmeticTy>(value: ExprInput<T>, lo: ExprInput<T>, hi: ExprInput<T>) => TypedExpr<T>;
     select: <T extends IfxTy>(cond: Cond, thenExpr: ExprInput<T>, elseExpr: ExprInput<T>) => TypedExpr<T>;
 };

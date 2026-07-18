@@ -129,7 +129,7 @@ dy       = floor(dy_gross × (10_000 − fee_bps) / 10_000)
 
 The fee (**dy_gross − dy**) stays in the pool’s TOKEN_B reserve (no separate fee ATA in the showcase).
 
-Use **`u128`** intermediates, SDK **`mulDivFloor`**, and **`bpsMulFloor`** so on-chain evaluation matches off-chain `computeSwapOutput(..., feeBps)`.
+Use **`u128`** intermediates, SDK **`mulDivFloor`**, and **`bpsMulFloor`** so on-chain evaluation matches off-chain `computeSwapOutput(..., feeBps)`. Fee bps fits in **`u16`** (`expr.u16(BPS_DENOM - feeBps)`); `amount` stays **`u64`**.
 
 ### 4.2 Instruction order (critical)
 
@@ -142,7 +142,7 @@ Reserves must be read **before** transfers mutate balances:
      y  ← spl_token_amount(pool_token_b_ata)
      dx ← const or user-specified amount_in
      dy_gross ← mulDivFloor(y, dx, x + dx)
-     dy       ← bpsMulFloor(asU64(dy_gross), 10_000 − fee_bps)   [or dy_gross when fee_bps = 0]
+     dy       ← bpsMulFloor(asU64(dy_gross), u16(10_000 − fee_bps))   [or dy_gross when fee_bps = 0]
      min_out ← user slippage floor (const)
 3. ifx_assert: dy >= min_out
 4. SPL Transfer (top-level ix): user_token_a_ata → pool_token_a_ata, amount = dx  [known at quote time — not Ifx]

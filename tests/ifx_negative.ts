@@ -3,6 +3,7 @@
  */
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
+import BN from "bn.js";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 import {
@@ -652,6 +653,77 @@ describe("ifx negative (on-chain errors)", () => {
           )
         ),
       "LoadTypeMismatch"
+    );
+  });
+
+  it("ifx_let rejects LoadTypeMismatch when mulDiv divisor is wider than a/b", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 512,
+    });
+
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · LoadTypeMismatch wide mulDiv c (expect fail)",
+          scratch.ixReset(),
+          buildIxLet(
+            scratch.frame,
+            scratch.authority,
+            {
+              bindings: [
+                binding.eval({
+                  mulDivFloor: {
+                    a: { constU64: [new BN(100)] },
+                    b: { constU64: [new BN(50)] },
+                    c: { constU128: [new BN(10)] },
+                  },
+                }),
+              ],
+            },
+            [],
+            { programId: IFX_LOCALNET_PROGRAM_ID }
+          )
+        ),
+      "LoadTypeMismatch"
+    );
+  });
+
+  it("ifx_let rejects UnsupportedBinaryOp when bpsMul bps is u128", async () => {
+    const scratch = await provisionLocalFrame(provider, {
+      payer: payer.publicKey,
+      frameId: randomBytes(32),
+      authority: payer.publicKey,
+      tapeLen: 512,
+    });
+
+    await expectIfxTxFail(
+      () =>
+        sendAndConfirm(
+          provider,
+          "ifx · UnsupportedBinaryOp bps u128 (expect fail)",
+          scratch.ixReset(),
+          buildIxLet(
+            scratch.frame,
+            scratch.authority,
+            {
+              bindings: [
+                binding.eval({
+                  bpsMulFloor: {
+                    amount: { constU64: [new BN(1_000_000)] },
+                    bps: { constU128: [new BN(50)] },
+                  },
+                }),
+              ],
+            },
+            [],
+            { programId: IFX_LOCALNET_PROGRAM_ID }
+          )
+        ),
+      "UnsupportedBinaryOp"
     );
   });
 

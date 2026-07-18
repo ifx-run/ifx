@@ -6,6 +6,13 @@ Go SDK (`github.com/ifx-run/ifx/go-sdk`) changes. Aligned with `@ifx-run/sdk` an
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-18
+
+### Changed
+
+- **`BpsMulFloor` / `BpsMulCeil`:** `bps` may be `U8`/`U16`/`U32`/`U64` (on-chain promote). Example uses `expr.U16` for fee bps.
+- **`MulDivFloor` / `MulDivCeil`:** divisor `c` may be narrower unsigned than `a`/`b` (`U64`|`U128`). Requires program redeploy (**`ifx` / `ifx-core` 0.1.2**).
+
 ## [0.1.2] - 2026-07-03
 
 ### Added

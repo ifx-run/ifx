@@ -13,6 +13,21 @@ Object.defineProperty(exports, "scratchValue", { enumerable: true, get: function
 Object.defineProperty(exports, "taggedExpr", { enumerable: true, get: function () { return typed_1.taggedExpr; } });
 var cond_1 = require("./cond");
 Object.defineProperty(exports, "toCond", { enumerable: true, get: function () { return cond_1.toCond; } });
+const UINT_WIDTH = {
+    u8: 1,
+    u16: 2,
+    u32: 4,
+    u64: 8,
+    u128: 16,
+};
+function isNarrowerOrEqualUint(c, base) {
+    const cw = UINT_WIDTH[c];
+    const bw = UINT_WIDTH[base];
+    return cw !== undefined && bw !== undefined && cw <= bw;
+}
+function isBpsTy(ty) {
+    return ty === "u8" || ty === "u16" || ty === "u32" || ty === "u64";
+}
 function toOperand(x) {
     if ((0, typed_1.isScratchValue)(x)) {
         return exports.expr.ref(x);
@@ -107,21 +122,43 @@ exports.expr = {
     or: (lhs, rhs) => (0, typed_1.taggedExpr)("bool", {
         or: { lhs: toOperand(lhs), rhs: toOperand(rhs) },
     }),
-    bpsMulFloor: (amount, bps) => (0, typed_1.taggedExpr)("u64", {
-        bpsMulFloor: { amount: toOperand(amount), bps: toOperand(bps) },
-    }),
-    bpsMulCeil: (amount, bps) => (0, typed_1.taggedExpr)("u64", {
-        bpsMulCeil: { amount: toOperand(amount), bps: toOperand(bps) },
-    }),
+    /**
+     * `⌊amount × bps / 10_000⌋`. `amount` is `u64`; `bps` may be `u8`/`u16`/`u32`/`u64`
+     * (promoted on-chain). Result is always `u64`.
+     */
+    bpsMulFloor: (amount, bps) => {
+        const bpsT = exprTy(bps);
+        if (!isBpsTy(bpsT)) {
+            throw new Error(`bpsMul expects u8/u16/u32/u64 bps, got ${bpsT}`);
+        }
+        return (0, typed_1.taggedExpr)("u64", {
+            bpsMulFloor: { amount: toOperand(amount), bps: toOperand(bps) },
+        });
+    },
+    /** Like {@link expr.bpsMulFloor} with ceiling division. */
+    bpsMulCeil: (amount, bps) => {
+        const bpsT = exprTy(bps);
+        if (!isBpsTy(bpsT)) {
+            throw new Error(`bpsMul expects u8/u16/u32/u64 bps, got ${bpsT}`);
+        }
+        return (0, typed_1.taggedExpr)("u64", {
+            bpsMulCeil: { amount: toOperand(amount), bps: toOperand(bps) },
+        });
+    },
+    /**
+     * `⌊a × b / c⌋`. `a`/`b` are `u64` or `u128` (same type); `c` may be the same
+     * or any narrower unsigned (`u8`…`T`). Result type follows `a`.
+     */
     mulDivFloor: (a, b, c) => {
-        inferTernaryTy(a, b, c);
+        inferMulDivTy(a, b, c);
         const ty = exprTy(a);
         return (0, typed_1.taggedExpr)(ty, {
             mulDivFloor: { a: toOperand(a), b: toOperand(b), c: toOperand(c) },
         });
     },
+    /** Like {@link expr.mulDivFloor} with ceiling division. */
     mulDivCeil: (a, b, c) => {
-        inferTernaryTy(a, b, c);
+        inferMulDivTy(a, b, c);
         const ty = exprTy(a);
         return (0, typed_1.taggedExpr)(ty, {
             mulDivCeil: { a: toOperand(a), b: toOperand(b), c: toOperand(c) },
@@ -158,6 +195,21 @@ function inferBinaryTy(lhs, rhs) {
         throw new Error(`expr operand type mismatch: ${l} vs ${r}`);
     }
     return l;
+}
+function inferMulDivTy(a, b, c) {
+    const ta = exprTy(a);
+    const tb = exprTy(b);
+    if (ta !== tb) {
+        throw new Error(`expr operand type mismatch: ${ta} vs ${tb}`);
+    }
+    if (ta !== "u64" && ta !== "u128") {
+        throw new Error(`mulDiv expects u64 or u128, got ${ta}`);
+    }
+    const tc = exprTy(c);
+    if (!isNarrowerOrEqualUint(tc, ta)) {
+        throw new Error(`mulDiv divisor type ${tc} is wider than ${ta}`);
+    }
+    return ta;
 }
 function inferTernaryTy(a, b, c) {
     const ta = exprTy(a);

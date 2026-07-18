@@ -2,9 +2,16 @@
 
 # 更新日志
 
-Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 在 `ifx-core@0.1.1`（Structured CPI tag 33）。
+Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 在 `ifx-core@0.1.2`。
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-07-18
+
+### 变更
+
+- **`bps_mul_floor` / `bps_mul_ceil`：** `bps` 可为 `U8`/`U16`/`U32`/`U64`（链上 promote）。Personal AMM planner 费率用 `expr::u16`。
+- **`mul_div_floor` / `mul_div_ceil`：** 除数 `c` 可比 `a`/`b`（`U64`|`U128`）更窄。需 program redeploy（`ifx` / `ifx-core` **0.1.2**）。
 
 ## [0.1.2] - 2026-07-03
 

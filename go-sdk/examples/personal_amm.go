@@ -135,7 +135,7 @@ func PlanPersonalAmmSwapInstructions(
 	} else {
 		amountOut, err = b.LetEval(expr.BpsMulFloor(
 			expr.Ref(amountOutGrossU64.Index),
-			expr.U64(BpsDenom-feeBps),
+			expr.U16(uint16(BpsDenom-feeBps)),
 		))
 		if err != nil {
 			return PersonalAmmSwapPlan{}, err

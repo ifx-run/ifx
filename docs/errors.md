@@ -19,7 +19,7 @@ Anchor maps each [`ErrorCode`](../programs/ifx/src/error.rs) variant to **`6000 
 | 6010 | `IntegerOverflow` | Integer overflow | Arithmetic on signed/unsigned types |
 | 6011 | `IntegerUnderflow` | Integer underflow | Subtraction underflow |
 | 6012 | `DivisionByZero` | Division by zero | `/`, `divFloor`, `divCeil`, `mulDiv*`, or `bpsMul*` with zero divisor |
-| 6013 | `UnsupportedBinaryOp` | Unsupported binary operator for value type | e.g. `Add` on `Bool`, ordering on unsupported type |
+| 6013 | `UnsupportedBinaryOp` | Unsupported binary operator for value type | e.g. `Add` on `Bool`; `bpsMul*` with `u128` bps; `mulDiv*` when `a`/`b` are not `u64`/`u128` |
 | 6014 | `UnsupportedUnaryOp` | Unsupported unary operator for value type | e.g. `Neg` on unsigned types |
 | 6015 | `FloatUnordered` | Float comparison is undefined | NaN in float compare |
 | 6016 | `LoadTypeMismatch` | Load source type does not match binding | Stored type tag ≠ expected, or encode size mismatch |

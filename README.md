@@ -32,9 +32,9 @@ Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; l
 | --- | --- |
 | **Status** | [Devnet](#networks--sdks) + **[mainnet](#networks--sdks)** deployed (`ifxmwW…`); **no third-party audit**; [latest internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, `8a42766`) |
 | **Shared public Frames (mainnet)** | Three production addresses · `tapeLen=1024` — see [Mainnet public Frames](#mainnet-public-frames-production) below · spec [frame-authority §6.0](./docs/frame-authority.md#60-mainnet-public-frame-pool-recommended) · **start every business tx with `ixReset()`** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.2`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
-| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.2`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.2` |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.2`** · `cargo add ifx-sdk@0.1.2` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.3`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
 | **Cursor / AI agents** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
 
 ### Mainnet public Frames (production)
@@ -68,7 +68,7 @@ Explorer: [Fr8dvc…](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF765
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-go get github.com/ifx-run/ifx/go-sdk@v0.1.2
+go get github.com/ifx-run/ifx/go-sdk@v0.1.3
 cargo add ifx-sdk
 ```
 

@@ -34,7 +34,7 @@ ifx-core  ◄──  ifx (program)     ← 链上执行
     └──  ifx-sdk (rust-sdk/)    ← 集成方链下组 tx（不依赖 ifx program）
 ```
 
-**`ifx-sdk` 不依赖 `ifx`。** 与 TypeScript（`@ifx-run/sdk@0.1.2` + IDL）和 Go（`go-sdk@v0.1.2` + bundled IDL）同一分层。三端 **`0.1.2`** 应对齐同一 git revision。
+**`ifx-sdk` 不依赖 `ifx`。** 与 TypeScript（`@ifx-run/sdk@0.1.3` + IDL）和 Go（`go-sdk@v0.1.3` + bundled IDL）同一分层。三端 **`0.1.3`** 应对齐同一 git revision。
 
 ### `ifx-core` feature（增量抽取）
 

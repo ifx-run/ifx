@@ -2,9 +2,16 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 # Changelog
 
-Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk) changes. Wire truth in `ifx-core@0.1.1` (Structured CPI tag 33).
+Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk) changes. Wire truth in `ifx-core@0.1.2`.
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-07-18
+
+### Changed
+
+- **`bps_mul_floor` / `bps_mul_ceil`:** `bps` may be `U8`/`U16`/`U32`/`U64` (on-chain promote). Personal AMM planner uses `expr::u16` for fee bps.
+- **`mul_div_floor` / `mul_div_ceil`:** divisor `c` may be narrower unsigned than `a`/`b` (`U64`|`U128`). Requires program redeploy (`ifx` / `ifx-core` **0.1.2**).
 
 ## [0.1.2] - 2026-07-03
 

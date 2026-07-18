@@ -4,9 +4,17 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** npm 版本 **`0.1.2`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.2** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
+**状态：** npm 版本 **`0.1.3`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.3**、链上 program / `ifx-core` **0.1.2** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
 
 ## [Unreleased]
+
+## [0.1.3] - 2026-07-18
+
+### 变更
+
+- **`bpsMulFloor` / `bpsMulCeil`：** `bps` 可为 `u8`/`u16`/`u32`/`u64`（原先仅 `u64`）；结果仍为 `u64`。需 program redeploy（**`ifx` / `ifx-core` 0.1.2**）。
+- **`mulDivFloor` / `mulDivCeil`：** 除数 `c` 可为不比 `a`/`b`（`u64`|`u128`）更宽的任意无符号类型；`a`/`b` 不变。需 program redeploy。
+- **示例：** personal AMM 费率 bps 改用 `expr.u16(...)`。
 
 ## [0.1.2] - 2026-07-03
 

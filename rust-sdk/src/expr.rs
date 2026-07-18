@@ -118,6 +118,7 @@ binary!(saturating_sub, SaturatingSub);
 binary!(and, And);
 binary!(or, Or);
 
+/// `⌊amount × bps / 10_000⌋` — `amount` is `U64`; `bps` may be `U8`/`U16`/`U32`/`U64`.
 pub fn bps_mul_floor(amount: Expr, bps: Expr) -> Expr {
     Expr::BpsMulFloor {
         amount: Box::new(amount),
@@ -125,6 +126,7 @@ pub fn bps_mul_floor(amount: Expr, bps: Expr) -> Expr {
     }
 }
 
+/// Like [`bps_mul_floor`] with ceiling division.
 pub fn bps_mul_ceil(amount: Expr, bps: Expr) -> Expr {
     Expr::BpsMulCeil {
         amount: Box::new(amount),
@@ -144,7 +146,9 @@ macro_rules! ternary {
     };
 }
 
+// mul_div_floor: ⌊a × b / c⌋ — a/b are U64 or U128 (same); c same or narrower unsigned.
 ternary!(mul_div_floor, MulDivFloor);
+// mul_div_ceil: like mul_div_floor with ceiling division.
 ternary!(mul_div_ceil, MulDivCeil);
 
 pub fn clamp(value: Expr, lo: Expr, hi: Expr) -> Expr {

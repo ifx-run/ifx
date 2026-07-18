@@ -115,6 +115,11 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 
 扁平 enum：每个运算符一个 Borsh tag（**`0`–`51`**；`ConstPubkey` = 51；cast 族 18–28）。详见 `sdk/src/expr-variants.ts` 与英文 [implementation.md](./implementation.md) §5。
 
+**结算辅助：** `IsZero`、`NonZero`、`AsU64`/`AsU128`、`SaturatingSub`、`And`/`Or`、`MulDivFloor`/`Ceil`、`Clamp`、`Select`、`DivFloor`/`Ceil`、`BpsMulFloor`/`Ceil`。
+
+- **`MulDivFloor` / `MulDivCeil`：** `a`、`b` 同型（**`U64` 或 `U128`**）；除数 `c` 可为 **同型或任意更窄的无符号**（`U8`/`U16`/`U32`；当 `a`/`b` 为 `U128` 时还可为 `U64`）。结果类型跟随 `a`。链上对窄 `c` 先 promote 再乘除。
+- **`BpsMulFloor` / `BpsMulCeil`：** `amount` 为 **`U64`**；`bps` 可为 **`U8`/`U16`/`U32`/`U64`**（promote 到 `U64`）。结果恒为 **`U64`**。
+
 ---
 
 ## 6. 条件执行

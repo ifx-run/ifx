@@ -32,9 +32,9 @@
 | --- | --- |
 | **状态** | [Devnet](#网络与-sdk) + **[Mainnet](#网络与-sdk)** 已部署（`ifxmwW…`）；**无第三方付费审计**；[最新内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，`8a42766`） |
 | **公共 Frame（主网）** | 三个生产地址 · `tapeLen=1024` — 见下方 [主网公共 Frame](#主网公共-frame生产) · 规范 [frame-authority §6.0](./docs/frame-authority.zh-CN.md#60-主网公共-frame-池推荐) · **每笔业务 tx 开头 `ixReset()`** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.2`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
-| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.2`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.2` |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.2`** · `cargo add ifx-sdk@0.1.2` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.3`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
 | **Cursor / AI agent** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
 
 ### 主网公共 Frame（生产）
@@ -68,7 +68,7 @@ Explorer：[Fr8dvc…](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF76
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-go get github.com/ifx-run/ifx/go-sdk@v0.1.2
+go get github.com/ifx-run/ifx/go-sdk@v0.1.3
 cargo add ifx-sdk
 ```
 

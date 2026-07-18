@@ -25,6 +25,18 @@ describe("sdk flat Expr codec", () => {
       encodeExpr(expr.bpsMulFloor(expr.u64(1_000_000), expr.u64(50)))[0]
     ).to.equal(EXPR_TAG.bpsMulFloor);
     expect(
+      encodeExpr(expr.bpsMulFloor(expr.u64(1_000_000), expr.u16(50)))[0]
+    ).to.equal(EXPR_TAG.bpsMulFloor);
+    expect(
+      encodeExpr(expr.mulDivFloor(expr.u64(100), expr.u64(50), expr.u16(10)))[0]
+    ).to.equal(EXPR_TAG.mulDivFloor);
+    expect(
+      encodeExpr(expr.bpsMulCeil(expr.u64(1_000), expr.u8(1)))[0]
+    ).to.equal(EXPR_TAG.bpsMulCeil);
+    expect(
+      encodeExpr(expr.mulDivCeil(expr.u128(7), expr.u128(1), expr.u32(2)))[0]
+    ).to.equal(EXPR_TAG.mulDivCeil);
+    expect(
       encodeExpr(expr.clamp(expr.u64(5), expr.u64(0), expr.u64(10)))[0]
     ).to.equal(EXPR_TAG.clamp);
     expect(
@@ -32,5 +44,24 @@ describe("sdk flat Expr codec", () => {
         expr.select(expr.bool(true), expr.u64(1), expr.u64(2))
       )[0]
     ).to.equal(EXPR_TAG.select);
+  });
+
+  it("rejects mulDiv divisor wider than a/b", () => {
+    expect(() =>
+      expr.mulDivFloor(
+        expr.u64(100),
+        expr.u64(50),
+        expr.u128(10) as unknown as ReturnType<typeof expr.u64>
+      )
+    ).to.throw(/wider than u64/i);
+  });
+
+  it("rejects bpsMul with non-bps operand type", () => {
+    expect(() =>
+      expr.bpsMulFloor(
+        expr.u64(1_000_000),
+        expr.u128(50) as unknown as ReturnType<typeof expr.u16>
+      )
+    ).to.throw(/bpsMul expects/i);
   });
 });

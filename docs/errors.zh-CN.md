@@ -19,7 +19,7 @@ Anchor 将 [`ErrorCode`](../programs/ifx/src/error.rs) 各变体映射为 **`600
 | 6010 | `IntegerOverflow` | 整数溢出 | 有符号/无符号算术溢出 |
 | 6011 | `IntegerUnderflow` | 整数下溢 | 减法下溢 |
 | 6012 | `DivisionByZero` | 除零 | `/`、`divFloor`、`divCeil`、`mulDiv*`、`bpsMul*` 除数为 0 |
-| 6013 | `UnsupportedBinaryOp` | 该类型不支持此二元运算 | 如对 `Bool` 做 `Add` |
+| 6013 | `UnsupportedBinaryOp` | 该类型不支持此二元运算 | 如对 `Bool` 做 `Add`；`bpsMul*` 的 bps 为 `u128`；`mulDiv*` 的 `a`/`b` 非 `u64`/`u128` |
 | 6014 | `UnsupportedUnaryOp` | 该类型不支持此一元运算 | 如对无符号类型做 `Neg` |
 | 6015 | `FloatUnordered` | 浮点比较未定义 | 比较中含 NaN |
 | 6016 | `LoadTypeMismatch` | 加载类型与 binding 不匹配 | 存储的类型 tag 与预期不符 |

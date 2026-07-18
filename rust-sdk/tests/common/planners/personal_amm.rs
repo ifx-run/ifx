@@ -108,7 +108,7 @@ pub fn plan_personal_amm_swap_instructions(
     } else {
         batch.let_eval(expr::bps_mul_floor(
             expr::r(&amount_out_gross_u64),
-            expr::u64(BPS_DENOM - fee_bps),
+            expr::u16((BPS_DENOM - fee_bps) as u16),
         ))?
     };
     let min_out = batch.let_const_u64(params.min_out)?;

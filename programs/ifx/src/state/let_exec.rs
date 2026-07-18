@@ -9,7 +9,8 @@ use crate::{
         apply_and, apply_arith, apply_bps_mul_ceil,
         apply_bps_mul_floor, apply_cast, apply_clamp, apply_compare, apply_div_ceil, apply_div_floor,
         apply_is_zero, apply_mul_div_ceil, apply_mul_div_floor, apply_neg, apply_non_zero,
-        apply_not, apply_or, apply_saturating_sub, ArithOp, CompareOp,
+        apply_not, apply_or, apply_saturating_sub, is_bps_operand_ty, is_unsigned_narrower_or_equal,
+        ArithOp, CompareOp,
     },
 };
 
@@ -115,33 +116,33 @@ pub fn eval_expr(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Re
         Expr::BpsMulFloor { amount, bps } => {
             require!(dst_ty == ValueType::U64, ErrorCode::ExprTypeMismatch);
             let a = eval_expr(frame, ValueType::U64, amount)?;
-            let b = eval_expr(frame, ValueType::U64, bps)?;
+            let b = eval_promoted_u64(frame, bps)?;
             apply_bps_mul_floor(&a, &b)
         }
         Expr::BpsMulCeil { amount, bps } => {
             require!(dst_ty == ValueType::U64, ErrorCode::ExprTypeMismatch);
             let a = eval_expr(frame, ValueType::U64, amount)?;
-            let b = eval_expr(frame, ValueType::U64, bps)?;
+            let b = eval_promoted_u64(frame, bps)?;
             apply_bps_mul_ceil(&a, &b)
         }
         Expr::MulDivFloor { a, b, c } => {
-            let ty = infer_muldiv_ty(frame, a, b, c)?;
+            let ty = infer_muldiv_ab_ty(frame, a, b)?;
             require!(dst_ty == ty, ErrorCode::ExprTypeMismatch);
             let av = eval_expr(frame, ty, a)?;
             let bv = eval_expr(frame, ty, b)?;
-            let cv = eval_expr(frame, ty, c)?;
+            let cv = eval_promoted(frame, ty, c)?;
             apply_mul_div_floor(ty, &av, &bv, &cv)
         }
         Expr::MulDivCeil { a, b, c } => {
-            let ty = infer_muldiv_ty(frame, a, b, c)?;
+            let ty = infer_muldiv_ab_ty(frame, a, b)?;
             require!(dst_ty == ty, ErrorCode::ExprTypeMismatch);
             let av = eval_expr(frame, ty, a)?;
             let bv = eval_expr(frame, ty, b)?;
-            let cv = eval_expr(frame, ty, c)?;
+            let cv = eval_promoted(frame, ty, c)?;
             apply_mul_div_ceil(ty, &av, &bv, &cv)
         }
         Expr::Clamp { value, lo, hi } => {
-            let ty = infer_ternary_ty(frame, value, lo, hi)?;
+            let ty = infer_clamp_ty(frame, value, lo, hi)?;
             require!(dst_ty == ty, ErrorCode::ExprTypeMismatch);
             let v = eval_expr(frame, ty, value)?;
             let l = eval_expr(frame, ty, lo)?;
@@ -212,11 +213,10 @@ fn infer_binary_ty(frame: &impl FrameReader, lhs: &Expr, rhs: &Expr) -> Result<V
     Ok(lt)
 }
 
-fn infer_muldiv_ty(frame: &impl FrameReader, a: &Expr, b: &Expr, c: &Expr) -> Result<ValueType> {
+fn infer_muldiv_ab_ty(frame: &impl FrameReader, a: &Expr, b: &Expr) -> Result<ValueType> {
     let ta = infer_expr_ty(frame, a)?;
     let tb = infer_expr_ty(frame, b)?;
-    let tc = infer_expr_ty(frame, c)?;
-    require!(ta == tb && tb == tc, ErrorCode::LoadTypeMismatch);
+    require!(ta == tb, ErrorCode::LoadTypeMismatch);
     require!(
         matches!(ta, ValueType::U64 | ValueType::U128),
         ErrorCode::UnsupportedBinaryOp
@@ -224,8 +224,37 @@ fn infer_muldiv_ty(frame: &impl FrameReader, a: &Expr, b: &Expr, c: &Expr) -> Re
     Ok(ta)
 }
 
-fn infer_ternary_ty(frame: &impl FrameReader, a: &Expr, b: &Expr, c: &Expr) -> Result<ValueType> {
-    infer_muldiv_ty(frame, a, b, c)
+fn infer_clamp_ty(frame: &impl FrameReader, value: &Expr, lo: &Expr, hi: &Expr) -> Result<ValueType> {
+    let tv = infer_expr_ty(frame, value)?;
+    let tl = infer_expr_ty(frame, lo)?;
+    let th = infer_expr_ty(frame, hi)?;
+    require!(tv == tl && tl == th, ErrorCode::LoadTypeMismatch);
+    require!(tv.supports_ordering(), ErrorCode::UnsupportedBinaryOp);
+    Ok(tv)
+}
+
+fn eval_promoted(
+    frame: &impl FrameReader,
+    dst_ty: ValueType,
+    expr: &Expr,
+) -> Result<ValueBytes> {
+    let src_ty = infer_expr_ty(frame, expr)?;
+    require!(
+        is_unsigned_narrower_or_equal(src_ty, dst_ty),
+        ErrorCode::LoadTypeMismatch
+    );
+    let raw = eval_expr(frame, src_ty, expr)?;
+    if src_ty == dst_ty {
+        Ok(raw)
+    } else {
+        apply_cast(dst_ty, src_ty, raw.as_slice())
+    }
+}
+
+fn eval_promoted_u64(frame: &impl FrameReader, expr: &Expr) -> Result<ValueBytes> {
+    let src_ty = infer_expr_ty(frame, expr)?;
+    require!(is_bps_operand_ty(src_ty), ErrorCode::UnsupportedBinaryOp);
+    eval_promoted(frame, ValueType::U64, expr)
 }
 
 /// Static type of an expression subtree (for comparisons and consistency checks).

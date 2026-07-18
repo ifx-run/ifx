@@ -404,6 +404,33 @@ fn value_to_i128(src_ty: ValueType, v: TypedValue) -> Result<i128> {
     }
 }
 
+/// Unsigned width in bytes (`U8`..=`U128` only).
+pub fn unsigned_width(ty: ValueType) -> Option<u8> {
+    Some(match ty {
+        ValueType::U8 => 1,
+        ValueType::U16 => 2,
+        ValueType::U32 => 4,
+        ValueType::U64 => 8,
+        ValueType::U128 => 16,
+        _ => return None,
+    })
+}
+
+/// `narrow` is unsigned and no wider than `wide`.
+pub fn is_unsigned_narrower_or_equal(narrow: ValueType, wide: ValueType) -> bool {
+    match (unsigned_width(narrow), unsigned_width(wide)) {
+        (Some(n), Some(w)) => n <= w,
+        _ => false,
+    }
+}
+
+pub fn is_bps_operand_ty(ty: ValueType) -> bool {
+    matches!(
+        ty,
+        ValueType::U8 | ValueType::U16 | ValueType::U32 | ValueType::U64
+    )
+}
+
 pub fn apply_mul_div_floor(ty: ValueType, a: &[u8], b: &[u8], c: &[u8]) -> Result<ValueBytes> {
     match ty {
         ValueType::U64 => {
@@ -715,6 +742,16 @@ mod tests {
     }
 
     #[test]
+    fn is_bps_operand_ty_allows_u8_through_u64() {
+        assert!(is_bps_operand_ty(ValueType::U8));
+        assert!(is_bps_operand_ty(ValueType::U16));
+        assert!(is_bps_operand_ty(ValueType::U32));
+        assert!(is_bps_operand_ty(ValueType::U64));
+        assert!(!is_bps_operand_ty(ValueType::U128));
+        assert!(!is_bps_operand_ty(ValueType::I16));
+    }
+
+    #[test]
     fn muldiv_floor_basic() {
         let out = apply_mul_div_floor(
             ValueType::U64,
@@ -727,5 +764,13 @@ mod tests {
             out,
             encode_typed(ValueType::U64, TypedValue::U64(500)).unwrap()
         );
+    }
+
+    #[test]
+    fn is_unsigned_narrower_or_equal_checks_width() {
+        assert!(is_unsigned_narrower_or_equal(ValueType::U16, ValueType::U64));
+        assert!(is_unsigned_narrower_or_equal(ValueType::U64, ValueType::U64));
+        assert!(!is_unsigned_narrower_or_equal(ValueType::U128, ValueType::U64));
+        assert!(!is_unsigned_narrower_or_equal(ValueType::I32, ValueType::U64));
     }
 }

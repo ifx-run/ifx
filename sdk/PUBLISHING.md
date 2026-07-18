@@ -13,10 +13,10 @@ English | [中文](./PUBLISHING.zh-CN.md)
 
 ```bash
 npm install @ifx-run/sdk
-# or pin: npm install @ifx-run/sdk@0.1.2
+# or pin: npm install @ifx-run/sdk@0.1.3
 ```
 
-`latest` points at **`0.1.2`** (mainnet default). Align with **`ifx-sdk@0.1.2`** and **`go-sdk@v0.1.2`** on the same git revision.
+`latest` points at **`0.1.3`** (mainnet default). Align with **`ifx-sdk@0.1.3`** and **`go-sdk@v0.1.3`** on the same git revision.
 
 ## Dry run
 
@@ -46,7 +46,7 @@ npm deprecate @ifx-run/sdk@0.2.0-devnet.0 "$MSG"
 npm deprecate @ifx-run/sdk@0.3.0-devnet.0 "$MSG"
 ```
 
-We no longer maintain a separate `devnet` dist-tag — integrators should use `npm install @ifx-run/sdk` (`latest` → `0.1.2`).
+We no longer maintain a separate `devnet` dist-tag — integrators should use `npm install @ifx-run/sdk` (`latest` → `0.1.3`).
 
 ## Version coupling
 

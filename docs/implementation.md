@@ -121,6 +121,9 @@ Flat enum: **one Borsh tag per operator** (no nested `Unary`/`Binary` + `*Operat
 
 **Settlement helpers:** `IsZero`, `NonZero`, `AsU64`, `AsU128`, `SaturatingSub`, `And`, `Or`, `MulDivFloor`/`Ceil`, `Clamp`, `Select`, `DivFloor`/`DivCeil`, `BpsMulFloor`/`Ceil`.
 
+- **`MulDivFloor` / `MulDivCeil`:** `a` and `b` share type **`U64` or `U128`**; divisor `c` may be the **same type or any narrower unsigned** (`U8`/`U16`/`U32`, and `U64` when `a`/`b` are `U128`). Result type follows `a`. Narrow `c` is promoted on-chain before the multiply-divide.
+- **`BpsMulFloor` / `BpsMulCeil`:** `amount` is **`U64`**; `bps` may be **`U8`/`U16`/`U32`/`U64`** (promoted to `U64`). Result is always **`U64`**.
+
 Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 
 ---

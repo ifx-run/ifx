@@ -129,7 +129,7 @@ dy       = floor(dy_gross × (10_000 − fee_bps) / 10_000)
 
 手续费（**dy_gross − dy**）留在 pool 的 TOKEN_B 余额中（showcase 不单独转 fee ATA）。
 
-中间量用 **`u128`**，SDK 用 **`mulDivFloor`** 与 **`bpsMulFloor`**，与链下 `computeSwapOutput(..., feeBps)` 一致。
+中间量用 **`u128`**，SDK 用 **`mulDivFloor`** 与 **`bpsMulFloor`**，与链下 `computeSwapOutput(..., feeBps)` 一致。费率 bps 用 **`u16`** 即可（`expr.u16(BPS_DENOM - feeBps)`）；`amount` 仍为 **`u64`**。
 
 ### 4.2 指令顺序（关键）
 
@@ -142,7 +142,7 @@ dy       = floor(dy_gross × (10_000 − fee_bps) / 10_000)
      y  ← spl_token_amount(pool_token_b_ata)
      dx ← 常量或用户指定 amount_in
      dy_gross ← mulDivFloor(y, dx, x + dx)
-     dy       ← bpsMulFloor(asU64(dy_gross), 10_000 − fee_bps)   [fee_bps = 0 时直接用 dy_gross]
+     dy       ← bpsMulFloor(asU64(dy_gross), u16(10_000 − fee_bps))   [fee_bps = 0 时直接用 dy_gross]
      min_out ← 用户滑点下限（常量）
 3. ifx_assert: dy >= min_out
 4. SPL Transfer（顶层 ix）：user_token_a_ata → pool_token_a_ata，amount = dx  [quote 时已知 — 不经 Ifx]

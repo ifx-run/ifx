@@ -164,10 +164,19 @@ func Le(a, b Node) Node           { return Binary{Tag: constants.ExprTagLe, Lhs:
 func SaturatingSub(a, b Node) Node { return Binary{Tag: constants.ExprTagSaturatingSub, Lhs: a, Rhs: b} }
 func And(a, b Node) Node          { return Binary{Tag: constants.ExprTagAnd, Lhs: a, Rhs: b} }
 func Or(a, b Node) Node           { return Binary{Tag: constants.ExprTagOr, Lhs: a, Rhs: b} }
+
+// BpsMulFloor is ⌊amount × bps / 10_000⌋. amount must be U64; bps may be U8/U16/U32/U64
+// (promoted on-chain). Result is U64.
 func BpsMulFloor(a, b Node) Node  { return Binary{Tag: constants.ExprTagBpsMulFloor, Lhs: a, Rhs: b} }
+
+// BpsMulCeil is like BpsMulFloor with ceiling division.
 func BpsMulCeil(a, b Node) Node   { return Binary{Tag: constants.ExprTagBpsMulCeil, Lhs: a, Rhs: b} }
 
+// MulDivFloor is ⌊a × b / c⌋. a and b must share type U64 or U128; c may be the same
+// or any narrower unsigned. Result type follows a.
 func MulDivFloor(a, b, c Node) Node { return Ternary{Tag: constants.ExprTagMulDivFloor, A: a, B: b, C: c} }
+
+// MulDivCeil is like MulDivFloor with ceiling division.
 func MulDivCeil(a, b, c Node) Node  { return Ternary{Tag: constants.ExprTagMulDivCeil, A: a, B: b, C: c} }
 func Clamp(v, lo, hi Node) Node      { return Ternary{Tag: constants.ExprTagClamp, A: v, B: lo, C: hi} }
 func Select(cond, thenExpr, elseExpr Node) Node {

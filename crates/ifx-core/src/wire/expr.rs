@@ -151,7 +151,7 @@ pub enum Expr {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
     },
-    /// `⌊amount × bps / 10_000⌋`. **→ `U64`.**
+    /// `⌊amount × bps / 10_000⌋` (`amount` → `U64`; `bps` → `U8`/`U16`/`U32`/`U64`). **→ `U64`.**
     BpsMulFloor {
         amount: Box<Expr>,
         bps: Box<Expr>,
@@ -161,7 +161,7 @@ pub enum Expr {
         amount: Box<Expr>,
         bps: Box<Expr>,
     },
-    /// `⌊a × b / c⌋` (`a`, `b`, `c` same type). **→ `a` type.**
+    /// `⌊a × b / c⌋` (`a`, `b` same type: `U64`/`U128`; `c` same or narrower unsigned). **→ `a` type.**
     MulDivFloor {
         a: Box<Expr>,
         b: Box<Expr>,
