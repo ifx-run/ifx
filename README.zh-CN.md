@@ -289,12 +289,41 @@ Guardrail 示例（无 program 变更）：[lamports delta](./sdk/examples/guard
 
 ### Mainnet 参考实现（[ifx-run](https://github.com/ifx-run) 组织）
 
-独立仓库（不在本 tree）。**演示软件** — 非审计过的生产交易所。二者均展示 **SDK 之外** 由集成方维护的部分（`rawCpiPatch` / 池子布局、v0 体积 / ALT 策略、业务 planner）；边界见 [SDK 集成方反馈](./docs/sdk-integrator-feedback-plan.zh-CN.md)。
+独立仓库（不在本 tree）。**演示软件** — 非审计过的生产交易所。展示 **SDK 之外** 由集成方维护的部分（`rawCpiPatch` / 池子布局、v0 ALT 与 **v1** 打包、业务 planner）；边界见 [SDK 集成方反馈](./docs/sdk-integrator-feedback-plan.zh-CN.md)。
 
 | 仓库 | SDK | 要点 |
 |------|-----|------|
-| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding curve v2 买卖 / 两跳 swap、条件关 ATA、平台费、SOL sponsor — 单笔 mainnet v0 |
-| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** 直连 swap + SOL 桥接路由、动态平台费、sponsor 代付、smart close、v0 + ALT 与 1232 B 体积门控 |
+| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding curve v2 买卖 / 两跳、条件关 ATA、平台费、SOL sponsor — v0 + ALT 或 **v1** |
+| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** 直连 + SOL 桥接、链上 bps 手续费、sponsor 代付、smart close — v0 + ALT（1232 B 门控）或 **v1** |
+| [**ifx-launchpad-orchestrator**](https://github.com/ifx-run/ifx-launchpad-orchestrator) | Go [`go-sdk`](./go-sdk/) | Pump.fun + Meteora DAMM v2 报价桥、Ifx patch 两跳、sponsored 偿还 — **仅 v1**（4096 B，无 ALT） |
+
+Ifx 仍然只 **产出指令**。SIMD-0385 **v1** 包（4096 B、配置在 message header、无 ALT）由集成方组装（`@solana/kit` ≥ 8、`solana-message` 4.2+ 或等价实现）。链上 program 不用升级。v1 默认 CU limit 与 loaded-accounts-data-size 为 **0** — 必须在 header 里显式设置，否则交易可用计算为 0。
+
+### 已落地的 v1 交易（突破 1232 B 包长）
+
+legacy / v0 包长上限是 **1232 字节**。Ifx 的开销主要在 **ix data**（Expr、patched CPI 模板），所以两跳 + sponsor + 中途算术会先撞字节墙，而不是 64 个唯一账户锁。v1 让这些 planner 继续用链上 `let` / `assert` / `rawCpiPatch`，而不必在报价时把金额写死。
+
+下列主网签名来自上面的 demo 栈。体积是已签名 packet（含 signatures）。
+
+| 体积 | 路径 | 同一笔 tx 里的 Ifx | Solscan |
+|------|------|-------------------|---------|
+| **1629 B** v1 | **Sponsored 两跳：** Meteora DAMM v2（稳定币 → WSOL）再 Pump.fun `BuyExactSolIn` | 快照 lamports → 建 ATA → `let` ATA 租金 → swap → `let` WSOL 增量 → `assert` 覆盖租金+手续费 → structured `system:transfer` 偿还 → **raw patch** Pump 买入金额 | [5x7KCD2…](https://solscan.io/tx/5x7KCD2J3GycZxEqS768Nz8JXNKvpANhJ153jGfShHAjyq4ChbwwwVyU4HA5eRheYBHWmFu7g8ixQ7uXSRn5bprb) |
+| 1193 B v1 | Pump.fun `SellV2` + 5 bps 平台费 + Token-2022 关 ATA | `let` SOL 产出 → structured 转手续费 → `if_else` 余额为 0 则 close 否则 **Skip** | [5ZwiWKh…](https://solscan.io/tx/5ZwiWKhr8MVhxnUGiWeyLJtnEjsFHABW51thhn3JYoq2SJV7ymASZg91CYZyCqfuXXPB8pdzJYczQKNAWSbMEW8T) |
+| 981 B v1 | Meteora DAMM v2 swap，sponsor 代付 | `let` ATA 租金（已存在则为 0）→ swap → `assert` 增量 ≥ 租金+费 → structured 偿还 | [3twe8HV…](https://solscan.io/tx/3twe8HVa9MqJ5uMW2NLsxVWKiXMzYGAmee67Tf2RYmvCeDHCfWBYGrirJCmFN2KmAdyjeBC2QRssdZpevsV3QLmi) |
+| 856 B v1 | Raydium CPMM `SwapBaseInput` + smart close | `let` WSOL 产出 → `bpsMulFloor` 手续费 → structured `unwrap_lamports` → `if_else` 关闭空输入 ATA | [5nWjCgE…](https://solscan.io/tx/5nWjCgEAKXjwzR3BFdFbM8rCNuPwBvXeorkcP1Nx7rsNV6s9AY5XXERVED8SNc6Lg6dh596ok9Cgm5jdR3o5Tdia) |
+
+**1629 B** 这一笔在 1232 B 限制下无法以正确的 Ifx 会计落地：第二跳 `BuyExactSolIn` 必须用同一笔 tx 里 hop-1 的 WSOL，并扣掉现场量到的 ATA 租金（`buyLamports = wsolDelta − (ataCost + txFee)`）。若在报价时写死金额，就会重新打开 TOCTOU。36 个唯一账户，远低于 64 lock；卡住的是 **字节**。
+
+```text
+reset → let(user lamports)
+     → create ATAs
+     → let(ataCost)
+     → Meteora Swap2（稳定币 → WSOL）
+     → let(wsolOut)
+     → assert(wsolOut ≥ ataCost + txFee)
+     → structured CPI: 偿还 sponsor（ataCost + txFee）
+     → raw patched CPI: Pump BuyExactSolIn ← (wsolOut − settle)
+```
 
 ### L1 — 销毁 dust Token-2022 账户
 

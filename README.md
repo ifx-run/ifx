@@ -291,12 +291,41 @@ Pick the **tx template off-chain** (Token vs Token-2022, extensions, etc.). Ifx 
 
 ### Mainnet reference integrations ([ifx-run](https://github.com/ifx-run) org)
 
-Separate repos (not part of this tree). **Demo software** — not audited production exchanges. Both illustrate integrator-owned pieces that stay **outside** the SDK (`rawCpiPatch` / pool layout, v0 size / ALT policy, business planners); boundary notes in [SDK integrator feedback](./docs/sdk-integrator-feedback-plan.md).
+Separate repos (not part of this tree). **Demo software** — not audited production exchanges. They illustrate integrator-owned pieces that stay **outside** the SDK (`rawCpiPatch` / pool layout, v0 ALT vs **v1** packing, business planners); boundary notes in [SDK integrator feedback](./docs/sdk-integrator-feedback-plan.md).
 
 | Repo | SDK | Highlights |
 |------|-----|------------|
-| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding-curve v2 buy / sell / two-hop swap, conditional ATA close, platform fee, SOL sponsor — one v0 mainnet tx |
-| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** direct swap + SOL-bridge routes, dynamic platform fee, sponsored gas, smart ATA close, v0 + ALT with 1232 B size gate |
+| [**ifx-pumpfun-ext**](https://github.com/ifx-run/ifx-pumpfun-ext) | TypeScript `@ifx-run/sdk` | Pump.fun bonding-curve v2 buy / sell / two-hop, conditional ATA close, platform fee, SOL sponsor — v0 + ALT or **v1** |
+| [**ifx-raydium-ext**](https://github.com/ifx-run/ifx-raydium-ext) | Rust **`ifx-sdk`** | Raydium **CPMM** direct + SOL-bridge, on-chain bps fee, sponsored gas, smart ATA close — v0 + ALT (1232 B gate) or **v1** |
+| [**ifx-launchpad-orchestrator**](https://github.com/ifx-run/ifx-launchpad-orchestrator) | Go [`go-sdk`](./go-sdk/) | Pump.fun + Meteora DAMM v2 quote-bridge, two-hop with Ifx patches, sponsored repay — **v1 only** (4096 B, no ALT) |
+
+Ifx still only **emits instructions**. SIMD-0385 **v1** packets (4096 B, config in the message header, no ALT) are assembled by the integrator (`@solana/kit` ≥ 8, `solana-message` 4.2+, or equivalent). The on-chain program does not change. v1 defaults compute-unit limit and loaded-accounts-data-size to **0** — set both in the header or the tx consumes nothing.
+
+### Landed v1 transactions (beyond the 1232 B packet)
+
+Legacy / v0 packets cap at **1232 bytes**. Ifx tax is mostly **ix data** (Expr, patched CPI templates), so two-hop + sponsor + mid-tx math hits that wall before it hits the 64 unique-account lock. v1 is what lets those planners keep **on-chain** `let` / `assert` / `rawCpiPatch` instead of freezing amounts at quote time.
+
+These mainnet signatures were sent by the demo stacks above. Wire size is the signed packet (signatures included).
+
+| Wire | Flow | Ifx in the same tx | Solscan |
+|------|------|--------------------|---------|
+| **1629 B** v1 | **Sponsored two-hop:** Meteora DAMM v2 (stable → WSOL) then Pump.fun `BuyExactSolIn` | Snapshot lamports → create ATAs → `let` ATA rent → swap → `let` WSOL delta → `assert` proceeds cover rent+fee → structured `system:transfer` repay → **raw patch** Pump buy amount from remaining lamports | [5x7KCD2…](https://solscan.io/tx/5x7KCD2J3GycZxEqS768Nz8JXNKvpANhJ153jGfShHAjyq4ChbwwwVyU4HA5eRheYBHWmFu7g8ixQ7uXSRn5bprb) |
+| 1193 B v1 | Pump.fun `SellV2` + 5 bps platform fee + Token-2022 ATA close | `let` SOL proceeds → structured transfer fee → `if_else` close if amount == 0 else **Skip** | [5ZwiWKh…](https://solscan.io/tx/5ZwiWKhr8MVhxnUGiWeyLJtnEjsFHABW51thhn3JYoq2SJV7ymASZg91CYZyCqfuXXPB8pdzJYczQKNAWSbMEW8T) |
+| 981 B v1 | Meteora DAMM v2 swap, sponsor as fee payer | `let` ATA rent (0 if already exists) → swap → `assert` delta ≥ rent+fee → structured repay | [3twe8HV…](https://solscan.io/tx/3twe8HVa9MqJ5uMW2NLsxVWKiXMzYGAmee67Tf2RYmvCeDHCfWBYGrirJCmFN2KmAdyjeBC2QRssdZpevsV3QLmi) |
+| 856 B v1 | Raydium CPMM `SwapBaseInput` + smart close | `let` WSOL proceeds → `bpsMulFloor` fee → structured `unwrap_lamports` → `if_else` close empty input ATA | [5nWjCgE…](https://solscan.io/tx/5nWjCgEAKXjwzR3BFdFbM8rCNuPwBvXeorkcP1Nx7rsNV6s9AY5XXERVED8SNc6Lg6dh596ok9Cgm5jdR3o5Tdia) |
+
+The **1629 B** tx is the one that could not land as a correct Ifx flow under 1232 B: hop-2 `BuyExactSolIn` is patched from hop-1 WSOL **after** measuring ATA rent in the same tx (`buyLamports = wsolDelta − (ataCost + txFee)`). Flattening those amounts at quote time would re-open TOCTOU. 36 unique accounts — well under 64 locks; **bytes** were the constraint.
+
+```text
+reset → let(user lamports)
+     → create ATAs
+     → let(ataCost)
+     → Meteora Swap2 (stable → WSOL)
+     → let(wsolOut)
+     → assert(wsolOut ≥ ataCost + txFee)
+     → structured CPI: repay sponsor (ataCost + txFee)
+     → raw patched CPI: Pump BuyExactSolIn ← (wsolOut − settle)
+```
 
 ### L1 — Destroy dust Token-2022 accounts
 
