@@ -220,7 +220,7 @@ Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。部署说明见 
 
 ## 用 Cursor、Claude Code 或其他 AI agent
 
-> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、**Structured CPI**（官方 System/SPL 用 `structuredCpi`）与 **RawPatched** CPI（`rawCpi` + `ifx_patched_cpi`）及静态 CPI 的取舍、各集群 `programId`（SDK 默认主网）、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 示例扩展，减少手写 wire format 和 `Expr` 错误。
+> **推荐：** 在让 agent 改 swap / 结算交易之前，先让它读 **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**。其中约定两笔 tx、**具名且无条件的交易模板**（路由选型，构建函数是固定指令列表）、**Structured CPI** 与 **RawPatched** / 静态 CPI 的取舍、各集群 `programId`（SDK 默认主网）、公共 Frame、**交易版本（legacy/v0 vs v1 — 只建议，须开发者确认；很多栈还不支持 v1）**、**何时用 Jito bundle（何时不必）**，以及该从哪个 L0–L3 / venue demo 扩展。
 
 | | |
 |---|---|
@@ -228,7 +228,7 @@ Devnet 合约：`ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc`。部署说明见 
 | **在你自己的项目** | 把该目录复制到项目的 `.cursor/skills/`，或在 prompt 里附上 skill 的路径 / 链接 |
 | **Claude Code 等** | 入口见 [AGENTS.md](./AGENTS.md) |
 
-配套：[scenarios.md](./.cursor/skills/ifx-orchestration/scenarios.md)（L0–L3 + bundle 路由）· [anti-patterns.md](./.cursor/skills/ifx-orchestration/anti-patterns.md)（审查清单）· [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)（Jito 语义）
+配套：[scenarios.md](./.cursor/skills/ifx-orchestration/scenarios.md)（L0–L3 + feat → 模板）· [anti-patterns.md](./.cursor/skills/ifx-orchestration/anti-patterns.md)（审查清单）· [docs/bundles.zh-CN.md](./docs/bundles.zh-CN.md)（Jito 语义）
 
 ---
 

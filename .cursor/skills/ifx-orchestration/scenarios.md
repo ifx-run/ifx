@@ -1,159 +1,79 @@
-# Ifx scenario router
+# Ifx scenario map
 
-Use this after reading [SKILL.md](SKILL.md). Pick **one** primary pattern; compose multiple only when the user's flow clearly needs it.
+Pick a **template id** and the **packet version** with the developer first ([SKILL.md](SKILL.md) Hard gates). Then copy the matching `sdk/examples/` / `tests/` / `*-ext` file.
 
-## Decision tree
+**Do not** freeze hop-2 / repay / fee at quote time to fit 1232 B. Smaller packet = another template.
 
-```text
-Need on-chain read in same tx?
-├─ No  → Do not use Ifx; build tx normally
-└─ Yes → What changes mid-tx?
-    ├─ Lamports only (SOL settlement, sponsor repay)
-    │     → L3: tests/sponsored_buy.ts
-    ├─ SPL token balance on ATA (after swap / transfer)
-    │     ├─ Official SPL ix (TransferChecked, etc.) from tape
-    │     │     → structuredCpi + structuredCpiPatch (see tests/ifx_structured_cpi_initialize_mint.ts)
-    │     ├─ Two hops with intermediate mint (standard SPL hop2)
-    │     │     → sdk/examples/two-hop-token-swap.ts (structuredCpi / tokenTransfer)
-    │     └─ DEX / custom `data` layout
-    │           → rawCpi + rawCpiPatch (tests/ifx.ts, ifx_cpi_edges.ts)
-    ├─ Token-2022 + extensions (withheld fees, decimals for burn)
-    │     → sdk/examples/dust-destroy-token2022.ts
-    ├─ Conditional steps (if dust then burn else skip)
-    │     → chained ixIfElse (one CPI per arm)
-    └─ Only sanity check (non-zero, min balance)
-          → ixAssert after ixLet
+## Which template?
 
-Must split across txs or use Jito bundle?
-├─ No  → pattern 1: one business tx (default); see tests/sponsored_buy.ts
-└─ Yes → docs/bundles.md
-          ├─ order only, fresh scratch each Ifx tx → pattern 2 (reset each tx)
-          └─ tx2 reads tx1 Frame without reset → pattern 3 (landed bundle; sync generation / index_count)
+| Need | Template shape | Start from |
+|------|----------------|------------|
+| All fields known at build | no Ifx | `tx.add` |
+| One read + one patched CPI | L0 | `tests/ifx.ts` |
+| ATA rent / Token-2022 dust | L0 | `tests/sponsored_buy.ts`, `sdk/examples/dust-destroy-token2022.ts` |
+| Skip vs CPI (`if_else`) | L1 | `tests/ifx.ts` |
+| Two hops; hop2 amount from hop1 | L2 | `sdk/examples/two-hop-token-swap.ts` |
+| Two hops + skip empty ATA | L3 | `sdk/examples/two-hop-token-swap.ts` + `if_else` |
+| Pump / Raydium / Meteora / launchpad | product | [ifx-pumpfun-ext](https://github.com/ifx-run/ifx-pumpfun-ext), [ifx-raydium-ext](https://github.com/ifx-run/ifx-raydium-ext), [ifx-launchpad-orchestrator](https://github.com/ifx-run/ifx-launchpad-orchestrator) |
+| Durable app state | not Ifx | own program |
+
+**Router** maps feats → **one** template id. Each builder is a constant ix list.
+
+| Feat (example) | Typical templates |
+|----------------|-------------------|
+| `sponsored` | `swap_sponsored`, `swap_sponsored_close` |
+| `closeAta` | `swap_self_close`, `swap_sponsored_close` |
+| both | `swap_sponsored_close` |
+| neither | `swap_self` |
+| `twoHop` | `two_hop`, `two_hop_close` |
+| `wsolUnwrap` | `…_unwrap` vs keep wrapped |
+
+Mutex (e.g. self-funded vs sponsored): **two templates**, never `if` in the builder. Empty hop / unused ATA: **`if_else` Skip in the skeleton**, not a missing ix.
+
+## Packet vs size
+
+If the compiled packet exceeds the confirmed version's limit, **ask**: other template / SIMD-0385 v1 (only if they accept wallet/RPC risk) / ALT they already use / split txs. Ifx SDK does not pack packets. Oversize is often **ix data**, not 64 unique-account locks.
+
+## Two-tx split
+
+Tx A (once): `planPublicFrame` + `ixCreate`. Tx B (every use): `ixReset` + business ixs. Do not mix `create_frame` into B. Same Frame across txs: `ixReset` on every Ifx tx unless they explicitly want lab pattern 3.
+
+## L0 — same-tx read → CPI
+
+```
+ixReset
+ixLet          // read accounts / balances into SSA
+[optional ATA CreateIdempotent]
+ixLet          // deltas, bpsMulFloor, min, sub, …
+ixAssert       // fail closed if invariant broken
+ix + patches   // structuredCpi or rawCpi — data from lets
 ```
 
-## L0 — Frame smoke test
+Use when CPI bytes or lamports are unknown until this tx (ATA rent, Token-2022 fee, quoted size vs execution).
 
-**User says:** "try ifx", "minimal example", "frame + assert"
+## L1 — skip vs do
 
-**File:** `sdk/examples/minimal-frame.ts`
+Same as L0, then `ixIfElse({ cond, then, else })`. Optional step stays in the **skeleton**; `Skip` is the no-op. Same cond → one `if_else`. No Ifx write ix in arms.
 
-**Flow:** create frame → reset → let const → assert non-zero
+## L2 — two-hop
 
-**tapeLen:** 256 default (`indexCap` 128)
-
----
-
-## L1 — Token-2022 dust destroy
-
-**User says:** "close dust ATA", "burn small balance", "harvest withheld", "Token-2022 cleanup"
-
-**File:** `sdk/examples/dust-destroy-token2022.ts`
-
-**Flow:**
-
-```text
-let(amount, withheld, decimals)
-→ if_else: dust ∧ amount > 0     → BurnChecked (structuredCpi / token2022BurnChecked)
-→ if_else: dust ∧ withheld > 0   → harvest (staticCpi / arm.cpi)
-→ if_else: dust                  → closeAccount (staticCpi)
+```
+reset → let hop1 → swap1 → let hop1-out → assert →
+rawCpi(swap2, amount_in := hop1-out)
 ```
 
-**Notes:**
+Do not pass hop1 quote into hop2 `data`.
 
-- DUST_THRESHOLD is off-chain constant in planner.
-- Three separate `if_else` — not one arm with three CPIs.
+## L3 — two-hop + skip empty
 
----
+L2 + `if_else` close/unwrap when amount is 0. Close/unwrap is not a second client tx.
 
-## L2 — Two-hop token swap (A → USDC → B)
+## Bundle router
 
-**User says:** "two hop", "use swap output as next input", "exact in from balance read"
+Ifx does **not** send bundles. Router chooses **legacy / Jito / both**. Ifx stays in the **business** tx (pattern 1). Details: [docs/bundles.md](../../../docs/bundles.md).
 
-**File:** `sdk/examples/two-hop-token-swap.ts`
-
-**Flow:**
-
-```text
-reset → tx.add(hop1 static) → let(usdcAta balance) → 
-structuredCpi(hop2, tokenTransfer) [→ optional deliver]
-```
-
-**User must provide:**
-
-- `hop1`: DEX swap ix (static)
-- `hop2Template`: exact-in ix with placeholder amount (standard SPL `Transfer` in the example)
-
-**Setup outside Ifx:** intermediate USDC ATA must exist; balance 0 at start recommended.
-
-**Wire DEX:** replace mock transfers in `tests/two_hop_swap.ts` with real Raydium/Orca ix — if hop2 `data` is not registry SPL, use `rawCpi()` + `rawCpiPatch` (covered in `tests/ifx.ts`, `tests/ifx_cpi_edges.ts`).
-
----
-
-## L3 — Sponsored swap settlement
-
-**User says:** "sponsor pays", "repay after swap", "only buy if profit", "settle fees from delta"
-
-**File:** `tests/sponsored_buy.ts`
-
-**Flow:**
-
-```text
-reset → let(user sol + ATA lamports baseline)
-→ idempotent create ATA
-→ let(ataCost = ATA lamports delta)
-→ swap ix
-→ let(sol after, settle = ataCost + tx fee, buyLamports)
-→ assert swap delta ≥ settle
-→ structuredCpi(systemTransfer) repay sponsor
-→ if_else buyLamports > 0 → structuredCpi(systemTransfer) pay pool
-```
-
-**Key formula:** `ataCost = lamports(ATA after create) − lamports(ATA baseline)`; `settle = ataCost + txFee`; `buyLamports = solAfter − solBefore − settle`. Never hardcode ATA rent — Token-2022 extensions change account size.
-
-**Notes:** Idempotent ATA create usually **before** swap in the same tx; baseline read must happen before create (missing ATA → 0).
-
----
-
-## Common user requests → mapping
-
-| Request | Pattern |
-|---------|---------|
-| "Slippage guard after swap" | let balance before/after or read output ATA; ixAssert min out |
-| "Revert if swap fails profit test" | ixAssert (reverts whole tx) |
-| "Transfer exact swap output" | Official SPL: `structuredCpi` + `structuredCpiPatch`; DEX/custom: `rawCpi()` + `rawCpiPatch` |
-| "Skip close if balance too high" | if_else with cond on let value |
-| "Jupiter swap + settle" | tx.add(jupiterIx) between let blocks; same skeleton as L3 |
-| "Devnet" | omit `programId` (default) or `IFX_DEVNET_PROGRAM_ID` |
-| "Localnet / npm test" | `IFX_LOCALNET_PROGRAM_ID` on all Ifx ix |
-
----
-
-## Testing reference (ifx repo)
-
-| Scenario | Test file |
-|----------|-----------|
-| L0 | `tests/minimal_frame.ts` |
-| L1 | `tests/dust_destroy_token2022.ts` |
-| L2 | `tests/two_hop_swap.ts` |
-| L3 | `tests/sponsored_buy.ts` |
-| if_else arms | `tests/ifx.ts` |
-| Let builder / parity | `tests/sdk_let_builder.ts`, `tests/sdk_let_binding_parity.ts` |
-| Structured CPI + Pubkey + Frame metadata | `tests/ifx_structured_cpi_initialize_mint.ts`, `tests/ifx_pubkey.ts`, `tests/ifx_frame_generation.ts` |
-
-After edits in ifx repo: `npm test` or target file with `anchor test`.
-
----
-
-## Multi-tx / Jito bundle
-
-**User says:** "tx too large", "Jito bundle", "swap and settlement atomic", "split across txs"
-
-**Read:** [docs/bundles.md](../../../docs/bundles.md)
-
-| Need | Pattern |
-|------|---------|
-| Everything fits one tx | **1** — no bundle |
-| Swap + Ifx settlement must land together; each Ifx tx fresh scratch | **2** — bundle for order; **reset** on Ifx tx |
-| tx2 reads Frame bindings from tx1 without re-let | **3** — landed bundle; tx2 **no reset**; sync planner + read **`generation`** / **`index_count`** |
-
-**Do not** bundle `ifx_create_frame` with business logic. Canonical single-tx flow: [`tests/sponsored_buy.ts`](../../../tests/sponsored_buy.ts).
+| | Pattern 1 (default) | Pattern 2 | Pattern 3 (lab) |
+|--|---------------------|-----------|-----------------|
+| Ifx | business tx only | + `ixClose` in last tx | `ixReset` only in first |
+| Reset | every Ifx tx | last does not reset | later txs omit reset |
+| `bundle_id` | not a land guarantee | same | same |

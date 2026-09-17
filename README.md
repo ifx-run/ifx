@@ -222,7 +222,7 @@ Need a **private / closeable** Frame (on-curve `authority` signs `reset`/`let`; 
 
 ## Using Cursor, Claude Code, or other AI agents
 
-> **Recommended:** Before an agent edits swap / settlement transactions, point it at the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**. It encodes the two-tx model, **Structured CPI** (`structuredCpi` for official System/SPL ix) vs **RawPatched** CPI (`rawCpi` + `ifx_patched_cpi`) vs static CPI, cluster `programId` (SDK default = mainnet), **when to use Jito bundles (and when not to)**, and which L0–L3 example to extend — so you get fewer wire-format mistakes and less hand-rolled `Expr`.
+> **Recommended:** Before an agent edits swap / settlement transactions, point it at the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)**. It encodes the two-tx model, **named unconditional tx templates** (router selects; builder is a fixed ix list), **Structured CPI** vs **RawPatched** vs static CPI, cluster `programId` (SDK default = mainnet), public Frames, **packet version (legacy/v0 vs v1 — suggest only; confirm with the developer; many stacks cannot handle v1)**, **when to use Jito bundles (and when not to)**, and which L0–L3 / venue demo to extend.
 
 | | |
 |---|---|
@@ -230,7 +230,7 @@ Need a **private / closeable** Frame (on-curve `authority` signs `reset`/`let`; 
 | **In your app repo** | Copy that folder into your project’s `.cursor/skills/`, or paste the skill URL / path into the agent prompt |
 | **Claude Code & others** | See [AGENTS.md](./AGENTS.md) for the same entry point |
 
-Supporting files: [scenarios.md](./.cursor/skills/ifx-orchestration/scenarios.md) (L0–L3 + bundle router) · [anti-patterns.md](./.cursor/skills/ifx-orchestration/anti-patterns.md) (review checklist) · [docs/bundles.md](./docs/bundles.md) (Jito semantics)
+Supporting files: [scenarios.md](./.cursor/skills/ifx-orchestration/scenarios.md) (L0–L3 + feat → templates) · [anti-patterns.md](./.cursor/skills/ifx-orchestration/anti-patterns.md) (review checklist) · [docs/bundles.md](./docs/bundles.md) (Jito semantics)
 
 ---
 
