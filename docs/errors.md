@@ -38,7 +38,6 @@ Anchor maps each [`ErrorCode`](../programs/ifx/src/error.rs) variant to **`6000 
 | 6029 | `InvalidPatchedCpiPatches` | `ifx_patched_cpi` requires at least one patch | Unconditional static CPI via `ifx_if_else` or direct `tx.add` |
 | 6030 | `InvalidStructuredCpiProgram` | Structured CPI program id does not match patch | Wrong program in remaining accounts for the chosen `StructuredCpiPatch` variant |
 | 6031 | `InvalidInstructionData` | Invalid instruction data | Trailing bytes or CPI payload invalid |
-
 | 6032 | `StakeUnpackFailed` | Failed to unpack stake account | Corrupt `StakeStateV2` layout |
 | 6033 | `StakeStateMismatch` | Stake state does not expose field | e.g. delegation on `Initialized` |
 | 6034 | `ResetNotTopLevel` | `ifx_reset_frame` must be top level | CPI-wrapped reset |

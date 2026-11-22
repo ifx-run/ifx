@@ -38,7 +38,6 @@ Anchor 将 [`ErrorCode`](../programs/ifx/src/error.rs) 各变体映射为 **`600
 | 6029 | `InvalidPatchedCpiPatches` | `ifx_patched_cpi` 要求至少一个 patch | 无条件静态 CPI 请用 `ifx_if_else` 或 `tx.add` |
 | 6030 | `InvalidStructuredCpiProgram` | Structured CPI 的 program id 与 patch 不匹配 | remaining 中 program 与所选 `StructuredCpiPatch` variant 不符 |
 | 6031 | `InvalidInstructionData` | 指令数据无效 | 尾部字节或 CPI payload 无效 |
-
 | 6032 | `StakeUnpackFailed` | stake 账户解包失败 | `StakeStateV2` layout 损坏 |
 | 6033 | `StakeStateMismatch` | stake 状态不提供该字段 | 如 `Initialized` 上读 delegation |
 | 6034 | `ResetNotTopLevel` | `ifx_reset_frame` 须顶层 | CPI 包装 reset |
