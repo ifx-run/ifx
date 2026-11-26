@@ -36,6 +36,7 @@
 | **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
 | **Cursor / AI agent** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
+| **浏览器** | [ifx.run/explorer](https://ifx.run/explorer) — 粘贴交易 wire 或签名，离线解码 Ifx 指令，包括 SIMD-0385 v1 |
 
 ### 主网公共 Frame（生产）
 

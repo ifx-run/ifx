@@ -36,6 +36,7 @@ Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; l
 | **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
 | **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
 | **Cursor / AI agents** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
+| **Explorer** | [ifx.run/explorer](https://ifx.run/explorer) — paste a tx wire or signature; offline decode of Ifx instructions, including SIMD-0385 v1 |
 
 ### Mainnet public Frames (production)
 
