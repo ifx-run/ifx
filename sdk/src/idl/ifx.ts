@@ -8,7 +8,7 @@ export type Ifx = {
   "address": "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD",
   "metadata": {
     "name": "ifx",
-    "version": "0.1.2",
+    "version": "0.1.4",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
@@ -229,6 +229,42 @@ export type Ifx = {
           "type": {
             "defined": {
               "name": "letArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ifxLetPatchedCpi",
+      "docs": [
+        "One CPI, then `let` fixed-width slices of its return data onto the Frame tape.",
+        "",
+        "`args.cpi` is one [`Cpi`] step (Static, RawPatched with at least one patch, or",
+        "Structured). `args.lets` is non-empty: each entry is a [`ValueType`] and a",
+        "constant byte `offset` into that call's return data. Width is `ty.size()`",
+        "(little-endian). The lets are appended in order and can be read by a later",
+        "`ifx_let` / `ifx_assert` / `ifx_if_else`.",
+        "",
+        "**Constraints:** transaction top level (stack height 1). Not valid inside",
+        "`ifx_if_else`. **Private** Frame: `remaining_accounts[0]` = `authority` signer;",
+        "CPI accounts follow. **Public** Frame: CPI accounts start at `[0]`.",
+        "Does not observe return data of a top-level instruction Ifx did not invoke."
+      ],
+      "discriminator": [
+        8
+      ],
+      "accounts": [
+        {
+          "name": "frame",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "letPatchedCpiArgs"
             }
           }
         }
@@ -493,6 +529,31 @@ export type Ifx = {
       "code": 6039,
       "name": "assertFailedMulti",
       "msg": "Assertion failed in ifx_assert_multi"
+    },
+    {
+      "code": 6040,
+      "name": "letPatchedCpiNotTopLevel",
+      "msg": "ifx_let_patched_cpi must be invoked at transaction top level (stack height 1)"
+    },
+    {
+      "code": 6041,
+      "name": "invalidReturnDataLets",
+      "msg": "ifx_let_patched_cpi requires at least one return-data let"
+    },
+    {
+      "code": 6042,
+      "name": "returnDataMissing",
+      "msg": "CPI return data is missing"
+    },
+    {
+      "code": 6043,
+      "name": "returnDataProgramMismatch",
+      "msg": "CPI return data program id does not match the invoked program"
+    },
+    {
+      "code": 6044,
+      "name": "returnDataTooShort",
+      "msg": "CPI return data is shorter than offset plus type width"
     }
   ],
   "types": [
@@ -506,9 +567,12 @@ export type Ifx = {
         "fields": [
           {
             "name": "conds",
+            "docs": [
+              "Boolean expressions checked in order. At least one. Count prefix is a `u8` (1..=255)."
+            ],
             "type": {
               "defined": {
-                "name": "ifx::state::u8_len_vec::U8LenVec<ifx_core::wire::expr::Expr>",
+                "name": "u8LenVecExpr",
                 "generics": [
                   {
                     "kind": "type",
@@ -545,6 +609,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "value",
+                "docs": [
+                  "Tape binding. `value.index` is the binding slot."
+                ],
                 "type": {
                   "defined": {
                     "name": "value"
@@ -636,6 +703,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Boolean expression to negate."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -649,6 +719,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Signed expression to negate."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -662,6 +735,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Expression compared with zero."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -675,6 +751,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Expression compared with zero."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -688,6 +767,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u8`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -701,6 +783,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u16`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -714,6 +799,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u32`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -727,6 +815,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u64`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -740,6 +831,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u128`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -753,6 +847,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i8`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -766,6 +863,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i16`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -779,6 +879,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i32`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -792,6 +895,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i64`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -805,6 +911,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i128`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -818,6 +927,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -826,6 +938,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -839,6 +954,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -847,6 +965,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -860,6 +981,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -868,6 +992,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -881,6 +1008,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -889,6 +1019,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -902,6 +1035,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -910,6 +1046,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -923,6 +1062,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -931,6 +1073,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -944,6 +1089,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -952,6 +1100,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -965,6 +1116,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -973,6 +1127,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -986,6 +1143,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -994,6 +1154,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1007,6 +1170,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1015,6 +1181,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1028,6 +1197,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1036,6 +1208,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1049,6 +1224,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1057,6 +1235,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1070,6 +1251,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1078,6 +1262,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1091,6 +1278,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1099,6 +1289,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1112,6 +1305,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1120,6 +1316,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1133,6 +1332,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1141,6 +1343,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1154,6 +1359,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1162,6 +1370,9 @@ export type Ifx = {
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1175,6 +1386,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "amount",
+                "docs": [
+                  "Amount expression (`u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1183,6 +1397,9 @@ export type Ifx = {
               },
               {
                 "name": "bps",
+                "docs": [
+                  "Fee in basis points (`u8`, `u16`, `u32`, or `u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1196,6 +1413,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "amount",
+                "docs": [
+                  "Amount expression (`u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1204,6 +1424,9 @@ export type Ifx = {
               },
               {
                 "name": "bps",
+                "docs": [
+                  "Fee in basis points (`u8`, `u16`, `u32`, or `u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1217,6 +1440,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "a",
+                "docs": [
+                  "First factor (`u64` or `u128`, same type as `b`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1225,6 +1451,9 @@ export type Ifx = {
               },
               {
                 "name": "b",
+                "docs": [
+                  "Second factor, same type as `a`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1233,6 +1462,9 @@ export type Ifx = {
               },
               {
                 "name": "c",
+                "docs": [
+                  "Divisor. Same type as `a`, or any narrower unsigned."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1246,6 +1478,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "a",
+                "docs": [
+                  "First factor (`u64` or `u128`, same type as `b`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1254,6 +1489,9 @@ export type Ifx = {
               },
               {
                 "name": "b",
+                "docs": [
+                  "Second factor, same type as `a`."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1262,6 +1500,9 @@ export type Ifx = {
               },
               {
                 "name": "c",
+                "docs": [
+                  "Divisor. Same type as `a`, or any narrower unsigned."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1275,6 +1516,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "value",
+                "docs": [
+                  "Expression to clamp."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1283,6 +1527,9 @@ export type Ifx = {
               },
               {
                 "name": "lo",
+                "docs": [
+                  "Inclusive lower bound."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1291,6 +1538,9 @@ export type Ifx = {
               },
               {
                 "name": "hi",
+                "docs": [
+                  "Inclusive upper bound."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1304,6 +1554,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "cond",
+                "docs": [
+                  "Boolean expression that selects the branch."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1312,6 +1565,9 @@ export type Ifx = {
               },
               {
                 "name": "thenExpr",
+                "docs": [
+                  "Result when `cond` is true."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1320,6 +1576,9 @@ export type Ifx = {
               },
               {
                 "name": "elseExpr",
+                "docs": [
+                  "Result when `cond` is false."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1352,6 +1611,9 @@ export type Ifx = {
         "fields": [
           {
             "name": "authority",
+            "docs": [
+              "Account allowed to close this Frame. When on-curve, it must sign writes."
+            ],
             "type": "pubkey"
           },
           {
@@ -1393,6 +1655,9 @@ export type Ifx = {
           },
           {
             "name": "tape",
+            "docs": [
+              "Append-only scratch bytes. Length is fixed at create (`tape_len`)."
+            ],
             "type": "bytes"
           }
         ]
@@ -1408,6 +1673,9 @@ export type Ifx = {
         "fields": [
           {
             "name": "cond",
+            "docs": [
+              "Boolean expression that selects the arm."
+            ],
             "type": {
               "defined": {
                 "name": "expr"
@@ -1416,6 +1684,9 @@ export type Ifx = {
           },
           {
             "name": "thenArm",
+            "docs": [
+              "Arm run when `cond` is true."
+            ],
             "type": {
               "defined": {
                 "name": "ifElseArm"
@@ -1424,6 +1695,9 @@ export type Ifx = {
           },
           {
             "name": "elseArm",
+            "docs": [
+              "Arm run when `cond` is false."
+            ],
             "type": {
               "defined": {
                 "name": "ifElseArm"
@@ -1472,9 +1746,12 @@ export type Ifx = {
         "fields": [
           {
             "name": "bindings",
+            "docs": [
+              "Bindings evaluated in order and appended to the tape. Count prefix is a `u8` (1..=255)."
+            ],
             "type": {
               "defined": {
-                "name": "ifx_core::u8_len_vec::U8LenVec<ifx_core::wire::let_binding::LetBinding>",
+                "name": "u8LenVecLetBinding",
                 "generics": [
                   {
                     "kind": "type",
@@ -1506,6 +1783,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "ty",
+                "docs": [
+                  "Caller-supplied type of the copied bytes."
+                ],
                 "type": {
                   "defined": {
                     "name": "valueType"
@@ -1514,14 +1794,23 @@ export type Ifx = {
               },
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               },
               {
                 "name": "offset",
+                "docs": [
+                  "Start byte of the slice in the account data."
+                ],
                 "type": "u32"
               },
               {
                 "name": "expectedProgramOwner",
+                "docs": [
+                  "Index of the remaining account whose address must equal the data account's owner."
+                ],
                 "type": "u8"
               }
             ]
@@ -1531,6 +1820,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1540,6 +1832,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "expr",
+                "docs": [
+                  "Expression evaluated and appended to the tape."
+                ],
                 "type": {
                   "defined": {
                     "name": "expr"
@@ -1568,6 +1863,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "dataLen",
+                "docs": [
+                  "Data length passed to `Rent::minimum_balance`."
+                ],
                 "type": "u32"
               }
             ]
@@ -1577,6 +1875,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1586,6 +1887,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1595,6 +1899,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1604,6 +1911,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1613,6 +1923,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1622,6 +1935,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1631,6 +1947,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1640,6 +1959,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1649,6 +1971,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1658,6 +1983,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1667,6 +1995,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1676,6 +2007,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1685,6 +2019,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1694,6 +2031,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1703,6 +2043,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1712,6 +2055,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1721,6 +2067,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1730,6 +2079,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "bytes",
+                "docs": [
+                  "32-byte public key literal."
+                ],
                 "type": {
                   "array": [
                     "u8",
@@ -1750,6 +2102,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1759,6 +2114,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1768,6 +2126,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1777,6 +2138,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1786,6 +2150,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1795,6 +2162,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1804,6 +2174,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1813,6 +2186,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1822,6 +2198,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1831,6 +2210,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1840,6 +2222,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1849,6 +2234,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1858,6 +2246,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1867,6 +2258,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1876,6 +2270,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1885,6 +2282,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1894,6 +2294,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1903,6 +2306,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1912,6 +2318,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1921,6 +2330,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1930,6 +2342,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1939,6 +2354,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1948,6 +2366,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1957,6 +2378,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1966,6 +2390,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1975,6 +2402,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1984,6 +2414,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1993,6 +2426,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2002,6 +2438,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2011,6 +2450,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2020,6 +2462,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2029,6 +2474,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2038,6 +2486,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2047,6 +2498,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2056,6 +2510,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2065,6 +2522,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2074,6 +2534,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2083,6 +2546,9 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2092,9 +2558,135 @@ export type Ifx = {
             "fields": [
               {
                 "name": "accountIndex",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "letPatchedCpiArgs",
+      "docs": [
+        "Arguments for `ifx_let_patched_cpi`: one CPI, then at least one return-data let."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cpi",
+            "docs": [
+              "CPI invoked before the lets. RawPatched requires at least one patch."
+            ],
+            "type": {
+              "defined": {
+                "name": "cpi"
+              }
+            }
+          },
+          {
+            "name": "lets",
+            "docs": [
+              "Return-data slices appended in order. Non-empty. Count prefix is a `u8` (1..=255)."
+            ],
+            "type": {
+              "defined": {
+                "name": "u8LenVecReturnDataLet",
+                "generics": [
+                  {
+                    "kind": "type",
+                    "type": {
+                      "defined": {
+                        "name": "returnDataLet"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "returnDataLet",
+      "docs": [
+        "One fixed-width slice of the CPI return data, appended as a `let`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ty",
+            "docs": [
+              "Value type of the copied bytes. Width is `ty.size()` little-endian bytes."
+            ],
+            "type": {
+              "defined": {
+                "name": "valueType"
+              }
+            }
+          },
+          {
+            "name": "offset",
+            "docs": [
+              "Byte offset into the return data. Length is `ty.size()`."
+            ],
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "u8LenVecExpr",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: Expr.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "u8LenVecLetBinding",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: LetBinding.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "u8LenVecReturnDataLet",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: ReturnDataLet.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "value",
+      "docs": [
+        "Reference to a bound value by **binding index** (0-based append order)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "docs": [
+              "Binding index into `Frame::payload_at` / `tape` (0-based append order)."
+            ],
+            "type": "u8"
           }
         ]
       }

@@ -13,10 +13,10 @@
 
 ```bash
 npm install @ifx-run/sdk
-# 或锁定：npm install @ifx-run/sdk@0.1.3
+# 或锁定：npm install @ifx-run/sdk@0.1.4
 ```
 
-`latest` 指向 **`0.1.3`**（默认主网）。与 **`ifx-sdk@0.1.3`**、**`go-sdk@v0.1.3`** 使用同一 git revision。
+`latest` 指向 **`0.1.4`**（默认主网）。与 **`ifx-sdk@0.1.4`**、**`go-sdk@v0.1.4`** 使用同一 git revision。
 
 ## 试打包
 
@@ -46,7 +46,7 @@ npm deprecate @ifx-run/sdk@0.2.0-devnet.0 "$MSG"
 npm deprecate @ifx-run/sdk@0.3.0-devnet.0 "$MSG"
 ```
 
-不再维护单独的 `devnet` dist-tag — 集成方请使用 `npm install @ifx-run/sdk`（`latest` → `0.1.3`）。
+不再维护单独的 `devnet` dist-tag — 集成方请使用 `npm install @ifx-run/sdk`（`latest` → `0.1.4`）。
 
 ## 版本绑定
 

@@ -12,6 +12,8 @@ Localnet, devnet, and mainnet use different vanity prefixes (base58): localnet *
 
 **Local / Surfpool / `anchor test`:** committed localnet keypair only. Do not fund these addresses on mainnet.
 
+**`return_echo`** (`keys/return-echo-keypair.json`, id `DrC6aMeryjNBs2kmf7yE87MtWj8rwL1YEkWioK4xosJP`) is a localnet-only fixture for `ifx_let_patched_cpi` tests. It copies instruction data into return data. Not deployed to devnet or mainnet. `npm run keys:sync` copies it to `target/deploy/return_echo-keypair.json`.
+
 ## Local workflow
 
 ```bash

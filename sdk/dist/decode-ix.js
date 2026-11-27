@@ -14,6 +14,7 @@ exports.IFX_IX_NAMES = [
     "ifx_assert_multi",
     "ifx_patched_cpi",
     "ifx_if_else",
+    "ifx_let_patched_cpi",
 ];
 const DISC_TO_NAME = new Map([
     [constants_1.IX_DISC_CREATE_FRAME, "ifx_create_frame"],
@@ -24,6 +25,7 @@ const DISC_TO_NAME = new Map([
     [constants_1.IX_DISC_ASSERT_MULTI, "ifx_assert_multi"],
     [constants_1.IX_DISC_PATCHED_CPI, "ifx_patched_cpi"],
     [constants_1.IX_DISC_IF_ELSE, "ifx_if_else"],
+    [constants_1.IX_DISC_LET_PATCHED_CPI, "ifx_let_patched_cpi"],
 ]);
 /**
  * Decode the 1-byte Ifx instruction discriminator from wire `data`.

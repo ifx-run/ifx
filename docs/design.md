@@ -133,6 +133,7 @@ On-chain reads use the [`LetBinding`](./typed-let-bindings.md) enum (tags `0`–
   - **RawPatched (type-unsafe):** template `data` + **`patches`** (`PatchList`); byte overlay before invoke — DEX / custom / non-registry layouts. **Program id is builder-chosen**; Ifx does not maintain a Raw allowlist ([`raw-cpi-patches.md`](./raw-cpi-patches.md) § design intent).
   - **Static:** template `data` invoked as-is (empty `PatchList`); program id also builder-chosen.
 - Unconditional patched CPI: **`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** or **Structured** (requires patch apply).
+- **`ifx_let_patched_cpi(args: LetPatchedCpiArgs)`** — one CPI (**Static**, non-empty **RawPatched**, or **Structured**), then append fixed-width slices of **that** call's return data (`{ ty, offset: u16 }`, count 1–255). Top-level write only; not valid inside `ifx_if_else`. A later `ifx_let` cannot see return data from a CPI this instruction did not invoke. Width is `ty.size()` (little-endian). Offset is a constant, not an `Expr`.
 - **`RawCpiPatch`:** `{ data_offset: u16, source: Value }` — **RawPatched only**.
 
 **Division of responsibility:** prefer **Structured** for registry ix (System / SPL / Token-2022 / Stake). Use **Raw** when generality matters — same trade-off as typed vs `unsafe` APIs: the **transaction constructor** is responsible for correct template, accounts, offsets, and target program. Optional Raw whitelists would not be meaningfully safer without duplicating Structured field-by-field.

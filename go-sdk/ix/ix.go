@@ -11,6 +11,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/expr"
 	"github.com/ifx-run/ifx/go-sdk/frame"
 	"github.com/ifx-run/ifx/go-sdk/frameauthority"
+	"github.com/ifx-run/ifx/go-sdk/typed"
 )
 
 // Options overrides the default Ifx program id.
@@ -27,11 +28,11 @@ func programID(opts *Options) solana.PublicKey {
 
 // CreateFrameParams builds ifx_create_frame.
 type CreateFrameParams struct {
-	Payer          solana.PublicKey
-	FrameID        [32]byte
+	Payer     solana.PublicKey
+	FrameID   [32]byte
 	Authority solana.PublicKey
-	TapeLen        uint32
-	Options        *Options
+	TapeLen   uint32
+	Options   *Options
 }
 
 // BuildCreateFrame returns ifx_create_frame.
@@ -42,9 +43,9 @@ func BuildCreateFrame(p CreateFrameParams) (solana.Instruction, solana.PublicKey
 		return nil, solana.PublicKey{}, err
 	}
 	args, err := frame.EncodeCreateFrameArgs(frame.CreateFrameArgs{
-		FrameID:        p.FrameID,
+		FrameID:   p.FrameID,
 		Authority: p.Authority,
-		TapeLen:        p.TapeLen,
+		TapeLen:   p.TapeLen,
 	})
 	if err != nil {
 		return nil, solana.PublicKey{}, err
@@ -143,6 +144,46 @@ func BuildCpi(framePK solana.PublicKey, built codec.WireBuildResult, opts *Optio
 		accounts = append(accounts, meta)
 	}
 	return solana.NewInstruction(programID, accounts, data), nil
+}
+
+// BuildLetPatchedCpi returns ifx_let_patched_cpi.
+// Static CPI (no patches, no structured payload) is allowed.
+// lets must be non-empty; each offset is a constant u16.
+func BuildLetPatchedCpi(
+	framePK, authority solana.PublicKey,
+	step codec.Cpi,
+	remaining []typed.AccountMeta,
+	lets []codec.ReturnDataLet,
+	opts *Options,
+) (solana.Instruction, error) {
+	cpiBody, err := codec.EncodeCpi(step)
+	if err != nil {
+		return nil, err
+	}
+	letsBody, err := codec.EncodeReturnDataLets(lets)
+	if err != nil {
+		return nil, err
+	}
+	data := append([]byte{constants.IxDiscLetPatchedCpi}, cpiBody...)
+	data = append(data, letsBody...)
+	accounts := solana.AccountMetaSlice{solana.Meta(framePK).WRITE()}
+	rem := make(solana.AccountMetaSlice, 0, len(remaining))
+	for _, m := range remaining {
+		pub, err := solana.PublicKeyFromBase58(m.Pubkey)
+		if err != nil {
+			return nil, fmt.Errorf("remaining pubkey: %w", err)
+		}
+		meta := solana.Meta(pub)
+		if m.IsSigner {
+			meta = meta.SIGNER()
+		}
+		if m.IsWritable {
+			meta = meta.WRITE()
+		}
+		rem = append(rem, meta)
+	}
+	accounts = append(accounts, frameauthority.PrependWriteAuthorityRemaining(authority, rem)...)
+	return solana.NewInstruction(programID(opts), accounts, data), nil
 }
 
 // BuildIfElse returns ifx_if_else.

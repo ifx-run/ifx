@@ -89,7 +89,7 @@ pub use frame_authority::{
 pub use if_else::{args as if_else_args, cpi as if_else_cpi, revert as if_else_revert, skip as if_else_skip};
 pub use ix::{
     build_ix_assert, build_ix_assert_multi, build_ix_close_frame, build_ix_create_frame,
-    build_ix_cpi, build_ix_if_else, build_ix_let, build_ix_reset_frame, if_else_args_skip_skip,
+    build_ix_cpi, build_ix_if_else, build_ix_let, build_ix_let_patched_cpi, build_ix_reset_frame, if_else_args_skip_skip,
     let_args_from_bindings, CreateFrameParams, CreateFrameResult, IxOpts,
 };
 pub use let_builder::{LetBuilder, LetBuilderFinish};

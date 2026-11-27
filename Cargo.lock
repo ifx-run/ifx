@@ -1773,7 +1773,7 @@ dependencies = [
 
 [[package]]
 name = "ifx"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "anchor-lang",
  "borsh",
@@ -1787,7 +1787,7 @@ dependencies = [
 
 [[package]]
 name = "ifx-core"
-version = "0.1.2"
+version = "0.1.4"
 dependencies = [
  "anchor-lang",
  "borsh",
@@ -1799,7 +1799,7 @@ dependencies = [
 
 [[package]]
 name = "ifx-sdk"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anchor-lang",
  "borsh",
@@ -2696,6 +2696,13 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tower-service",
+]
+
+[[package]]
+name = "return-echo"
+version = "0.1.0"
+dependencies = [
+ "solana-program",
 ]
 
 [[package]]

@@ -11,6 +11,7 @@ exports.buildIxLet = buildIxLet;
 exports.buildIxAssert = buildIxAssert;
 exports.buildIxAssertMulti = buildIxAssertMulti;
 exports.createIxCpi = createIxCpi;
+exports.createIxLetPatchedCpi = createIxLetPatchedCpi;
 exports.createIxIfElse = createIxIfElse;
 const web3_js_1 = require("@solana/web3.js");
 const constants_1 = require("./constants");
@@ -28,6 +29,7 @@ exports.IX_DISCRIMINATOR = {
     ifxAssert: Buffer.from([constants_1.IX_DISC_ASSERT]),
     ifxAssertMulti: Buffer.from([constants_1.IX_DISC_ASSERT_MULTI]),
     ifxPatchedCpi: Buffer.from([constants_1.IX_DISC_PATCHED_CPI]),
+    ifxLetPatchedCpi: Buffer.from([constants_1.IX_DISC_LET_PATCHED_CPI]),
     ifxIfElse: Buffer.from([constants_1.IX_DISC_IF_ELSE]),
 };
 /** Merge per-ix overrides onto scratch / planner defaults. */
@@ -170,6 +172,41 @@ function createIxCpi(frame, built, opts = {}) {
         data: Buffer.concat([
             exports.IX_DISCRIMINATOR.ifxPatchedCpi,
             (0, codec_1.encodeCpi)(built.cpi),
+        ]),
+    });
+}
+/** Solana `set_return_data` ceiling. A let past this cannot succeed. */
+const SOLANA_MAX_RETURN_DATA = 1024;
+/**
+ * `ifx_let_patched_cpi`: one CPI, then `let` fixed-width slices of its return data.
+ *
+ * Static CPI is allowed. RawPatched still needs at least one patch.
+ * `lets` is non-empty; each offset is a constant `u16` and the width is `ty`.
+ */
+function createIxLetPatchedCpi(frame, authority, built, lets, opts = {}) {
+    if (lets.length === 0 || lets.length > 255) {
+        throw new Error(`ifx_let_patched_cpi requires 1..=255 return-data lets (got ${lets.length})`);
+    }
+    if (built.cpi.kind === "rawPatched" && !(0, types_1.cpiRequiresPatchApply)(built.cpi)) {
+        throw new Error("ifx_let_patched_cpi raw CPI requires at least one patch; use staticCpi(...).staticStep when instruction data is fixed");
+    }
+    for (const item of lets) {
+        const width = (0, layout_1.valueTypeSize)(item.ty);
+        if (item.offset + width > SOLANA_MAX_RETURN_DATA) {
+            throw new Error(`return-data let offset ${item.offset} + ${width} exceeds ${SOLANA_MAX_RETURN_DATA}`);
+        }
+    }
+    const programId = opts.programId ?? constants_1.DEFAULT_IFX_PROGRAM_ID;
+    return new web3_js_1.TransactionInstruction({
+        programId,
+        keys: [
+            { pubkey: frame, isSigner: false, isWritable: true },
+            ...(0, frame_authority_1.prependWriteAuthorityRemaining)(authority, built.remaining),
+        ],
+        data: Buffer.concat([
+            exports.IX_DISCRIMINATOR.ifxLetPatchedCpi,
+            (0, codec_1.encodeCpi)(built.cpi),
+            (0, codec_1.encodeReturnDataLets)(lets),
         ]),
     });
 }

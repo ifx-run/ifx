@@ -59,7 +59,7 @@ Ifx **不提供** bundle。本文说明 Jito bundle **实际能保证什么、�
 ### 1. 单笔 tx（推荐）
 
 ```text
-ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else / ifx_let_patched_cpi → …
 ```
 
 普通 `sendTransaction`，无需 bundle。

@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::instruction::get_stack_height;
 use anchor_lang::solana_program::clock::Clock;
+use anchor_lang::solana_program::instruction::get_stack_height;
 use anchor_lang::solana_program::rent::Rent;
+use solana_stake_interface::state::StakeStateV2;
 use spl_token::solana_program::program_option::COption;
 use spl_token::solana_program::program_pack::Pack;
 use spl_token::state::{Account as SplAccount, Mint as SplMint};
-use solana_stake_interface::state::StakeStateV2;
 use spl_token_2022::extension::transfer_fee::{TransferFeeAmount, TransferFeeConfig};
 use spl_token_2022::extension::{
     default_account_state::DefaultAccountState, BaseStateWithExtensions, StateWithExtensions,
@@ -65,11 +65,9 @@ impl LetBatchCache {
     fn account_slot(&mut self, account_index: u8) -> &mut Token2022AccountCache {
         let i = account_index as usize;
         if i >= self.token2022_accounts.len() {
-            self.token2022_accounts
-                .resize_with(i + 1, || None);
+            self.token2022_accounts.resize_with(i + 1, || None);
         }
-        self.token2022_accounts[i]
-            .get_or_insert_with(Token2022AccountCache::default)
+        self.token2022_accounts[i].get_or_insert_with(Token2022AccountCache::default)
     }
 
     fn mint_slot(&mut self, account_index: u8) -> &mut Token2022MintCache {
@@ -77,8 +75,7 @@ impl LetBatchCache {
         if i >= self.token2022_mints.len() {
             self.token2022_mints.resize_with(i + 1, || None);
         }
-        self.token2022_mints[i]
-            .get_or_insert_with(Token2022MintCache::default)
+        self.token2022_mints[i].get_or_insert_with(Token2022MintCache::default)
     }
 }
 
@@ -147,7 +144,10 @@ fn ensure_token2022_mint_base<'info>(
     let acc = get_remaining(remaining, account_index)?;
     require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
     let data = acc.try_borrow_data()?;
-    require!(data.len() >= Spl2022Mint::LEN, ErrorCode::AccountDataLenMismatch);
+    require!(
+        data.len() >= Spl2022Mint::LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
     let parsed = StateWithExtensions::<Spl2022Mint>::unpack(&data)
         .map_err(|_| ErrorCode::SplToken2022UnpackFailed)?;
     let base = (parsed.base.supply, parsed.base.decimals);
@@ -167,7 +167,10 @@ fn ensure_token2022_transfer_fee_config<'info>(
     let acc = get_remaining(remaining, account_index)?;
     require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
     let data = acc.try_borrow_data()?;
-    require!(data.len() >= Spl2022Mint::LEN, ErrorCode::AccountDataLenMismatch);
+    require!(
+        data.len() >= Spl2022Mint::LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
     let parsed = StateWithExtensions::<Spl2022Mint>::unpack(&data)
         .map_err(|_| ErrorCode::SplToken2022UnpackFailed)?;
     let ext = parsed
@@ -194,7 +197,10 @@ fn ensure_token2022_default_account_state<'info>(
     let acc = get_remaining(remaining, account_index)?;
     require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
     let data = acc.try_borrow_data()?;
-    require!(data.len() >= Spl2022Mint::LEN, ErrorCode::AccountDataLenMismatch);
+    require!(
+        data.len() >= Spl2022Mint::LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
     let parsed = StateWithExtensions::<Spl2022Mint>::unpack(&data)
         .map_err(|_| ErrorCode::SplToken2022UnpackFailed)?;
     let ext = parsed
@@ -261,9 +267,7 @@ fn eval_binding<'info>(
         LetBinding::AccountDataLen { account_index } => {
             load_account_data_len(remaining, *account_index, frame_key, frame_data_len)?
         }
-        LetBinding::AccountKey { account_index } => {
-            load_account_key(remaining, *account_index)?
-        }
+        LetBinding::AccountKey { account_index } => load_account_key(remaining, *account_index)?,
         LetBinding::ConstPubkey { bytes } => {
             encode_typed(ValueType::Pubkey, TypedValue::Pubkey(*bytes))?
         }
@@ -289,10 +293,7 @@ fn eval_binding<'info>(
         LetBinding::StakeDelegationActivationEpoch { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
             let delegation = require_stake_delegation(&state)?;
-            encode_typed(
-                ValueType::U64,
-                TypedValue::U64(delegation.activation_epoch),
-            )?
+            encode_typed(ValueType::U64, TypedValue::U64(delegation.activation_epoch))?
         }
         LetBinding::StakeDelegationDeactivationEpoch { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
@@ -305,10 +306,7 @@ fn eval_binding<'info>(
         LetBinding::StakeLockupUnixTimestamp { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
             let meta = require_stake_meta(&state)?;
-            encode_typed(
-                ValueType::I64,
-                TypedValue::I64(meta.lockup.unix_timestamp),
-            )?
+            encode_typed(ValueType::I64, TypedValue::I64(meta.lockup.unix_timestamp))?
         }
         LetBinding::StakeLockupEpoch { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
@@ -400,7 +398,8 @@ fn eval_binding<'info>(
         LetBinding::SplTokenAccountOwnerIsDerived { account_index } => {
             let acc_info = get_remaining(remaining, *account_index)?;
             let acc = load_spl_token_account(remaining, *account_index)?;
-            let derived = spl_token_owner_is_derived(acc_info, &acc.owner, &acc.mint, &spl_token::ID);
+            let derived =
+                spl_token_owner_is_derived(acc_info, &acc.owner, &acc.mint, &spl_token::ID);
             encode_typed(ValueType::Bool, TypedValue::Bool(derived))?
         }
         LetBinding::SplToken2022AccountMint { account_index } => {
@@ -445,10 +444,7 @@ fn eval_binding<'info>(
         LetBinding::StakeRentExemptReserve { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
             let meta = require_stake_meta(&state)?;
-            encode_typed(
-                ValueType::U64,
-                TypedValue::U64(meta.rent_exempt_reserve),
-            )?
+            encode_typed(ValueType::U64, TypedValue::U64(meta.rent_exempt_reserve))?
         }
         LetBinding::StakeCreditsObserved { account_index } => {
             let state = load_stake_state(remaining, *account_index)?;
@@ -467,10 +463,7 @@ fn eval_binding<'info>(
         }
         LetBinding::UpgradeableProgramDataTag { account_index } => {
             let state = load_upgradeable_state(remaining, *account_index)?;
-            encode_typed(
-                ValueType::U32,
-                TypedValue::U32(program_data_tag(&state)),
-            )?
+            encode_typed(ValueType::U32, TypedValue::U32(program_data_tag(&state)))?
         }
         LetBinding::UpgradeableProgramDataUpgradeAuthority { account_index } => {
             let state = load_upgradeable_state(remaining, *account_index)?;
@@ -489,27 +482,21 @@ fn eval_binding<'info>(
         LetBinding::SysvarClockSlot => {
             encode_typed(ValueType::U64, TypedValue::U64(Clock::get()?.slot))?
         }
-        LetBinding::SysvarClockEpochStartTimestamp => {
-            encode_typed(
-                ValueType::I64,
-                TypedValue::I64(Clock::get()?.epoch_start_timestamp),
-            )?
-        }
+        LetBinding::SysvarClockEpochStartTimestamp => encode_typed(
+            ValueType::I64,
+            TypedValue::I64(Clock::get()?.epoch_start_timestamp),
+        )?,
         LetBinding::SysvarClockEpoch => {
             encode_typed(ValueType::U64, TypedValue::U64(Clock::get()?.epoch))?
         }
-        LetBinding::SysvarClockLeaderScheduleEpoch => {
-            encode_typed(
-                ValueType::U64,
-                TypedValue::U64(Clock::get()?.leader_schedule_epoch),
-            )?
-        }
-        LetBinding::SysvarClockUnixTimestamp => {
-            encode_typed(
-                ValueType::I64,
-                TypedValue::I64(Clock::get()?.unix_timestamp),
-            )?
-        }
+        LetBinding::SysvarClockLeaderScheduleEpoch => encode_typed(
+            ValueType::U64,
+            TypedValue::U64(Clock::get()?.leader_schedule_epoch),
+        )?,
+        LetBinding::SysvarClockUnixTimestamp => encode_typed(
+            ValueType::I64,
+            TypedValue::I64(Clock::get()?.unix_timestamp),
+        )?,
         LetBinding::SysvarRentMinimumBalance { data_len } => {
             let rent = Rent::get()?;
             let min = rent.minimum_balance(*data_len as usize);
@@ -536,8 +523,7 @@ fn eval_binding<'info>(
             encode_typed(ValueType::U8, TypedValue::U8(mint.decimals))?
         }
         LetBinding::SplToken2022AccountAmount { account_index } => {
-            let (amount, _, _) =
-                ensure_token2022_account_base(remaining, cache, *account_index)?;
+            let (amount, _, _) = ensure_token2022_account_base(remaining, cache, *account_index)?;
             encode_typed(ValueType::U64, TypedValue::U64(amount))?
         }
         LetBinding::SplToken2022AccountDelegatedAmount { account_index } => {
@@ -578,8 +564,7 @@ fn eval_binding<'info>(
             encode_typed(ValueType::U64, TypedValue::U64(withheld))?
         }
         LetBinding::SplToken2022MintDefaultAccountState { account_index } => {
-            let state =
-                ensure_token2022_default_account_state(remaining, cache, *account_index)?;
+            let state = ensure_token2022_default_account_state(remaining, cache, *account_index)?;
             encode_typed(ValueType::U8, TypedValue::U8(state))?
         }
     };
@@ -603,7 +588,10 @@ fn load_account_data_slice<'info>(
 ) -> Result<ValueBytes> {
     let acc = get_remaining(remaining, account_index)?;
     let owner_ref = get_remaining(remaining, expected_program_owner)?;
-    require!(*acc.owner == *owner_ref.key, ErrorCode::AccountOwnerMismatch);
+    require!(
+        *acc.owner == *owner_ref.key,
+        ErrorCode::AccountOwnerMismatch
+    );
     let data = acc.try_borrow_data()?;
     let off = offset as usize;
     let end = off
@@ -667,7 +655,10 @@ fn load_spl_token_mint<'info>(
     let acc = get_remaining(remaining, account_index)?;
     require_owner_bytes(acc, &spl_token::ID.to_bytes())?;
     let data = acc.try_borrow_data()?;
-    require!(data.len() == SPL_TOKEN_MINT_LEN, ErrorCode::AccountDataLenMismatch);
+    require!(
+        data.len() == SPL_TOKEN_MINT_LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
     SplMint::unpack(&data).map_err(|_| ErrorCode::SplTokenUnpackFailed.into())
 }
 
@@ -678,7 +669,10 @@ fn load_spl_token_2022_mint_base<'info>(
     let acc = get_remaining(remaining, account_index)?;
     require_owner_bytes(acc, &spl_token_2022::ID.to_bytes())?;
     let data = acc.try_borrow_data()?;
-    require!(data.len() >= Spl2022Mint::LEN, ErrorCode::AccountDataLenMismatch);
+    require!(
+        data.len() >= Spl2022Mint::LEN,
+        ErrorCode::AccountDataLenMismatch
+    );
     let parsed = StateWithExtensions::<Spl2022Mint>::unpack(&data)
         .map_err(|_| ErrorCode::SplToken2022UnpackFailed)?;
     Ok(parsed.base)
@@ -710,10 +704,7 @@ fn load_account_program_owner<'info>(
     account_index: u8,
 ) -> Result<ValueBytes> {
     let acc = get_remaining(remaining, account_index)?;
-    encode_typed(
-        ValueType::Pubkey,
-        TypedValue::Pubkey(acc.owner.to_bytes()),
-    )
+    encode_typed(ValueType::Pubkey, TypedValue::Pubkey(acc.owner.to_bytes()))
 }
 
 fn load_spl_token_2022_account<'info>(
@@ -741,11 +732,7 @@ fn spl_token_owner_is_derived(
     token_program: &Pubkey,
 ) -> bool {
     let (ata, _) = Pubkey::find_program_address(
-        &[
-            owner.as_ref(),
-            token_program.as_ref(),
-            mint.as_ref(),
-        ],
+        &[owner.as_ref(), token_program.as_ref(), mint.as_ref()],
         &ATA_PROGRAM_ID,
     );
     *acc.key == ata

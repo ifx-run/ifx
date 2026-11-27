@@ -128,4 +128,19 @@ pub enum ErrorCode {
     /// Failing index (u8) is in **return data** when available; see pseudocode logs.
     #[msg("Assertion failed in ifx_assert_multi")]
     AssertFailedMulti,
+    /// `ifx_let_patched_cpi` was invoked via CPI (must be transaction top level).
+    #[msg("ifx_let_patched_cpi must be invoked at transaction top level (stack height 1)")]
+    LetPatchedCpiNotTopLevel,
+    /// `ifx_let_patched_cpi` was given an empty return-data let list.
+    #[msg("ifx_let_patched_cpi requires at least one return-data let")]
+    InvalidReturnDataLets,
+    /// The CPI did not set return data.
+    #[msg("CPI return data is missing")]
+    ReturnDataMissing,
+    /// `get_return_data` program id is not the program this instruction invoked.
+    #[msg("CPI return data program id does not match the invoked program")]
+    ReturnDataProgramMismatch,
+    /// `offset + ty.size()` is past the return data.
+    #[msg("CPI return data is shorter than offset plus type width")]
+    ReturnDataTooShort,
 }

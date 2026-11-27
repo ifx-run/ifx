@@ -36,4 +36,9 @@ mkdir -p "$ROOT/target/deploy" "$ROOT/programs/ifx/target/deploy"
 cp "$SRC" "$ROOT/target/deploy/ifx-keypair.json"
 cp "$SRC" "$ROOT/programs/ifx/target/deploy/ifx-keypair.json"
 chmod 600 "$ROOT/target/deploy/ifx-keypair.json" "$ROOT/programs/ifx/target/deploy/ifx-keypair.json"
+# Localnet fixture for ifx_let_patched_cpi tests. Not a cluster deployment.
+if [ -f "$ROOT/keys/return-echo-keypair.json" ]; then
+  cp "$ROOT/keys/return-echo-keypair.json" "$ROOT/target/deploy/return_echo-keypair.json"
+  chmod 600 "$ROOT/target/deploy/return_echo-keypair.json"
+fi
 echo "keys:sync ($CLUSTER) → target/deploy + programs/ifx/target/deploy"

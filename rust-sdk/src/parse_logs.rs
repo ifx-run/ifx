@@ -119,7 +119,7 @@ fn parse_custom_program_error(raw: &str) -> Option<(String, u32)> {
 }
 
 fn ifx_error_name_by_low_byte(low: u32) -> Option<&'static str> {
-    const NAMES: [&str; 8] = [
+    const NAMES: [&str; 13] = [
         "LetNotTopLevel",
         "TapeOutOfBounds",
         "UnauthorizedClose",
@@ -128,6 +128,11 @@ fn ifx_error_name_by_low_byte(low: u32) -> Option<&'static str> {
         "AssertFailed",
         "IfElseRevert",
         "AssertFailedMulti",
+        "LetPatchedCpiNotTopLevel",
+        "InvalidReturnDataLets",
+        "ReturnDataMissing",
+        "ReturnDataProgramMismatch",
+        "ReturnDataTooShort",
     ];
     NAMES.into_iter().find(|name| {
         ifx_error_code_by_name(name)
@@ -146,6 +151,11 @@ fn ifx_error_name(code: u32) -> Option<&'static str> {
         6005 => Some("AssertFailed"),
         6006 => Some("IfElseRevert"),
         6039 => Some("AssertFailedMulti"),
+        6040 => Some("LetPatchedCpiNotTopLevel"),
+        6041 => Some("InvalidReturnDataLets"),
+        6042 => Some("ReturnDataMissing"),
+        6043 => Some("ReturnDataProgramMismatch"),
+        6044 => Some("ReturnDataTooShort"),
         _ => None,
     }
 }
@@ -160,6 +170,11 @@ fn ifx_error_code_by_name(name: &str) -> Option<u32> {
         "AssertFailed" => Some(6005),
         "IfElseRevert" => Some(6006),
         "AssertFailedMulti" => Some(6039),
+        "LetPatchedCpiNotTopLevel" => Some(6040),
+        "InvalidReturnDataLets" => Some(6041),
+        "ReturnDataMissing" => Some(6042),
+        "ReturnDataProgramMismatch" => Some(6043),
+        "ReturnDataTooShort" => Some(6044),
         _ => None,
     }
 }

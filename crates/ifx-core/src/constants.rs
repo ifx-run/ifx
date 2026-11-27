@@ -11,6 +11,8 @@ pub const IX_DISC_ASSERT: u8 = 4;
 pub const IX_DISC_ASSERT_MULTI: u8 = 5;
 pub const IX_DISC_PATCHED_CPI: u8 = 6;
 pub const IX_DISC_IF_ELSE: u8 = 7;
+/// One CPI, then `let` fixed-width slices of its return data onto the Frame tape.
+pub const IX_DISC_LET_PATCHED_CPI: u8 = 8;
 
 /// 1-byte `Frame` account discriminator (`#[account(discriminator = …)]`).
 pub const ACCOUNT_DISC_FRAME: u8 = 6;

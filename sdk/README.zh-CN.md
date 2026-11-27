@@ -21,13 +21,13 @@ Ifx 的 TypeScript SDK，分两层，**不包装 RPC / 钱包**：
 
 ## 安装
 
-**当前版本：** **`0.1.3`**（默认主网；与 `ifx-sdk@0.1.3`、`go-sdk@v0.1.3` 对齐）。
+**当前版本：** **`0.1.4`**（默认主网；与 `ifx-sdk@0.1.4`、`go-sdk@v0.1.4` 对齐）。
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
 
-锁定版本：`npm install @ifx-run/sdk@0.1.3`
+锁定版本：`npm install @ifx-run/sdk@0.1.4`
 
 ## 创建 Frame，再使用
 
@@ -63,6 +63,14 @@ const target = scratch.letConstU64(10);
 tx.add(scratch.ixLet(target));
 tx.add(scratch.ixAssert(expr.nonZero(target)));
 await provider.sendAndConfirm(tx);
+```
+
+发送前把交易打出来，贴进 [ifx.run/explorer](https://ifx.run/explorer)。页面会解开每条 Ifx 指令（let、表达式、CPI 分支）。base64 即可，同一段字节的 base58 或 hex 也可以。可以不签名：
+
+```ts
+console.log(
+  tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64")
+);
 ```
 
 **可选 — 私有 / 可关闭 Frame**（on-curve `authority` 签 `reset`/`let`；日后 `close` 回收 rent）。用于 bundle / nonce 防投毒等场景 — [frame-authority.zh-CN.md](../docs/frame-authority.zh-CN.md)：
@@ -209,7 +217,7 @@ tx.add(scratch.ixCpi(built));
 
 `rawCpiPatch(dataOffset, value)` 从 Frame tape 拷贝到 `data[dataOffset..]`。**链上测试覆盖：** `tests/ifx.ts`、`tests/ifx_cpi_edges.ts`、`tests/ifx_negative.ts`；wire codec：`tests/sdk_patch_codec.ts`、`tests/sdk_if_else_generic_codec.ts`。
 
-**无 patch：** 用 `staticCpi(template)` → `ifx_if_else` 里 `arm.cpi(step.staticStep)`；无条件时也可直接把目标指令放进交易。
+**无 patch：** 用 `staticCpi(template)` → `ifx_if_else` 里 `arm.cpi(step.staticStep)`；无条件时也可直接把目标指令放进交易。若要把这次 CPI 留在 Ifx 里并绑定它的 return data，用 `scratch.ixLetPatchedCpi`（这里允许 Static；空 RawPatched 不行）。仅顶层，不能放进 `if_else` arm。之后的 `ixLet` 看不到这次 return data。
 
 ### `ifx_if_else` 分支 arm
 
@@ -250,7 +258,7 @@ ifElseArgs(flag, arm.cpi(built.cpi));
 |----|------|
 | **npm** | `@ifx-run/sdk` 语义化版本见 [CHANGELOG.md](./CHANGELOG.md) |
 | **链上** | `DEFAULT_IFX_PROGRAM_ID`（= 主网）· `IFX_MAINNET_PROGRAM_ID` · `IFX_DEVNET_PROGRAM_ID` · `IFX_LOCALNET_PROGRAM_ID`（`constants.ts`） |
-| **IDL** | `idl/ifx.json` 的 `metadata.version` 与 program crate 版本应对齐发布说明 |
+| **同一版本号** | 程序 crate、`ifx-core`、IDL `metadata.version` 与三个 SDK 使用同一个版本号。`ifx-core` 即使源码没改，也随主程序一起升。 |
 | **破坏性变更** | 指令 discriminator、`Expr` / `U8LenVec` / `U16LenVec` wire、Frame tape 布局 → 升 major 并写 changelog |
 
 省略 `programId` 即连主网（`DEFAULT_IFX_PROGRAM_ID`）。Devnet / localnet / 自定义 cluster：在 `planNewFrame` / 构造函数传 `IFX_DEVNET_PROGRAM_ID` 或 `IFX_LOCALNET_PROGRAM_ID`。单笔 ix 覆盖：`scratch.ixReset({ programId })`。

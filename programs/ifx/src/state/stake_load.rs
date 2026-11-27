@@ -49,9 +49,7 @@ pub fn stake_state_tag(state: &StakeStateV2) -> u8 {
     }
 }
 
-pub fn require_stake_record(
-    state: &StakeStateV2,
-) -> Result<&solana_stake_interface::state::Stake> {
+pub fn require_stake_record(state: &StakeStateV2) -> Result<&solana_stake_interface::state::Stake> {
     match state {
         StakeStateV2::Stake(_, stake, _) => Ok(stake),
         _ => err!(ErrorCode::StakeStateMismatch),

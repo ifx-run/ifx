@@ -21,13 +21,13 @@ Sign, send, fetch accounts with your existing **Anchor Provider / wallet / `conn
 
 ## Install
 
-**Current release:** **`0.1.3`** (mainnet default; aligned with `ifx-sdk@0.1.3` and `go-sdk@v0.1.3`).
+**Current release:** **`0.1.4`** (mainnet default; aligned with `ifx-sdk@0.1.4` and `go-sdk@v0.1.4`).
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
 ```
 
-Pin exact: `npm install @ifx-run/sdk@0.1.3`
+Pin exact: `npm install @ifx-run/sdk@0.1.4`
 
 ## Create a frame, then use it
 
@@ -63,6 +63,14 @@ const target = scratch.letConstU64(10);
 tx.add(scratch.ixLet(target));
 tx.add(scratch.ixAssert(expr.nonZero(target)));
 await provider.sendAndConfirm(tx);
+```
+
+Before sending, print the transaction and paste it into [ifx.run/explorer](https://ifx.run/explorer). The page decodes each Ifx instruction (lets, expressions, CPI arms). Base64 is enough; base58 and hex of the same bytes work too. Signatures can be empty:
+
+```ts
+console.log(
+  tx.serialize({ requireAllSignatures: false, verifySignatures: false }).toString("base64")
+);
 ```
 
 **Optional — private / closeable Frame** (`planNewFrame`): only when you need **`close`**, §3.7 pre-sign edge, or optional defense-in-depth — not the default production path. See [frame-authority.md](../docs/frame-authority.md) §3.7.
@@ -209,7 +217,7 @@ tx.add(scratch.ixCpi(built));
 
 `rawCpiPatch(dataOffset, value)` copies `ScratchValue<T>` bytes from Frame tape into `data[dataOffset..]`. **On-chain coverage:** `tests/ifx.ts`, `tests/ifx_cpi_edges.ts`, `tests/ifx_negative.ts`; wire codec: `tests/sdk_patch_codec.ts`, `tests/sdk_if_else_generic_codec.ts`.
 
-**No patches:** use `staticCpi(template)` → `arm.cpi(step.staticStep)` in `ifx_if_else`, or add the instruction to the transaction directly when it is unconditional.
+**No patches:** use `staticCpi(template)` → `arm.cpi(step.staticStep)` in `ifx_if_else`, or add the instruction to the transaction directly when it is unconditional. To keep that CPI inside Ifx and bind its return data, use `scratch.ixLetPatchedCpi` (Static is legal there; empty RawPatched is not). Top-level only — not inside an `if_else` arm. A later `ixLet` cannot see that return data.
 
 ### `ifx_if_else` arms
 
@@ -250,7 +258,7 @@ Published npm package includes `dist/idl/ifx.json` (`import "@ifx-run/sdk/idl.js
 |------|-------|
 | **npm** | `@ifx-run/sdk` semver in [CHANGELOG.md](./CHANGELOG.md) |
 | **On-chain** | `DEFAULT_IFX_PROGRAM_ID` (= mainnet) · `IFX_MAINNET_PROGRAM_ID` · `IFX_DEVNET_PROGRAM_ID` · `IFX_LOCALNET_PROGRAM_ID` in `constants.ts` |
-| **IDL** | `idl/ifx.json` `metadata.version` should align with program crate release |
+| **Release train** | Program crate, `ifx-core`, IDL `metadata.version`, and the three SDKs share one version. Bump `ifx-core` with the program even when its source is unchanged. |
 | **Breaking changes** | Instruction discriminators, `Expr` / `U8LenVec` / `U16LenVec` wire, Frame tape layout → major bump + changelog |
 
 Omitted `programId` targets mainnet (`DEFAULT_IFX_PROGRAM_ID`). Devnet / localnet / custom cluster: set `programId` on `planNewFrame` / `FrameScratch` constructor (`IFX_DEVNET_PROGRAM_ID`, `IFX_LOCALNET_PROGRAM_ID`). Per-ix override: `scratch.ixReset({ programId })`.

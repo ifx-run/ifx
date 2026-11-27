@@ -19,13 +19,13 @@ const PersonalAmmDefaultFeeBps uint64 = 30
 
 // PersonalAmmAccounts wire accounts for wallet-pool constant-product swap.
 type PersonalAmmAccounts struct {
-	User           solana.PublicKey
-	Pool           solana.PublicKey
-	UserTokenAAta  solana.PublicKey
-	PoolTokenAAta  solana.PublicKey
-	UserTokenBAta  solana.PublicKey
-	PoolTokenBAta  solana.PublicKey
-	TokenProgram   solana.PublicKey // zero → standard SPL Token program
+	User          solana.PublicKey
+	Pool          solana.PublicKey
+	UserTokenAAta solana.PublicKey
+	PoolTokenAAta solana.PublicKey
+	UserTokenBAta solana.PublicKey
+	PoolTokenBAta solana.PublicKey
+	TokenProgram  solana.PublicKey // zero → standard SPL Token program
 }
 
 // PersonalAmmSwapParams swap quote parameters.
@@ -111,21 +111,21 @@ func PlanPersonalAmmSwapInstructions(
 		return PersonalAmmSwapPlan{}, err
 	}
 	xPlusDx, err := b.LetEval(expr.Add(
-		expr.Ref(reserveTokenA.Index),
-		expr.Ref(amountIn.Index),
+		reserveTokenA,
+		amountIn,
 	))
 	if err != nil {
 		return PersonalAmmSwapPlan{}, err
 	}
 	amountOutGross, err := b.LetEval(expr.MulDivFloor(
-		expr.AsU128(expr.Ref(reserveTokenB.Index)),
-		expr.AsU128(expr.Ref(amountIn.Index)),
-		expr.AsU128(expr.Ref(xPlusDx.Index)),
+		expr.AsU128(reserveTokenB),
+		expr.AsU128(amountIn),
+		expr.AsU128(xPlusDx),
 	))
 	if err != nil {
 		return PersonalAmmSwapPlan{}, err
 	}
-	amountOutGrossU64, err := b.LetEval(expr.AsU64(expr.Ref(amountOutGross.Index)))
+	amountOutGrossU64, err := b.LetEval(expr.AsU64(amountOutGross))
 	if err != nil {
 		return PersonalAmmSwapPlan{}, err
 	}
@@ -134,7 +134,7 @@ func PlanPersonalAmmSwapInstructions(
 		amountOut = amountOutGrossU64
 	} else {
 		amountOut, err = b.LetEval(expr.BpsMulFloor(
-			expr.Ref(amountOutGrossU64.Index),
+			amountOutGrossU64,
 			expr.U16(uint16(BpsDenom-feeBps)),
 		))
 		if err != nil {
@@ -152,8 +152,8 @@ func PlanPersonalAmmSwapInstructions(
 	out = append(out, letIx)
 
 	assertIx, err := s.IxAssert(expr.Ge(
-		expr.Ref(amountOut.Index),
-		expr.Ref(minOut.Index),
+		amountOut,
+		minOut,
 	))
 	if err != nil {
 		return PersonalAmmSwapPlan{}, err

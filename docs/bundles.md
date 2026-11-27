@@ -59,7 +59,7 @@ So if tx1 writes Frame `tape` / `cursor` / `index_count` and tx2 (same bundle, l
 ### 1. Single tx (recommended)
 
 ```text
-ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_patched_cpi / ifx_if_else / ifx_let_patched_cpi → …
 ```
 
 Normal `sendTransaction`. No bundle.

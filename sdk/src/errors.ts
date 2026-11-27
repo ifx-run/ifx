@@ -47,6 +47,11 @@ export const IFX_ERROR = {
   CreateNotTopLevel: 6036,
   UnauthorizedFrameWrite: 6037,
   SplMintOptionEmpty: 6038,
+  LetPatchedCpiNotTopLevel: 6040,
+  InvalidReturnDataLets: 6041,
+  ReturnDataMissing: 6042,
+  ReturnDataProgramMismatch: 6043,
+  ReturnDataTooShort: 6044,
 } as const;
 
 export type IfxErrorName = keyof typeof IFX_ERROR;

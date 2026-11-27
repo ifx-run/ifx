@@ -52,6 +52,11 @@ exports.IFX_ERROR = {
     CreateNotTopLevel: 6036,
     UnauthorizedFrameWrite: 6037,
     SplMintOptionEmpty: 6038,
+    LetPatchedCpiNotTopLevel: 6040,
+    InvalidReturnDataLets: 6041,
+    ReturnDataMissing: 6042,
+    ReturnDataProgramMismatch: 6043,
+    ReturnDataTooShort: 6044,
 };
 const ERROR_NAME_BY_CODE = Object.fromEntries(Object.entries(exports.IFX_ERROR).map(([name, code]) => [code, name]));
 /** Resolve a numeric Anchor code to its Ifx error name, if known. */

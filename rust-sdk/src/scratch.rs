@@ -213,6 +213,27 @@ impl FrameScratch {
         crate::ix::build_ix_cpi(self.frame, &built.cpi, &built.remaining, self.ix_opts())
     }
 
+    /// One CPI, then reserve one tape index per return-data let (`ifx_let_patched_cpi`).
+    pub fn ix_let_patched_cpi(
+        &mut self,
+        built: &crate::cpi::CpiWireBuildResult,
+        lets: &[ifx_core::ReturnDataLet],
+    ) -> Result<(Instruction, Vec<ScratchValue>), ScratchError> {
+        let ix = crate::ix::build_ix_let_patched_cpi(
+            self.frame,
+            self.authority,
+            &built.cpi,
+            &built.remaining,
+            lets,
+            self.ix_opts(),
+        )?;
+        let mut values = Vec::with_capacity(lets.len());
+        for item in lets {
+            values.push(self.plan(LetBinding::Eval { expr: zero_expr(item.ty) }, &[])?);
+        }
+        Ok((ix, values))
+    }
+
     pub fn ix_if_else(
         &self,
         args: &crate::wire_ix::IfElseArgs,
@@ -261,6 +282,25 @@ impl FrameScratch {
             ty,
             remaining: let_remaining.to_vec(),
         })
+    }
+}
+
+fn zero_expr(ty: ValueType) -> Expr {
+    match ty {
+        ValueType::Bool => Expr::ConstBool(false),
+        ValueType::U8 => Expr::ConstU8(0),
+        ValueType::U16 => Expr::ConstU16(0),
+        ValueType::U32 => Expr::ConstU32(0),
+        ValueType::U64 => Expr::ConstU64(0),
+        ValueType::U128 => Expr::ConstU128(0),
+        ValueType::I8 => Expr::ConstI8(0),
+        ValueType::I16 => Expr::ConstI16(0),
+        ValueType::I32 => Expr::ConstI32(0),
+        ValueType::I64 => Expr::ConstI64(0),
+        ValueType::I128 => Expr::ConstI128(0),
+        ValueType::F32 => Expr::ConstF32(0.0),
+        ValueType::F64 => Expr::ConstF64(0.0),
+        ValueType::Pubkey => Expr::ConstPubkey([0u8; 32]),
     }
 }
 
@@ -397,5 +437,54 @@ mod tests {
             .unwrap();
         let ix = s.ix_let_single(&sv).unwrap();
         assert_eq!(&ix.data[1..], &[1, 9, 0]);
+    }
+
+    #[test]
+    fn let_patched_cpi_reserves_two_return_lets() {
+        use crate::constants::IX_DISC_LET_PATCHED_CPI;
+        use crate::cpi::CpiWireBuildResult;
+        use ifx_core::wire::{Cpi, ReturnDataLet, ValueType};
+        use ifx_core::U16LenVec;
+
+        let frame = Pubkey::new_unique();
+        let program = Pubkey::new_unique();
+        let mut s = FrameScratch::new(
+            frame,
+            Some(512),
+            Some(IFX_LOCALNET_PROGRAM_ID),
+            on_curve_authority(),
+        );
+        let built = CpiWireBuildResult {
+            cpi: Cpi::Static {
+                accounts_start: 0,
+                accounts_len: 1,
+                data: U16LenVec(vec![1, 2, 3, 4, 5, 6, 7, 8]),
+            },
+            remaining: vec![AccountMeta::new_readonly(program, false)],
+        };
+        let lets = [
+            ReturnDataLet {
+                ty: ValueType::U64,
+                offset: 0,
+            },
+            ReturnDataLet {
+                ty: ValueType::U64,
+                offset: 8,
+            },
+        ];
+        let (ix, values) = s.ix_let_patched_cpi(&built, &lets).unwrap();
+        assert_eq!(ix.data[0], IX_DISC_LET_PATCHED_CPI);
+        assert_eq!(ix.data[14], 2);
+        assert_eq!(ix.data[15], 4);
+        assert_eq!(&ix.data[16..18], &[0, 0]);
+        assert_eq!(values[0].index, 0);
+        assert_eq!(values[1].index, 1);
+        assert!(ix.accounts[0].is_writable);
+        assert!(ix.accounts[1].is_signer);
+        assert_eq!(ix.accounts[2].pubkey, program);
+
+        let err = s.ix_let_patched_cpi(&built, &[]).unwrap_err();
+        assert!(err.to_string().contains("1..=255"));
+        assert_eq!(s.next_index, 2);
     }
 }

@@ -12,6 +12,8 @@ Localnet、devnet、mainnet 使用不同 vanity 前缀（base58）：localnet **
 
 **本地 / Surfpool / `anchor test`：** 仅使用已提交的 localnet keypair。勿向这些地址在主网充值。
 
+**`return_echo`**（`keys/return-echo-keypair.json`，id `DrC6aMeryjNBs2kmf7yE87MtWj8rwL1YEkWioK4xosJP`）只给 localnet 上的 `ifx_let_patched_cpi` 测试用。它把 instruction data 抄进 return data。不部署到 devnet 或 mainnet。`npm run keys:sync` 会把它拷到 `target/deploy/return_echo-keypair.json`。
+
 ## 本地流程
 
 ```bash

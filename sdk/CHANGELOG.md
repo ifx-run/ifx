@@ -4,9 +4,20 @@ English | [中文](./CHANGELOG.zh-CN.md)
 
 All notable changes to `@ifx-run/sdk` are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-**Status:** npm release **`0.1.3`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.3** and on-chain program / `ifx-core` **0.1.2**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
+**Status:** npm release **`0.1.4`** — default program id is **mainnet** (`ifxmwW…`). Aligned with `ifx-sdk` / `go-sdk` **0.1.4** and on-chain program / `ifx-core` **0.1.4**. Pre-`0.1.0` `*-devnet.*` npm releases are deprecated (wire-incompatible).
 
 ## [Unreleased]
+
+## [0.1.4] - 2026-11-27
+
+### Added
+
+- **`ifx_let_patched_cpi`** (discriminator **8**): one CPI, then append fixed-width slices of that call's return data (`{ ty, offset: u16 }`, count 1–255). Top-level only; not valid inside `ifx_if_else`. Static, non-empty RawPatched, or Structured. Logs `cpi …` then `let $N: ty = return_data[+offset]; //= value`.
+- Errors **6040–6044**.
+
+### Changed
+
+- Requires program redeploy (**`ifx` / `ifx-core` 0.1.4**). Discriminators 0–7 are unchanged.
 
 ## [0.1.3] - 2026-07-18
 

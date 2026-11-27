@@ -15,18 +15,26 @@ pub enum LetBinding {
     /// `remaining[expected_program_owner].key` must equal `remaining[account_index].owner`.
     /// **→ `ty`.**
     AccountDataSlice {
+        /// Caller-supplied type of the copied bytes.
         ty: ValueType,
+        /// Index into post-gate `remaining_accounts`.
         account_index: u8,
+        /// Start byte of the slice in the account data.
         offset: u32,
+        /// Index of the remaining account whose address must equal the data account's owner.
         expected_program_owner: u8,
     },
     /// `remaining[i].lamports` (native SOL balance). **→ `U64`.**
-    AccountLamports { account_index: u8 },
+    AccountLamports {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Evaluate `expr` and append to frame tape.
     ///
     /// Storage type is inferred on-chain via [`infer_expr_ty`](crate::layout::infer_expr_ty)
     /// (same rules as `@ifx-run/sdk` `inferIfxTyFromExpr`). SDK `letEval` infers off-chain for layout.
     Eval {
+        /// Expression evaluated and appended to the tape.
         expr: Expr,
     },
     /// `Clock::get()?.slot`. **→ `U64`.** No `remaining` account.
@@ -40,125 +48,299 @@ pub enum LetBinding {
     /// `Clock::get()?.unix_timestamp`. **→ `I64`.**
     SysvarClockUnixTimestamp,
     /// `Rent::get()?.minimum_balance(data_len)`. **→ `U64`.**
-    SysvarRentMinimumBalance { data_len: u32 },
+    SysvarRentMinimumBalance {
+        /// Data length passed to `Rent::minimum_balance`.
+        data_len: u32,
+    },
     /// SPL Token account `amount` (`owner == spl_token::ID`, 165-byte account). **→ `U64`.**
-    SplTokenAccountAmount { account_index: u8 },
+    SplTokenAccountAmount {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `delegated_amount`. **→ `U64`.**
-    SplTokenAccountDelegatedAmount { account_index: u8 },
+    SplTokenAccountDelegatedAmount {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `state` (`AccountState` discriminant). **→ `U8`.**
-    SplTokenAccountState { account_index: u8 },
+    SplTokenAccountState {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token mint `supply`. **→ `U64`.**
-    SplMintSupply { account_index: u8 },
+    SplMintSupply {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token mint `decimals`. **→ `U8`.**
-    SplMintDecimals { account_index: u8 },
+    SplMintDecimals {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `amount` (`owner == spl_token_2022::ID`). **→ `U64`.**
-    SplToken2022AccountAmount { account_index: u8 },
+    SplToken2022AccountAmount {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `delegated_amount`. **→ `U64`.**
-    SplToken2022AccountDelegatedAmount { account_index: u8 },
+    SplToken2022AccountDelegatedAmount {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `state`. **→ `U8`.**
-    SplToken2022AccountState { account_index: u8 },
+    SplToken2022AccountState {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint `supply`. **→ `U64`.**
-    SplToken2022MintSupply { account_index: u8 },
+    SplToken2022MintSupply {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint `decimals`. **→ `U8`.**
-    SplToken2022MintDecimals { account_index: u8 },
+    SplToken2022MintDecimals {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 `TransferFeeAmount.withheld_amount` on token account. **→ `U64`.**
-    SplToken2022AccountTransferFeeWithheld { account_index: u8 },
+    SplToken2022AccountTransferFeeWithheld {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint current `transfer_fee_basis_points`. **→ `U16`.**
-    SplToken2022MintTransferFeeBasisPoints { account_index: u8 },
+    SplToken2022MintTransferFeeBasisPoints {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint current `maximum_fee`. **→ `U64`.**
-    SplToken2022MintTransferFeeMaximum { account_index: u8 },
+    SplToken2022MintTransferFeeMaximum {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint `TransferFeeConfig.withheld_amount`. **→ `U64`.**
-    SplToken2022MintWithheldAmount { account_index: u8 },
+    SplToken2022MintWithheldAmount {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint `DefaultAccountState.state`. **→ `U8`.**
-    SplToken2022MintDefaultAccountState { account_index: u8 },
+    SplToken2022MintDefaultAccountState {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].data_len()` (account data byte length). **→ `U32`.**
-    AccountDataLen { account_index: u8 },
+    AccountDataLen {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].key` (account address). **→ `Pubkey`.**
-    AccountKey { account_index: u8 },
+    AccountKey {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Wire literal public key (no ALT; prefer [`LetBinding::AccountKey`] when possible). **→ `Pubkey`.**
-    ConstPubkey { bytes: [u8; 32] },
+    ConstPubkey {
+        /// 32-byte public key literal.
+        bytes: [u8; 32],
+    },
     /// `Frame.generation` (increments on reset). **→ `U64`.** No `remaining` account.
     FrameGeneration,
     /// `Frame.index_count` (bindings since last reset). **→ `U16`.** No `remaining` account.
     FrameIndexCount,
     /// `remaining[i].is_signer` (runtime account meta). **→ `Bool`.**
-    AccountIsSigner { account_index: u8 },
+    AccountIsSigner {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].is_writable` (runtime account meta). **→ `Bool`.**
-    AccountIsWritable { account_index: u8 },
+    AccountIsWritable {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake delegation `stake` lamports (`Stake` state). **→ `U64`.**
-    StakeDelegationStake { account_index: u8 },
+    StakeDelegationStake {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake delegation `activation_epoch`. **→ `U64`.**
-    StakeDelegationActivationEpoch { account_index: u8 },
+    StakeDelegationActivationEpoch {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake delegation `deactivation_epoch`. **→ `U64`.**
-    StakeDelegationDeactivationEpoch { account_index: u8 },
+    StakeDelegationDeactivationEpoch {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `lockup.unix_timestamp`. **→ `I64`.**
-    StakeLockupUnixTimestamp { account_index: u8 },
+    StakeLockupUnixTimestamp {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `lockup.epoch`. **→ `U64`.**
-    StakeLockupEpoch { account_index: u8 },
+    StakeLockupEpoch {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `authorized.staker`. **→ `Pubkey`.**
-    StakeAuthorizedStaker { account_index: u8 },
+    StakeAuthorizedStaker {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `authorized.withdrawer`. **→ `Pubkey`.**
-    StakeAuthorizedWithdrawer { account_index: u8 },
+    StakeAuthorizedWithdrawer {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake delegation `voter_pubkey`. **→ `Pubkey`.**
-    StakeDelegationVoter { account_index: u8 },
+    StakeDelegationVoter {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL mint `is_initialized`. **→ `Bool`.**
-    SplMintIsInitialized { account_index: u8 },
+    SplMintIsInitialized {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL mint `mint_authority` when set. **→ `Pubkey`.** `COption::None` → `SplMintOptionEmpty`.
-    SplMintMintAuthority { account_index: u8 },
+    SplMintMintAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL mint `freeze_authority` when set. **→ `Pubkey`.** `COption::None` → `SplMintOptionEmpty`.
-    SplMintFreezeAuthority { account_index: u8 },
+    SplMintFreezeAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint base `is_initialized`. **→ `Bool`.**
-    SplToken2022MintIsInitialized { account_index: u8 },
+    SplToken2022MintIsInitialized {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint base `mint_authority` when set. **→ `Pubkey`.**
-    SplToken2022MintMintAuthority { account_index: u8 },
+    SplToken2022MintMintAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 mint base `freeze_authority` when set. **→ `Pubkey`.**
-    SplToken2022MintFreezeAuthority { account_index: u8 },
+    SplToken2022MintFreezeAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].owner` (program id that owns the account). **→ `Pubkey`.**
-    AccountProgramOwner { account_index: u8 },
+    AccountProgramOwner {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].executable`. **→ `Bool`.**
-    AccountExecutable { account_index: u8 },
+    AccountExecutable {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// `remaining[i].rent_epoch`. **→ `U64`.**
-    AccountRentEpoch { account_index: u8 },
+    AccountRentEpoch {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `mint`. **→ `Pubkey`.**
-    SplTokenAccountMint { account_index: u8 },
+    SplTokenAccountMint {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `owner`. **→ `Pubkey`.**
-    SplTokenAccountOwner { account_index: u8 },
+    SplTokenAccountOwner {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `delegate` when set. **→ `Pubkey`.**
-    SplTokenAccountDelegate { account_index: u8 },
+    SplTokenAccountDelegate {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `close_authority` when set. **→ `Pubkey`.**
-    SplTokenAccountCloseAuthority { account_index: u8 },
+    SplTokenAccountCloseAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token account `is_native` when set. **→ `U64`.**
-    SplTokenAccountIsNative { account_index: u8 },
+    SplTokenAccountIsNative {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// SPL Token ATA: `remaining[i].key` equals derived ATA(owner, mint). **→ `Bool`.**
-    SplTokenAccountOwnerIsDerived { account_index: u8 },
+    SplTokenAccountOwnerIsDerived {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `mint`. **→ `Pubkey`.**
-    SplToken2022AccountMint { account_index: u8 },
+    SplToken2022AccountMint {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `owner`. **→ `Pubkey`.**
-    SplToken2022AccountOwner { account_index: u8 },
+    SplToken2022AccountOwner {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `delegate` when set. **→ `Pubkey`.**
-    SplToken2022AccountDelegate { account_index: u8 },
+    SplToken2022AccountDelegate {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `close_authority` when set. **→ `Pubkey`.**
-    SplToken2022AccountCloseAuthority { account_index: u8 },
+    SplToken2022AccountCloseAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 account `is_native` when set. **→ `U64`.**
-    SplToken2022AccountIsNative { account_index: u8 },
+    SplToken2022AccountIsNative {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Token-2022 ATA derivation check. **→ `Bool`.**
-    SplToken2022AccountOwnerIsDerived { account_index: u8 },
+    SplToken2022AccountOwnerIsDerived {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake account state tag (0–3). **→ `U8`.**
-    StakeAccountState { account_index: u8 },
+    StakeAccountState {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `lockup.custodian`. **→ `Pubkey`.**
-    StakeLockupCustodian { account_index: u8 },
+    StakeLockupCustodian {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake meta `rent_exempt_reserve`. **→ `U64`.**
-    StakeRentExemptReserve { account_index: u8 },
+    StakeRentExemptReserve {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake `credits_observed` (`Stake` state). **→ `U64`.**
-    StakeCreditsObserved { account_index: u8 },
+    StakeCreditsObserved {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Stake flags byte (`Stake` state). **→ `U8`.**
-    StakeStakeFlags { account_index: u8 },
+    StakeStakeFlags {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Upgradeable loader ProgramData enum tag. **→ `U32`.**
-    UpgradeableProgramDataTag { account_index: u8 },
+    UpgradeableProgramDataTag {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Upgradeable loader ProgramData upgrade authority when set. **→ `Pubkey`.**
-    UpgradeableProgramDataUpgradeAuthority { account_index: u8 },
+    UpgradeableProgramDataUpgradeAuthority {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
     /// Upgradeable loader Program → programdata address. **→ `Pubkey`.**
-    UpgradeableProgramProgramDataAddress { account_index: u8 },
+    UpgradeableProgramProgramDataAddress {
+        /// Index into post-gate `remaining_accounts`.
+        account_index: u8,
+    },
 }
 
 impl LetBinding {
@@ -185,8 +367,7 @@ impl LetBinding {
             | SplToken2022AccountTransferFeeWithheld { .. }
             | SplToken2022MintTransferFeeMaximum { .. }
             | SplToken2022MintWithheldAmount { .. } => U64,
-            SysvarClockEpochStartTimestamp
-            | SysvarClockUnixTimestamp => I64,
+            SysvarClockEpochStartTimestamp | SysvarClockUnixTimestamp => I64,
             SplTokenAccountState { .. }
             | SplMintDecimals { .. }
             | SplToken2022AccountState { .. }

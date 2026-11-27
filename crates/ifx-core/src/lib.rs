@@ -56,7 +56,7 @@ pub use wire::{
     IF_ELSE_ARM_MAX_STEPS, IF_ELSE_ARM_REVERT, IF_ELSE_ARM_SKIP,
 };
 #[cfg(feature = "anchor-wire")]
-pub use wire::{LetArgs, LetBinding, ValueType};
+pub use wire::{LetArgs, LetBinding, LetPatchedCpiArgs, ReturnDataLet, ValueType};
 
 #[cfg(feature = "layout")]
 pub mod layout;

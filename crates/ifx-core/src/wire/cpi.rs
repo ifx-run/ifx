@@ -21,21 +21,31 @@ pub const CPI_WIRE_STRUCTURED: u8 = 2;
 pub enum Cpi {
     /// Template `data` invoked as-is.
     Static {
+        /// Index into post-gate `remaining_accounts` where this CPI's accounts begin.
         accounts_start: u8,
+        /// Number of remaining accounts passed to the invoked program.
         accounts_len: u8,
+        /// Instruction data, invoked as-is. Length prefix is `u16`.
         data: U16LenVec<u8>,
     },
     /// Legacy dynamic `(data_offset, source)*` patches — DEX / escape hatch.
     RawPatched {
+        /// Index into post-gate `remaining_accounts` where this CPI's accounts begin.
         accounts_start: u8,
+        /// Number of remaining accounts passed to the invoked program.
         accounts_len: u8,
+        /// Template instruction data. Length prefix is `u16`.
         data: U16LenVec<u8>,
+        /// Overlays applied to `data` before invoke. Length prefix is `u16`.
         patches: PatchList,
     },
     /// Official-program layout; ix `data` assembled from typed patch (no template blob).
     Structured {
+        /// Index into post-gate `remaining_accounts` where this CPI's accounts begin.
         accounts_start: u8,
+        /// Number of remaining accounts passed to the invoked program.
         accounts_len: u8,
+        /// Typed patch that assembles the invoked instruction data.
         patch: StructuredCpiPatch,
     },
 }
@@ -69,9 +79,9 @@ impl Cpi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use borsh::BorshDeserialize;
     use crate::wire::structured_cpi_payload::AmountDecimalsPatch;
     use crate::wire::value::Value;
+    use borsh::BorshDeserialize;
 
     fn encode_cpi(cpi: &Cpi) -> Vec<u8> {
         borsh::to_vec(cpi).unwrap()
@@ -101,7 +111,9 @@ mod tests {
             Cpi::Structured {
                 accounts_start: 0,
                 accounts_len: 4,
-                patch: StructuredCpiPatch::TokenTransfer { amount: Value { index: 0 } },
+                patch: StructuredCpiPatch::TokenTransfer {
+                    amount: Value { index: 0 }
+                },
             }
         ));
     }
@@ -117,12 +129,10 @@ mod tests {
             Cpi::Structured {
                 accounts_start: 0,
                 accounts_len: 4,
-                patch: StructuredCpiPatch::Token2022BurnChecked(
-                    AmountDecimalsPatch::Both {
-                        amount: Value { index: 0 },
-                        decimals: Value { index: 2 },
-                    }
-                ),
+                patch: StructuredCpiPatch::Token2022BurnChecked(AmountDecimalsPatch::Both {
+                    amount: Value { index: 0 },
+                    decimals: Value { index: 2 },
+                }),
             }
         ));
     }

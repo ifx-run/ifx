@@ -24,7 +24,7 @@ Prefer `FrameScratch` in application code; use `build_ix_create_frame` and frien
 
 ## Install
 
-**Current release:** **`0.1.3`** on [crates.io](https://crates.io/crates/ifx-sdk) (`ifx-core@0.1.2`; mainnet default; aligned with `@ifx-run/sdk@0.1.3` and `go-sdk@v0.1.3`).
+**Current release:** **`0.1.4`** on [crates.io](https://crates.io/crates/ifx-sdk) (`ifx-core@0.1.4`; mainnet default; aligned with `@ifx-run/sdk@0.1.4` and `go-sdk@v0.1.4`).
 
 ```bash
 cargo add ifx-sdk
@@ -39,8 +39,8 @@ ifx-sdk = { path = "../rust-sdk" }
 Pin in `Cargo.toml`:
 
 ```toml
-ifx-sdk = { version = "0.1.3" }
-ifx-core = { version = "0.1.2" }
+ifx-sdk = { version = "0.1.4" }
+ifx-core = { version = "0.1.4" }
 ```
 
 ## Quick start
@@ -78,7 +78,8 @@ let reset_ix = s.ix_reset();
 let target = s.let_const_u64(10)?;
 let let_ix = s.ix_let_single(&target)?;
 let assert_ix = s.ix_assert(&expr::non_zero(expr::r(&target)))?;
-// Assemble transaction, sign, send
+// Assemble the transaction, then paste base64 or base58 of its bytes at
+// https://ifx.run/explorer to read each Ifx instruction. Signing is optional.
 ```
 
 ### Production: logs, not Frame decode

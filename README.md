@@ -32,11 +32,11 @@ Not a VM or scripting engine — a fixed, enumerable instruction set on-chain; l
 | --- | --- |
 | **Status** | [Devnet](#networks--sdks) + **[mainnet](#networks--sdks)** deployed (`ifxmwW…`); **no third-party audit**; [latest internal assessment](./audits/internal/2026-06-13-8a42766-ifx-internal-review.md) (2026-06-13, `8a42766`) |
 | **Shared public Frames (mainnet)** | Three production addresses · `tapeLen=1024` — see [Mainnet public Frames](#mainnet-public-frames-production) below · spec [frame-authority §6.0](./docs/frame-authority.md#60-mainnet-public-frame-pool-recommended) · **start every business tx with `ixReset()`** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.3`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
-| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.4`** — `DEFAULT_IFX_PROGRAM_ID` = mainnet |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.4`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.4` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.4`** · `cargo add ifx-sdk@0.1.4` |
 | **Cursor / AI agents** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
-| **Explorer** | [ifx.run/explorer](https://ifx.run/explorer) — paste a tx wire or signature; offline decode of Ifx instructions, including SIMD-0385 v1 |
+| **Explorer** | [ifx.run/explorer](https://ifx.run/explorer) — paste base64 / base58 / hex of the transaction (or a signature). Decodes Ifx instructions in the browser. See [See the instructions before you send](#see-the-instructions-before-you-send). |
 
 ### Mainnet public Frames (production)
 
@@ -69,7 +69,7 @@ Explorer: [Fr8dvc…](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF765
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-go get github.com/ifx-run/ifx/go-sdk@v0.1.3
+go get github.com/ifx-run/ifx/go-sdk@v0.1.4
 cargo add ifx-sdk
 ```
 
@@ -166,6 +166,19 @@ tx.add(scratch.ixLet(one));
 tx.add(scratch.ixAssert(expr.nonZero(one)));
 await provider.sendAndConfirm(tx);
 ```
+
+### See the instructions before you send
+
+Solscan shows that the transaction called the Ifx program. It does not unpack the instruction data, so the lets, the expression, and the CPI arm stay opaque. [ifx.run](https://ifx.run/explorer) decodes those bytes in the browser.
+
+Serialize the transaction from the example above. Signatures can be empty:
+
+```ts
+const wire = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+console.log(wire.toString("base64")); // base58 or hex of the same bytes also work
+```
+
+Paste the string into [ifx.run/explorer](https://ifx.run/explorer). A wire paste stays on your machine. Fetching by signature is the path that uses an RPC.
 
 **Run on localnet** (clone this repo):
 
@@ -514,6 +527,7 @@ Use the **[ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md)
 
 | Start here | |
 |------------|---|
+| [ifx.run/explorer](https://ifx.run/explorer) | Paste a base64 / base58 / hex transaction and read each Ifx instruction |
 | [sdk/README.md](./sdk/README.md) | TypeScript API, `FrameScratch`, `expr`, CPI helpers |
 | [go-sdk/README.md](./go-sdk/README.md) | Go API (same planner layer; no RPC / wallet wrapper) |
 | [rust-sdk/README.md](./rust-sdk/README.md) | Rust API (`ifx-sdk`; same planner layer; no RPC / wallet wrapper) |

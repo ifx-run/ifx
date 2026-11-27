@@ -4,9 +4,20 @@
 
 `@ifx-run/sdk` 的所有重要变更记录于此。格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-**状态：** npm 版本 **`0.1.3`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.3**、链上 program / `ifx-core` **0.1.2** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
+**状态：** npm 版本 **`0.1.4`** — 默认 program id 为 **主网**（`ifxmwW…`）。与 `ifx-sdk` / `go-sdk` **0.1.4**、链上 program / `ifx-core` **0.1.4** 对齐。`0.1.0` 之前的 `*-devnet.*` npm 包已废弃（wire 不兼容）。
 
 ## [Unreleased]
+
+## [0.1.4] - 2026-11-27
+
+### 新增
+
+- **`ifx_let_patched_cpi`**（discriminator **8**）：一次 CPI，然后把这次调用的 return data 按定宽切片 append（`{ ty, offset: u16 }`，1–255 条）。仅顶层；不能放进 `ifx_if_else`。Static、非空 RawPatched 或 Structured。日志先 `cpi …`，再 `let $N: ty = return_data[+offset]; //= value`。
+- 错误码 **6040–6044**。
+
+### 变更
+
+- 需 program redeploy（**`ifx` / `ifx-core` 0.1.4**）。discriminator 0–7 不变。
 
 ## [0.1.3] - 2026-07-18
 

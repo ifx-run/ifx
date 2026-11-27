@@ -7,6 +7,8 @@ mod expr_idl;
 pub mod if_else_arm;
 pub mod patch_list;
 pub mod raw_cpi_patch;
+#[cfg(feature = "anchor-wire")]
+pub mod return_data_let;
 pub mod structured_cpi_payload;
 pub mod structured_cpi_patch;
 pub mod value;
@@ -33,5 +35,7 @@ pub mod value_type;
 pub use let_args::LetArgs;
 #[cfg(feature = "anchor-wire")]
 pub use let_binding::LetBinding;
+#[cfg(feature = "anchor-wire")]
+pub use return_data_let::{LetPatchedCpiArgs, ReturnDataLet};
 #[cfg(feature = "anchor-wire")]
 pub use value_type::ValueType;

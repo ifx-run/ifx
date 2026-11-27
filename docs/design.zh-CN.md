@@ -133,6 +133,7 @@ FrX9mVQYAfwz7BPnKC9qoU1xpc9qcwLZYhaedxg4qTMR
   - **RawPatched（type-unsafe）：** 模板 `data` + **`patches`** 字节覆盖 — DEX / 自定义 / 非 registry layout。**program id 由构造者指定**；Ifx 不对 Raw 维护白名单（[`raw-cpi-patches.zh-CN.md`](./raw-cpi-patches.zh-CN.md) § 设计意图）。
   - **Static：** 模板 `data` 原样 invoke；program id 同样由构造者指定。
 - 无条件 patched CPI：**`ifx_patched_cpi(arm: Cpi)`** — **RawPatched** 或 **Structured**（须 apply patch）。
+- **`ifx_let_patched_cpi(args: LetPatchedCpiArgs)`** — 一次 CPI（**Static**、非空 **RawPatched** 或 **Structured**），然后把**这次**调用的 return data 按定宽切片 append（`{ ty, offset: u16 }`，1–255 条）。仅顶层写；不能放进 `ifx_if_else`。之后的 `ifx_let` 看不到这次 return data。宽度是 `ty.size()`（小端）。`offset` 是常量，不是 `Expr`。
 - **`RawCpiPatch`：** `{ data_offset: u16, source: Value }` — **仅 RawPatched**。
 
 **责任划分：** registry 能覆盖的 ix 优先 **Structured**（System / SPL / Token-2022 / Stake）。需要通用性时用 **Raw** — 与 typed API vs `unsafe` 同类：**交易构造者**负责模板、账户、offset 与目标 program。可选 Raw 白名单若不做到与 Structured 同粒度的 ix+字段校验，并无实质安全增益，只会重复 registry 并损害通用性。

@@ -33,7 +33,7 @@ SDK：[`@ifx-run/sdk`](../sdk/README.zh-CN.md) / [`ifx-sdk`](../rust-sdk/README.
 
 对已有 frame 槽求值 `expr`；存储类型由推断得出（链上 `infer_expr_ty`，SDK `inferIfxTyFromExpr`）。
 
-**说明：** CPI 的 `set_return_data` 无法在另一条 top-level `ifx_let` 指令中读取。CPI 后的动态量请读账户字段（如 token `amount`），或在同一 batch 内用 `Eval` 引用已有 frame 槽。
+**说明：** CPI 的 `set_return_data` 无法在另一条 top-level `ifx_let` 里读取。要捕获这次调用的返回值，用 `ifx_let_patched_cpi`（同一条指令里 CPI，再按 `{ ty, offset }` 定宽切片 append）。账户上已经写好的量（如 token `amount`）仍用对应的 typed let。同一 batch 里引用已有槽用 `Eval`。
 
 ---
 

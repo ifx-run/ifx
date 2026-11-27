@@ -9,8 +9,8 @@ mod tests {
     use borsh::BorshSerialize;
     use std::io::Cursor;
 
-    use crate::state::{Expr, IfElseArgs, IfElseArm, StructuredCpiPatch, Value};
     use crate::state::structured_cpi_payload::AmountDecimalsPatch;
+    use crate::state::{Expr, IfElseArgs, IfElseArm, StructuredCpiPatch, Value};
 
     fn encode_cpi(cpi: &Cpi) -> Vec<u8> {
         borsh::to_vec(cpi).unwrap()
@@ -21,12 +21,10 @@ mod tests {
         let cpi = Cpi::Structured {
             accounts_start: 1,
             accounts_len: 4,
-            patch: StructuredCpiPatch::TokenTransferChecked(
-                AmountDecimalsPatch::AmountOnly {
-                    amount: Value { index: 3 },
-                    decimals: 9,
-                },
-            ),
+            patch: StructuredCpiPatch::TokenTransferChecked(AmountDecimalsPatch::AmountOnly {
+                amount: Value { index: 3 },
+                decimals: 9,
+            }),
         };
         let wire = encode_cpi(&cpi);
         let mut slice = wire.as_slice();

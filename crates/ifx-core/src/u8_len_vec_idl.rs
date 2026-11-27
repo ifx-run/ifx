@@ -1,4 +1,8 @@
 //! [`IdlBuild`] for [`U8LenVec`](super::u8_len_vec::U8LenVec).
+//!
+//! Each instantiation has its own IDL name so the field can point at a defined type.
+//! The struct is empty: Anchor IDL has no `u8`-count vector, and a Borsh `vec` would
+//! be a `u32` length. Instruction bytes stay in the SDK codecs.
 
 #[cfg(feature = "idl-build")]
 use std::collections::BTreeMap;
@@ -11,33 +15,75 @@ use anchor_lang::idl::types::IdlTypeDef;
 #[cfg(feature = "idl-build")]
 use super::u8_len_vec::U8LenVec;
 #[cfg(feature = "idl-build")]
-use crate::wire::{Expr, LetBinding};
+use crate::wire::{Expr, LetBinding, ReturnDataLet};
 
 #[cfg(feature = "idl-build")]
-const U8_LEN_VEC_IDL_NAME: &str = "U8LenVec";
+fn len_vec_type(name: &str, elem: &str) -> IdlTypeDef {
+    let raw = format!(
+        r#"{{
+  "name": "{name}",
+  "docs": [
+    "Sequence with a u8 element count (max 255). Element type: {elem}.",
+    "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+  ],
+  "type": {{
+    "kind": "struct",
+    "fields": []
+  }}
+}}"#,
+    );
+    serde_json::from_str(&raw).unwrap_or_else(|err| panic!("{name} idl json: {err}"))
+}
 
 #[cfg(feature = "idl-build")]
-fn register_u8_len_vec(types: &mut BTreeMap<String, IdlTypeDef>) {
-    if types.contains_key(U8_LEN_VEC_IDL_NAME) {
-        return;
+fn insert_elem<T: IdlBuild>(types: &mut BTreeMap<String, IdlTypeDef>) {
+    if let Some(ty) = T::create_type() {
+        types.insert(T::get_full_path(), ty);
+        T::insert_types(types);
     }
-    let ty: IdlTypeDef = serde_json::from_str(include_str!("u8_len_vec_idl_type.json"))
-        .expect("u8_len_vec_idl_type.json");
-    types.insert(U8_LEN_VEC_IDL_NAME.to_string(), ty);
 }
 
 #[cfg(feature = "idl-build")]
 impl IdlBuild for U8LenVec<LetBinding> {
+    fn create_type() -> Option<IdlTypeDef> {
+        Some(len_vec_type("U8LenVecLetBinding", "LetBinding"))
+    }
+
     fn insert_types(types: &mut BTreeMap<String, IdlTypeDef>) {
-        register_u8_len_vec(types);
-        LetBinding::insert_types(types);
+        insert_elem::<LetBinding>(types);
+    }
+
+    fn get_full_path() -> String {
+        "U8LenVecLetBinding".to_string()
     }
 }
 
 #[cfg(feature = "idl-build")]
 impl IdlBuild for U8LenVec<Expr> {
+    fn create_type() -> Option<IdlTypeDef> {
+        Some(len_vec_type("U8LenVecExpr", "Expr"))
+    }
+
     fn insert_types(types: &mut BTreeMap<String, IdlTypeDef>) {
-        register_u8_len_vec(types);
-        Expr::insert_types(types);
+        insert_elem::<Expr>(types);
+    }
+
+    fn get_full_path() -> String {
+        "U8LenVecExpr".to_string()
+    }
+}
+
+#[cfg(feature = "idl-build")]
+impl IdlBuild for U8LenVec<ReturnDataLet> {
+    fn create_type() -> Option<IdlTypeDef> {
+        Some(len_vec_type("U8LenVecReturnDataLet", "ReturnDataLet"))
+    }
+
+    fn insert_types(types: &mut BTreeMap<String, IdlTypeDef>) {
+        insert_elem::<ReturnDataLet>(types);
+    }
+
+    fn get_full_path() -> String {
+        "U8LenVecReturnDataLet".to_string()
     }
 }

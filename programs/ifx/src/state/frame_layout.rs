@@ -90,22 +90,18 @@ impl FrameLayout {
             FrameSite::ParseTapeLenPrefix,
             field(FrameSite::ParseTapeLenPrefix, data, tape_len_off, 4)?,
         )?;
-        let tape_off = tape_len_off
-            .checked_add(4)
-            .ok_or_else(|| {
-                FrameError::new(
-                    FrameSite::ParseTapeOffOverflow,
-                    ErrorCode::AccountDataTooShort,
-                )
-            })?;
-        let end = tape_off
-            .checked_add(tape_len as usize)
-            .ok_or_else(|| {
-                FrameError::new(
-                    FrameSite::ParseTotalLenOverflow,
-                    ErrorCode::AccountDataTooShort,
-                )
-            })?;
+        let tape_off = tape_len_off.checked_add(4).ok_or_else(|| {
+            FrameError::new(
+                FrameSite::ParseTapeOffOverflow,
+                ErrorCode::AccountDataTooShort,
+            )
+        })?;
+        let end = tape_off.checked_add(tape_len as usize).ok_or_else(|| {
+            FrameError::new(
+                FrameSite::ParseTotalLenOverflow,
+                ErrorCode::AccountDataTooShort,
+            )
+        })?;
         frame_require!(
             FrameSite::ParseTotalLenMismatch,
             data.len() == end,
@@ -236,11 +232,9 @@ impl FrameLayout {
         start: usize,
         len: usize,
     ) -> FrameLayoutResult<&'a [u8]> {
-        let end = start
-            .checked_add(len)
-            .ok_or_else(|| {
-                FrameError::new(FrameSite::TapeRangeAddOverflow, ErrorCode::TapeOutOfBounds)
-            })?;
+        let end = start.checked_add(len).ok_or_else(|| {
+            FrameError::new(FrameSite::TapeRangeAddOverflow, ErrorCode::TapeOutOfBounds)
+        })?;
         tape.get(start..end)
             .ok_or_else(|| FrameError::new(FrameSite::TapeRangeOob, ErrorCode::TapeOutOfBounds))
     }
@@ -251,17 +245,14 @@ impl FrameLayout {
         start: usize,
         len: usize,
     ) -> FrameLayoutResult<&'a mut [u8]> {
-        let end = start
-            .checked_add(len)
-            .ok_or_else(|| {
-                FrameError::new(
-                    FrameSite::TapeRangeMutAddOverflow,
-                    ErrorCode::TapeOutOfBounds,
-                )
-            })?;
-        tape.get_mut(start..end).ok_or_else(|| {
-            FrameError::new(FrameSite::TapeRangeMutOob, ErrorCode::TapeOutOfBounds)
-        })
+        let end = start.checked_add(len).ok_or_else(|| {
+            FrameError::new(
+                FrameSite::TapeRangeMutAddOverflow,
+                ErrorCode::TapeOutOfBounds,
+            )
+        })?;
+        tape.get_mut(start..end)
+            .ok_or_else(|| FrameError::new(FrameSite::TapeRangeMutOob, ErrorCode::TapeOutOfBounds))
     }
 }
 
@@ -289,12 +280,8 @@ pub fn field_mut(
 
 pub fn read_authority(data: &[u8]) -> FrameLayoutResult<Pubkey> {
     let bytes = field(FrameSite::AuthorityField, data, OFF_AUTHORITY, 32)?;
-    Pubkey::try_from(bytes).map_err(|_| {
-        FrameError::new(
-            FrameSite::AuthorityPubkey,
-            ErrorCode::AccountDataTooShort,
-        )
-    })
+    Pubkey::try_from(bytes)
+        .map_err(|_| FrameError::new(FrameSite::AuthorityPubkey, ErrorCode::AccountDataTooShort))
 }
 
 pub fn read_u16_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u16> {
@@ -314,11 +301,7 @@ pub fn read_u32_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u32> {
 pub fn read_u64_le(site: FrameSite, bytes: &[u8]) -> FrameLayoutResult<u64> {
     bytes
         .get(0..8)
-        .map(|b| {
-            u64::from_le_bytes([
-                b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
-            ])
-        })
+        .map(|b| u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
         .ok_or_else(|| FrameError::new(site, ErrorCode::AccountDataTooShort))
 }
 

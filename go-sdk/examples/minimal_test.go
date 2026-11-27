@@ -31,7 +31,7 @@ func TestPlanMinimalFrameBusiness(t *testing.T) {
 	if _, err := s.IxLet(one); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index))); err != nil {
+	if _, err := s.IxAssert(expr.NonZero(one)); err != nil {
 		t.Fatal(err)
 	}
 	if plan.IxCreate == nil || plan.Frame.IsZero() {

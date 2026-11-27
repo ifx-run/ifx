@@ -17,13 +17,13 @@ import (
 
 // FrameScratch mirrors on-chain Frame session planning.
 type FrameScratch struct {
-	Frame     solana.PublicKey
-	ProgramID solana.PublicKey
-	Authority solana.PublicKey
-	TapeLen   *int
-	IndexCap  *int
-	Cursor    uint32
-	NextIndex uint8
+	Frame      solana.PublicKey
+	ProgramID  solana.PublicKey
+	Authority  solana.PublicKey
+	TapeLen    *int
+	IndexCap   *int
+	Cursor     uint32
+	NextIndex  uint8
 	indexTypes map[uint8]typed.IfxTy
 }
 
@@ -66,11 +66,11 @@ func FromDecodedFrame(decoded *frame.DecodedFrame, framePK solana.PublicKey, pro
 
 // PlanNewFrameParams configures ifx_create_frame + scratch.
 type PlanNewFrameParams struct {
-	Payer          solana.PublicKey
-	FrameID        [32]byte
+	Payer     solana.PublicKey
+	FrameID   [32]byte
 	Authority solana.PublicKey
-	TapeLen        uint32
-	ProgramID      solana.PublicKey
+	TapeLen   uint32
+	ProgramID solana.PublicKey
 }
 
 // PlanNewFrame returns scratch + create ix for a new Frame PDA.
@@ -89,8 +89,8 @@ func PlanNewFrame(p PlanNewFrameParams) (PlanNewFrameResult, error) {
 		Payer:     p.Payer,
 		FrameID:   p.FrameID,
 		Authority: p.Authority,
-		TapeLen:        p.TapeLen,
-		Options:        &ix.Options{ProgramID: programID},
+		TapeLen:   p.TapeLen,
+		Options:   &ix.Options{ProgramID: programID},
 	})
 	if err != nil {
 		return PlanNewFrameResult{}, err
@@ -185,6 +185,27 @@ func (s *FrameScratch) IxAssertMulti(conds []interface{}) (solana.Instruction, e
 // IxCpi returns ifx_patched_cpi.
 func (s *FrameScratch) IxCpi(built codec.WireBuildResult) (solana.Instruction, error) {
 	return ix.BuildCpi(s.Frame, built, s.ixOpts())
+}
+
+// IxLetPatchedCpi returns ifx_let_patched_cpi and reserves one tape index per let.
+func (s *FrameScratch) IxLetPatchedCpi(step codec.Cpi, remaining []typed.AccountMeta, lets []codec.ReturnDataLet) (solana.Instruction, []typed.ScratchValue, error) {
+	built, err := ix.BuildLetPatchedCpi(s.Frame, s.Authority, step, remaining, lets, s.ixOpts())
+	if err != nil {
+		return nil, nil, err
+	}
+	values := make([]typed.ScratchValue, 0, len(lets))
+	for _, item := range lets {
+		zero, err := zeroExpr(item.Ty)
+		if err != nil {
+			return nil, nil, err
+		}
+		sv, err := s.plan(binding.EvalExpr(zero), nil)
+		if err != nil {
+			return nil, nil, err
+		}
+		values = append(values, sv)
+	}
+	return built, values, nil
 }
 
 // IxIfElse returns ifx_if_else.
@@ -307,4 +328,39 @@ func ToLetArgs(values []typed.ScratchValue) codec.LetArgs {
 		bindings[i] = v.Binding
 	}
 	return codec.LetArgs{Bindings: bindings}
+}
+
+func zeroExpr(ty typed.IfxTy) (expr.Node, error) {
+	switch ty {
+	case typed.TyBool:
+		return expr.Bool(false), nil
+	case typed.TyU8:
+		return expr.U8(0), nil
+	case typed.TyU16:
+		return expr.U16(0), nil
+	case typed.TyU32:
+		return expr.U32(0), nil
+	case typed.TyU64:
+		return expr.U64(0), nil
+	case typed.TyU128:
+		return expr.U128(0), nil
+	case typed.TyI8:
+		return expr.I8(0), nil
+	case typed.TyI16:
+		return expr.I16(0), nil
+	case typed.TyI32:
+		return expr.I32(0), nil
+	case typed.TyI64:
+		return expr.I64(0), nil
+	case typed.TyI128:
+		return expr.I128(0), nil
+	case typed.TyF32:
+		return expr.F32(0), nil
+	case typed.TyF64:
+		return expr.F64(0), nil
+	case typed.TyPubkey:
+		return expr.Pubkey([32]byte{}), nil
+	default:
+		return nil, fmt.Errorf("unknown IfxTy %q", ty)
+	}
 }

@@ -25,9 +25,7 @@ pub fn load_upgradeable_state<'info>(
         .map_err(|_| ErrorCode::InvalidInstructionData.into())
 }
 
-pub fn require_program_data(
-    state: UpgradeableLoaderState,
-) -> Result<(u64, Option<Pubkey>)> {
+pub fn require_program_data(state: UpgradeableLoaderState) -> Result<(u64, Option<Pubkey>)> {
     match state {
         UpgradeableLoaderState::ProgramData {
             slot,

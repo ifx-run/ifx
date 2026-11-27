@@ -3,9 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     error::ErrorCode,
     pseudocode,
-    state::{
-        require_frame_ix_top_level, verify_reset_write_authority, FrameAccount, FrameWriter,
-    },
+    state::{require_frame_ix_top_level, verify_reset_write_authority, FrameAccount, FrameWriter},
 };
 
 /// Accounts for [`ifx_reset_frame`](crate::ifx_reset_frame).

@@ -30,9 +30,43 @@ const layout_1 = require("./layout");
 const binding_1 = require("./binding");
 const expr_1 = require("./expr");
 const typed_1 = require("./typed");
+const ty_1 = require("./ty");
 const ix_1 = require("./ix");
 const let_account_1 = require("./let-account");
 const let_builder_1 = require("./let-builder");
+/** Zero literal used only to reserve a tape slot of `ty`. Not submitted as `ifx_let`. */
+function zeroExpr(ty) {
+    switch (ty) {
+        case "bool":
+            return expr_1.expr.bool(false);
+        case "u8":
+            return expr_1.expr.u8(0);
+        case "u16":
+            return expr_1.expr.u16(0);
+        case "u32":
+            return expr_1.expr.u32(0);
+        case "u64":
+            return expr_1.expr.u64(0);
+        case "u128":
+            return expr_1.expr.u128(0);
+        case "i8":
+            return expr_1.expr.i8(0);
+        case "i16":
+            return expr_1.expr.i16(0);
+        case "i32":
+            return expr_1.expr.i32(0);
+        case "i64":
+            return expr_1.expr.i64(0);
+        case "i128":
+            return expr_1.expr.i128(0);
+        case "f32":
+            return expr_1.expr.f32(0);
+        case "f64":
+            return expr_1.expr.f64(0);
+        case "pubkey":
+            return expr_1.expr.pubkey(web3_js_1.PublicKey.default);
+    }
+}
 /**
  * Off-chain mirror of Frame scratch tape: `cursor` + binding indices for `ifx_let`.
  * Plan values with `let*`; build frame instructions via `ix*` (reset / let / assert / patched_cpi / if_else).
@@ -307,6 +341,16 @@ class FrameScratch {
     /** Patched CPI (`ifx_patched_cpi`). */
     ixCpi(built, opts) {
         return (0, ix_1.createIxCpi)(this.frame, built, this.mergeIxOpts(opts));
+    }
+    /**
+     * `ifx_let_patched_cpi`: one CPI, then append each return-data slice as a let.
+     * `lets.length` is the number of tape indices reserved (static).
+     * Static CPI: `{ cpi: staticCpi(ix).staticStep, remaining }`.
+     */
+    ixLetPatchedCpi(built, lets, opts) {
+        const ix = (0, ix_1.createIxLetPatchedCpi)(this.frame, this.authority, built, lets.map((item) => ({ ty: ty_1.Ty[item.ty](), offset: item.offset })), this.mergeIxOpts(opts));
+        const values = lets.map((item) => this.plan(binding_1.binding.eval(zeroExpr(item.ty))));
+        return { ix, values };
     }
     /** Conditional CPI arms (`ifx_if_else`). */
     ixIfElse(args, remainingAccounts, opts) {

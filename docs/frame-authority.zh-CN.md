@@ -146,12 +146,13 @@ tape 在会话内 **仅追加**：若他人能 `let`，也只是新 index，**�
 | `ifx_create_frame` | init | **是** | 否（payer 签；`authority` 为数据参数） |
 | `ifx_reset_frame` | 是 | **是** | **是** |
 | `ifx_let` | 是 | **是**（今日 `LetNotTopLevel`） | **是** |
+| `ifx_let_patched_cpi` | 是 | **是**（`LetPatchedCpiNotTopLevel`） | **是** |
 | `ifx_close_frame` | 是（关闭） | **是** | **是**（同今日 close 校验） |
 | `ifx_assert` | 否 | — | — |
 | `ifx_patched_cpi` | 否 | — | — |
 | `ifx_if_else` | 否 | — | — |
 
-**写操作闭环：** 凡 **变更** Frame 状态的指令（`create`、`reset`、`let`、`close`）均 **仅顶层**，且 `authority` 为 on-curve 时须 **`authority` 签名**。其余在 Frame 层为只读。
+**写操作闭环：** 凡 **变更** Frame 状态的指令（`create`、`reset`、`let`、`let_patched_cpi`、`close`）均 **仅顶层**，且 `authority` 为 on-curve 时须 **`authority` 签名**。其余在 Frame 层为只读。
 
 ---
 
@@ -176,6 +177,16 @@ remaining[1..] — let binding 账户（AccountLoad、CPI source 等）
 
 公共 Frame：`remaining` 仅 let 账户；binding 下标从 `0` 起。
 
+### `ifx_let_patched_cpi`
+
+```text
+frame          (mut)
+remaining[0]   (signer，on-curve 时)  — 私有 Frame 写门控
+remaining[1..] — CPI 账户（`accounts_start` 相对这段切片）
+```
+
+公共 Frame：CPI 账户从 `remaining[0]` 起。`args.cpi` 是一步。`args.lets` 把该次调用 return data 的每个 `{ ty, offset }` 切片 append 上去。
+
 ### `ifx_close_frame`
 
 ```text
@@ -193,7 +204,7 @@ payer + init 不变；仅顶层。指令参数 **`authority`** 取代 `close_aut
 
 ### 5.1 顶层（`stack height == 1`）
 
-所有变更 Frame 的指令均强制仅顶层：`LetNotTopLevel`、`ResetNotTopLevel`、`CloseNotTopLevel`、`CreateNotTopLevel`。
+所有变更 Frame 的指令均强制仅顶层：`LetNotTopLevel`、`ResetNotTopLevel`、`CloseNotTopLevel`、`CreateNotTopLevel`、`LetPatchedCpiNotTopLevel`。
 
 Ifx **不是** 供其他 program CPI 包装的库。钱包与风控假设 Ifx 指令 **直接** 出现在交易消息中，以便静态分析。
 
@@ -325,10 +336,11 @@ authority 防 **第三方投毒**；**不** 替代 bundle 落地保证，也 **�
 | 名称 | 时机 |
 |------|------|
 | `LetNotTopLevel` | CPI 调用 `ifx_let` |
+| `LetPatchedCpiNotTopLevel` | CPI 调用 `ifx_let_patched_cpi` |
 | `ResetNotTopLevel` | CPI 调用 `ifx_reset_frame` |
 | `CloseNotTopLevel` | CPI 调用 `ifx_close_frame` |
 | `CreateNotTopLevel` | CPI 调用 `ifx_create_frame` |
-| `UnauthorizedFrameWrite` | on-curve `authority` 缺失或 signer 错误（`reset` / `let`） |
+| `UnauthorizedFrameWrite` | on-curve `authority` 缺失或 signer 错误（`reset` / `let` / `ifx_let_patched_cpi`） |
 | `UnauthorizedClose` | `close` signer 错误 |
 | `InvalidAuthority` | create 传入 `Pubkey::default()` |
 

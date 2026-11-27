@@ -2,17 +2,18 @@
 //!
 //! Format documented in `docs/debugging.md`. Examples:
 //! - `let $3: u64 = lamports(acct[0]); //= 1500000000`
+//! - `let $0: u64 = return_data[+0]; //= 42`
 //! - `assert!($3 >= $1); // ok`
 //! - `if $5 > 0 then patched_cpi else skip -> then`
 
 use anchor_lang::solana_program::log::sol_log;
 
-use crate::state::{
-    value_codec::{decode_typed, TypedValue},
-    Expr, LetBinding, Cpi, ValueType,
-};
 use crate::state::structured_cpi_payload::PatchLogSink;
 use crate::state::types::Value;
+use crate::state::{
+    value_codec::{decode_typed, TypedValue},
+    Cpi, Expr, LetBinding, ValueType,
+};
 
 const MAX_LINE: usize = 480;
 
@@ -200,21 +201,47 @@ fn fmt_expr(buf: &mut LineBuf, expr: &Expr) -> bool {
         Expr::ConstF32(v) => {
             buf.push_str("f32(") && buf.push_u64(v.to_bits() as u64) && buf.push_char(b')')
         }
-        Expr::ConstF64(v) => buf.push_str("f64(") && buf.push_u64(v.to_bits()) && buf.push_char(b')'),
+        Expr::ConstF64(v) => {
+            buf.push_str("f64(") && buf.push_u64(v.to_bits()) && buf.push_char(b')')
+        }
         Expr::Not { operand } => buf.push_char(b'!') && fmt_expr(buf, operand),
         Expr::Neg { operand } => buf.push_char(b'-') && fmt_expr(buf, operand),
-        Expr::IsZero { operand } => buf.push_str("isZero(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::NonZero { operand } => buf.push_str("nonZero(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsU8 { operand } => buf.push_str("asU8(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsU16 { operand } => buf.push_str("asU16(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsU32 { operand } => buf.push_str("asU32(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsU64 { operand } => buf.push_str("asU64(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsU128 { operand } => buf.push_str("asU128(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsI8 { operand } => buf.push_str("asI8(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsI16 { operand } => buf.push_str("asI16(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsI32 { operand } => buf.push_str("asI32(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsI64 { operand } => buf.push_str("asI64(") && fmt_expr(buf, operand) && buf.push_char(b')'),
-        Expr::AsI128 { operand } => buf.push_str("asI128(") && fmt_expr(buf, operand) && buf.push_char(b')'),
+        Expr::IsZero { operand } => {
+            buf.push_str("isZero(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::NonZero { operand } => {
+            buf.push_str("nonZero(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsU8 { operand } => {
+            buf.push_str("asU8(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsU16 { operand } => {
+            buf.push_str("asU16(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsU32 { operand } => {
+            buf.push_str("asU32(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsU64 { operand } => {
+            buf.push_str("asU64(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsU128 { operand } => {
+            buf.push_str("asU128(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsI8 { operand } => {
+            buf.push_str("asI8(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsI16 { operand } => {
+            buf.push_str("asI16(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsI32 { operand } => {
+            buf.push_str("asI32(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsI64 { operand } => {
+            buf.push_str("asI64(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
+        Expr::AsI128 { operand } => {
+            buf.push_str("asI128(") && fmt_expr(buf, operand) && buf.push_char(b')')
+        }
         Expr::Add { lhs, rhs } => bin_fmt(buf, "+", lhs, rhs),
         Expr::Sub { lhs, rhs } => bin_fmt(buf, "-", lhs, rhs),
         Expr::Mul { lhs, rhs } => bin_fmt(buf, "*", lhs, rhs),
@@ -237,7 +264,11 @@ fn fmt_expr(buf: &mut LineBuf, expr: &Expr) -> bool {
         Expr::MulDivFloor { a, b, c } => tern_fmt(buf, "mulDivFloor", a, b, c),
         Expr::MulDivCeil { a, b, c } => tern_fmt(buf, "mulDivCeil", a, b, c),
         Expr::Clamp { value, lo, hi } => tern_fmt(buf, "clamp", value, lo, hi),
-        Expr::Select { cond, then_expr, else_expr } => {
+        Expr::Select {
+            cond,
+            then_expr,
+            else_expr,
+        } => {
             buf.push_str("select(")
                 && fmt_expr(buf, cond)
                 && buf.push_char(b',')
@@ -269,7 +300,9 @@ fn fmt_typed_value(buf: &mut LineBuf, ty: ValueType, bytes: &[u8]) -> bool {
         TypedValue::F32(n) => {
             buf.push_str("f32(") && buf.push_u64(n.to_bits() as u64) && buf.push_char(b')')
         }
-        TypedValue::F64(n) => buf.push_str("f64(") && buf.push_u64(n.to_bits()) && buf.push_char(b')'),
+        TypedValue::F64(n) => {
+            buf.push_str("f64(") && buf.push_u64(n.to_bits()) && buf.push_char(b')')
+        }
         TypedValue::Pubkey(_) => buf.push_str("pubkey(...)"),
     }
 }
@@ -314,9 +347,7 @@ fn fmt_binding_rhs(buf: &mut LineBuf, binding: &LetBinding) -> bool {
         SysvarClockLeaderScheduleEpoch => buf.push_str("clock.leader_schedule_epoch()"),
         SysvarClockUnixTimestamp => buf.push_str("clock.unix_timestamp()"),
         SysvarRentMinimumBalance { data_len } => {
-            buf.push_str("rent.minimum_balance(")
-                && buf.push_u32(*data_len)
-                && buf.push_char(b')')
+            buf.push_str("rent.minimum_balance(") && buf.push_u32(*data_len) && buf.push_char(b')')
         }
         SplTokenAccountAmount { account_index } => {
             buf.push_str("spl_token_amount(acc[")
@@ -625,6 +656,22 @@ pub fn log_let_binding(binding_index: u8, binding: &LetBinding, ty: ValueType, b
     });
 }
 
+/// One captured slice of the CPI return data just invoked by `ifx_let_patched_cpi`.
+///
+/// `offset` is the constant byte offset into that return data. Width is `ty.size()`.
+pub fn log_return_data_let(binding_index: u8, ty: ValueType, offset: u16, bytes: &[u8]) {
+    emit_line(|b| {
+        b.push_str("let $")
+            && b.push_u8(binding_index)
+            && b.push_str(": ")
+            && b.push_str(ty_name(ty))
+            && b.push_str(" = return_data[+")
+            && b.push_u64(u64::from(offset))
+            && b.push_str("]; //= ")
+            && fmt_typed_value(b, ty, bytes)
+    });
+}
+
 pub fn log_let_batch(
     bindings: &[LetBinding],
     binding_indices: &[u8],
@@ -663,10 +710,7 @@ fn push_if_else_arm_label(b: &mut LineBuf, arm: &crate::state::IfElseArm) -> boo
         IfElseArm::Skip => b.push_str("skip"),
         IfElseArm::Revert => b.push_str("revert"),
         IfElseArm::Cpi(steps) if steps.len() == 1 => b.push_str("cpi"),
-        IfElseArm::Cpi(steps) => {
-            b.push_str("cpi×")
-                && b.push_u64(steps.len() as u64)
-        }
+        IfElseArm::Cpi(steps) => b.push_str("cpi×") && b.push_u64(steps.len() as u64),
     }
 }
 
@@ -704,9 +748,7 @@ impl PatchLogSink for LinePatchLogSink<'_> {
             return false;
         }
         self.first = false;
-        self.buf.push_str(field)
-            && self.buf.push_str(" <- $")
-            && self.buf.push_u8(source.index)
+        self.buf.push_str(field) && self.buf.push_str(" <- $") && self.buf.push_u8(source.index)
     }
 }
 
@@ -764,7 +806,10 @@ pub fn log_cpi(arm: &Cpi) {
                     && b.push_u64(u64::from(end))
                     && b.push_str("] structured ")
                     && b.push_str(patch.log_label());
-                let mut sink = LinePatchLogSink { buf: b, first: true };
+                let mut sink = LinePatchLogSink {
+                    buf: b,
+                    first: true,
+                };
                 return ok && patch.append_log_bindings(&mut sink);
             }
         };

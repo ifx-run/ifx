@@ -21,8 +21,8 @@ fn register_u16_len_vec(types: &mut BTreeMap<String, IdlTypeDef>) {
     if types.contains_key(U16_LEN_VEC_IDL_NAME) {
         return;
     }
-    let ty: IdlTypeDef =
-        serde_json::from_str(include_str!("u16_len_vec_idl_type.json")).expect("u16_len_vec_idl_type.json");
+    let ty: IdlTypeDef = serde_json::from_str(include_str!("u16_len_vec_idl_type.json"))
+        .expect("u16_len_vec_idl_type.json");
     types.insert(U16_LEN_VEC_IDL_NAME.to_string(), ty);
 }
 

@@ -2,6 +2,7 @@
 package expr
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ifx-run/ifx/go-sdk/constants"
@@ -98,10 +99,86 @@ type Ternary struct {
 
 func (Ternary) isExpr() {}
 
-func Ref(index uint8) Node { return ValueRef{Index: index} }
+// indexed is implemented by typed.ScratchValue. This package does not import typed.
+type indexed interface {
+	BindingIndex() uint8
+}
 
-func Bool(v bool) Node { return ConstBool(v) }
-func U8(v uint8) Node  { return ConstU8(v) }
+func operand(v any) Node {
+	switch x := v.(type) {
+	case Node:
+		return x
+	case indexed:
+		return ValueRef{Index: x.BindingIndex()}
+	case nil:
+		panic("expr: nil operand")
+	default:
+		panic(fmt.Sprintf("expr: operand must be expr.Node or a planned binding (typed.ScratchValue), got %T", v))
+	}
+}
+
+func refIndex(v any) (uint8, bool) {
+	switch x := v.(type) {
+	case uint8:
+		return x, true
+	case int:
+		if x >= 0 && x <= 255 {
+			return uint8(x), true
+		}
+	case int8:
+		if x >= 0 {
+			return uint8(x), true
+		}
+	case int16:
+		if x >= 0 && x <= 255 {
+			return uint8(x), true
+		}
+	case int32:
+		if x >= 0 && x <= 255 {
+			return uint8(x), true
+		}
+	case int64:
+		if x >= 0 && x <= 255 {
+			return uint8(x), true
+		}
+	case uint:
+		if x <= 255 {
+			return uint8(x), true
+		}
+	case uint16:
+		if x <= 255 {
+			return uint8(x), true
+		}
+	case uint32:
+		if x <= 255 {
+			return uint8(x), true
+		}
+	case uint64:
+		if x <= 255 {
+			return uint8(x), true
+		}
+	}
+	return 0, false
+}
+
+// Ref is a tape binding. Pass a planned value (typed.ScratchValue).
+// A raw index (expr.Ref(0)) is for codec tests; untyped constants still work.
+func Ref(v any) Node {
+	if idx, ok := refIndex(v); ok {
+		return ValueRef{Index: idx}
+	}
+	switch x := v.(type) {
+	case indexed:
+		return ValueRef{Index: x.BindingIndex()}
+	case ValueRef:
+		return x
+	default:
+		panic(fmt.Sprintf("expr: Ref wants a planned binding or an index, got %T", v))
+	}
+}
+
+func Bool(v bool) Node  { return ConstBool(v) }
+func U8(v uint8) Node   { return ConstU8(v) }
 func U16(v uint16) Node { return ConstU16(v) }
 func U32(v uint32) Node { return ConstU32(v) }
 func U64(v uint64) Node { return ConstU64(v) }
@@ -132,55 +209,63 @@ func F64(v float64) Node { return ConstF64(v) }
 
 func Pubkey(bytes [32]byte) Node { return ConstPubkey{Bytes: bytes} }
 
-func Not(op Node) Node     { return Unary{Tag: constants.ExprTagNot, Operand: op} }
-func Neg(op Node) Node     { return Unary{Tag: constants.ExprTagNeg, Operand: op} }
-func IsZero(op Node) Node  { return Unary{Tag: constants.ExprTagIsZero, Operand: op} }
-func NonZero(op Node) Node { return Unary{Tag: constants.ExprTagNonZero, Operand: op} }
-func AsU8(op Node) Node   { return Unary{Tag: constants.ExprTagAsU8, Operand: op} }
-func AsU16(op Node) Node  { return Unary{Tag: constants.ExprTagAsU16, Operand: op} }
-func AsU32(op Node) Node  { return Unary{Tag: constants.ExprTagAsU32, Operand: op} }
-func AsU64(op Node) Node   { return Unary{Tag: constants.ExprTagAsU64, Operand: op} }
-func AsU128(op Node) Node  { return Unary{Tag: constants.ExprTagAsU128, Operand: op} }
-func AsI8(op Node) Node   { return Unary{Tag: constants.ExprTagAsI8, Operand: op} }
-func AsI16(op Node) Node  { return Unary{Tag: constants.ExprTagAsI16, Operand: op} }
-func AsI32(op Node) Node  { return Unary{Tag: constants.ExprTagAsI32, Operand: op} }
-func AsI64(op Node) Node  { return Unary{Tag: constants.ExprTagAsI64, Operand: op} }
-func AsI128(op Node) Node { return Unary{Tag: constants.ExprTagAsI128, Operand: op} }
+func Not(op any) Node     { return Unary{Tag: constants.ExprTagNot, Operand: operand(op)} }
+func Neg(op any) Node     { return Unary{Tag: constants.ExprTagNeg, Operand: operand(op)} }
+func IsZero(op any) Node  { return Unary{Tag: constants.ExprTagIsZero, Operand: operand(op)} }
+func NonZero(op any) Node { return Unary{Tag: constants.ExprTagNonZero, Operand: operand(op)} }
+func AsU8(op any) Node    { return Unary{Tag: constants.ExprTagAsU8, Operand: operand(op)} }
+func AsU16(op any) Node   { return Unary{Tag: constants.ExprTagAsU16, Operand: operand(op)} }
+func AsU32(op any) Node   { return Unary{Tag: constants.ExprTagAsU32, Operand: operand(op)} }
+func AsU64(op any) Node   { return Unary{Tag: constants.ExprTagAsU64, Operand: operand(op)} }
+func AsU128(op any) Node  { return Unary{Tag: constants.ExprTagAsU128, Operand: operand(op)} }
+func AsI8(op any) Node    { return Unary{Tag: constants.ExprTagAsI8, Operand: operand(op)} }
+func AsI16(op any) Node   { return Unary{Tag: constants.ExprTagAsI16, Operand: operand(op)} }
+func AsI32(op any) Node   { return Unary{Tag: constants.ExprTagAsI32, Operand: operand(op)} }
+func AsI64(op any) Node   { return Unary{Tag: constants.ExprTagAsI64, Operand: operand(op)} }
+func AsI128(op any) Node  { return Unary{Tag: constants.ExprTagAsI128, Operand: operand(op)} }
 
-func Add(a, b Node) Node          { return Binary{Tag: constants.ExprTagAdd, Lhs: a, Rhs: b} }
-func Sub(a, b Node) Node          { return Binary{Tag: constants.ExprTagSub, Lhs: a, Rhs: b} }
-func Mul(a, b Node) Node          { return Binary{Tag: constants.ExprTagMul, Lhs: a, Rhs: b} }
-func Div(a, b Node) Node          { return Binary{Tag: constants.ExprTagDiv, Lhs: a, Rhs: b} }
-func DivFloor(a, b Node) Node     { return Binary{Tag: constants.ExprTagDivFloor, Lhs: a, Rhs: b} }
-func DivCeil(a, b Node) Node      { return Binary{Tag: constants.ExprTagDivCeil, Lhs: a, Rhs: b} }
-func Min(a, b Node) Node          { return Binary{Tag: constants.ExprTagMin, Lhs: a, Rhs: b} }
-func Max(a, b Node) Node          { return Binary{Tag: constants.ExprTagMax, Lhs: a, Rhs: b} }
-func Eq(a, b Node) Node           { return Binary{Tag: constants.ExprTagEq, Lhs: a, Rhs: b} }
-func Ne(a, b Node) Node           { return Binary{Tag: constants.ExprTagNe, Lhs: a, Rhs: b} }
-func Gt(a, b Node) Node           { return Binary{Tag: constants.ExprTagGt, Lhs: a, Rhs: b} }
-func Ge(a, b Node) Node           { return Binary{Tag: constants.ExprTagGe, Lhs: a, Rhs: b} }
-func Lt(a, b Node) Node           { return Binary{Tag: constants.ExprTagLt, Lhs: a, Rhs: b} }
-func Le(a, b Node) Node           { return Binary{Tag: constants.ExprTagLe, Lhs: a, Rhs: b} }
-func SaturatingSub(a, b Node) Node { return Binary{Tag: constants.ExprTagSaturatingSub, Lhs: a, Rhs: b} }
-func And(a, b Node) Node          { return Binary{Tag: constants.ExprTagAnd, Lhs: a, Rhs: b} }
-func Or(a, b Node) Node           { return Binary{Tag: constants.ExprTagOr, Lhs: a, Rhs: b} }
+func bin(tag uint8, a, b any) Node {
+	return Binary{Tag: tag, Lhs: operand(a), Rhs: operand(b)}
+}
+
+func Add(a, b any) Node           { return bin(constants.ExprTagAdd, a, b) }
+func Sub(a, b any) Node           { return bin(constants.ExprTagSub, a, b) }
+func Mul(a, b any) Node           { return bin(constants.ExprTagMul, a, b) }
+func Div(a, b any) Node           { return bin(constants.ExprTagDiv, a, b) }
+func DivFloor(a, b any) Node      { return bin(constants.ExprTagDivFloor, a, b) }
+func DivCeil(a, b any) Node       { return bin(constants.ExprTagDivCeil, a, b) }
+func Min(a, b any) Node           { return bin(constants.ExprTagMin, a, b) }
+func Max(a, b any) Node           { return bin(constants.ExprTagMax, a, b) }
+func Eq(a, b any) Node            { return bin(constants.ExprTagEq, a, b) }
+func Ne(a, b any) Node            { return bin(constants.ExprTagNe, a, b) }
+func Gt(a, b any) Node            { return bin(constants.ExprTagGt, a, b) }
+func Ge(a, b any) Node            { return bin(constants.ExprTagGe, a, b) }
+func Lt(a, b any) Node            { return bin(constants.ExprTagLt, a, b) }
+func Le(a, b any) Node            { return bin(constants.ExprTagLe, a, b) }
+func SaturatingSub(a, b any) Node { return bin(constants.ExprTagSaturatingSub, a, b) }
+func And(a, b any) Node           { return bin(constants.ExprTagAnd, a, b) }
+func Or(a, b any) Node            { return bin(constants.ExprTagOr, a, b) }
 
 // BpsMulFloor is ⌊amount × bps / 10_000⌋. amount must be U64; bps may be U8/U16/U32/U64
 // (promoted on-chain). Result is U64.
-func BpsMulFloor(a, b Node) Node  { return Binary{Tag: constants.ExprTagBpsMulFloor, Lhs: a, Rhs: b} }
+func BpsMulFloor(a, b any) Node { return bin(constants.ExprTagBpsMulFloor, a, b) }
 
 // BpsMulCeil is like BpsMulFloor with ceiling division.
-func BpsMulCeil(a, b Node) Node   { return Binary{Tag: constants.ExprTagBpsMulCeil, Lhs: a, Rhs: b} }
+func BpsMulCeil(a, b any) Node { return bin(constants.ExprTagBpsMulCeil, a, b) }
+
+func tern(tag uint8, a, b, c any) Node {
+	return Ternary{Tag: tag, A: operand(a), B: operand(b), C: operand(c)}
+}
 
 // MulDivFloor is ⌊a × b / c⌋. a and b must share type U64 or U128; c may be the same
 // or any narrower unsigned. Result type follows a.
-func MulDivFloor(a, b, c Node) Node { return Ternary{Tag: constants.ExprTagMulDivFloor, A: a, B: b, C: c} }
+func MulDivFloor(a, b, c any) Node { return tern(constants.ExprTagMulDivFloor, a, b, c) }
 
 // MulDivCeil is like MulDivFloor with ceiling division.
-func MulDivCeil(a, b, c Node) Node  { return Ternary{Tag: constants.ExprTagMulDivCeil, A: a, B: b, C: c} }
-func Clamp(v, lo, hi Node) Node      { return Ternary{Tag: constants.ExprTagClamp, A: v, B: lo, C: hi} }
-func Select(cond, thenExpr, elseExpr Node) Node {
-	return Ternary{Tag: constants.ExprTagSelect, A: cond, B: thenExpr, C: elseExpr}
+func MulDivCeil(a, b, c any) Node { return tern(constants.ExprTagMulDivCeil, a, b, c) }
+func Clamp(v, lo, hi any) Node    { return tern(constants.ExprTagClamp, v, lo, hi) }
+func Select(cond, thenExpr, elseExpr any) Node {
+	return tern(constants.ExprTagSelect, cond, thenExpr, elseExpr)
 }
 
 // Sample returns the minimal parity sample for wire tag index 0..51 (tests/sdk_expr_parity.ts).

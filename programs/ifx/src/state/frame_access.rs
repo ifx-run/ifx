@@ -77,15 +77,17 @@ impl<'a> FrameRef<'a> {
             pay >= 1,
             ErrorCode::InvalidValueIndex
         );
-        let ty_off = pay
-            .checked_sub(1)
-            .ok_or_else(|| FrameError::new(FrameSite::ReadTypeTyUnderflow, ErrorCode::InvalidValueIndex))?;
+        let ty_off = pay.checked_sub(1).ok_or_else(|| {
+            FrameError::new(FrameSite::ReadTypeTyUnderflow, ErrorCode::InvalidValueIndex)
+        })?;
         let tape = self.layout.tape(self.data)?;
         let ty_byte = *self
             .layout
             .tape_range(tape, ty_off, 1)?
             .first()
-            .ok_or_else(|| FrameError::new(FrameSite::ReadTypeTagByte, ErrorCode::TapeOutOfBounds))?;
+            .ok_or_else(|| {
+                FrameError::new(FrameSite::ReadTypeTagByte, ErrorCode::TapeOutOfBounds)
+            })?;
         tag_to_value_type(ty_byte).map_err(|_| {
             FrameError::new(FrameSite::ReadTypeTagByte, ErrorCode::InvalidValueTypeTag)
         })
@@ -102,7 +104,10 @@ impl<'a> FrameRef<'a> {
         let tape = self.layout.tape(self.data)?;
         let slice = self.layout.tape_range(tape, off, ty.size())?;
         copy_from(ty, slice).map_err(|_| {
-            FrameError::new(FrameSite::ReadBytesTypeMismatch, ErrorCode::LoadTypeMismatch)
+            FrameError::new(
+                FrameSite::ReadBytesTypeMismatch,
+                ErrorCode::LoadTypeMismatch,
+            )
         })
     }
 }
@@ -139,9 +144,8 @@ impl<'a> FrameMut<'a> {
         );
         let index = index_count;
         let cursor = self.layout.read_cursor(self.data)?;
-        let (ty_offset, payload_offset) = plan_record_offsets(cursor, ty).map_err(|_| {
-            FrameError::new(FrameSite::AppendPlanEnd, ErrorCode::TapeOutOfBounds)
-        })?;
+        let (ty_offset, payload_offset) = plan_record_offsets(cursor, ty)
+            .map_err(|_| FrameError::new(FrameSite::AppendPlanEnd, ErrorCode::TapeOutOfBounds))?;
         let end = payload_offset
             .checked_add(ty.size() as u32)
             .ok_or_else(|| FrameError::new(FrameSite::AppendPlanEnd, ErrorCode::TapeOutOfBounds))?;
@@ -159,8 +163,9 @@ impl<'a> FrameMut<'a> {
                 .layout
                 .tape_range_mut(tape, ty_off, 1)?
                 .first_mut()
-                .ok_or_else(|| FrameError::new(FrameSite::AppendTypeTag, ErrorCode::TapeOutOfBounds))?
-                = value_type_to_tag(ty);
+                .ok_or_else(|| {
+                    FrameError::new(FrameSite::AppendTypeTag, ErrorCode::TapeOutOfBounds)
+                })? = value_type_to_tag(ty);
             self.layout
                 .tape_range_mut(tape, pay_off, ty.size())?
                 .copy_from_slice(bytes);
@@ -169,9 +174,9 @@ impl<'a> FrameMut<'a> {
         self.layout
             .write_payload_at(self.data, index, payload_offset as u16)?;
         self.layout.write_cursor(self.data, end)?;
-        let new_count = index
-            .checked_add(1)
-            .ok_or_else(|| FrameError::new(FrameSite::AppendIndexCount, ErrorCode::IndexCapReached))?;
+        let new_count = index.checked_add(1).ok_or_else(|| {
+            FrameError::new(FrameSite::AppendIndexCount, ErrorCode::IndexCapReached)
+        })?;
         self.layout.write_index_count(self.data, new_count)?;
         frame_require!(
             FrameSite::AppendIndexU8,
@@ -251,8 +256,12 @@ impl FrameWriter for FrameMut<'_> {
         self.layout
             .write_generation(self.data, gen.wrapping_add(1))
             .map_err(Error::from)?;
-        self.layout.write_cursor(self.data, 0).map_err(Error::from)?;
-        self.layout.write_index_count(self.data, 0).map_err(Error::from)
+        self.layout
+            .write_cursor(self.data, 0)
+            .map_err(Error::from)?;
+        self.layout
+            .write_index_count(self.data, 0)
+            .map_err(Error::from)
     }
 
     fn append_value(&mut self, ty: ValueType, bytes: &[u8]) -> Result<u8> {
@@ -294,12 +303,20 @@ mod tests {
         let layout = FrameLayout::parse(&wire).unwrap();
         let mut view = FrameMut::new(&mut wire, layout).unwrap();
 
-        let i0_heap = heap.append_value(ValueType::U64, &7u64.to_le_bytes()).unwrap();
-        let i0_wire = view.append_value(ValueType::U64, &7u64.to_le_bytes()).unwrap();
+        let i0_heap = heap
+            .append_value(ValueType::U64, &7u64.to_le_bytes())
+            .unwrap();
+        let i0_wire = view
+            .append_value(ValueType::U64, &7u64.to_le_bytes())
+            .unwrap();
         assert_eq!(i0_heap, i0_wire);
 
-        let i1_heap = heap.append_value(ValueType::U64, &9u64.to_le_bytes()).unwrap();
-        let i1_wire = view.append_value(ValueType::U64, &9u64.to_le_bytes()).unwrap();
+        let i1_heap = heap
+            .append_value(ValueType::U64, &9u64.to_le_bytes())
+            .unwrap();
+        let i1_wire = view
+            .append_value(ValueType::U64, &9u64.to_le_bytes())
+            .unwrap();
         assert_eq!(i1_heap, i1_wire);
 
         assert_eq!(heap.cursor, view.cursor().unwrap());

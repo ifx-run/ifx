@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::FRAME_SEED, error::ErrorCode, pseudocode,
+    constants::FRAME_SEED,
+    error::ErrorCode,
+    pseudocode,
     state::{require_frame_ix_top_level, Frame},
 };
 

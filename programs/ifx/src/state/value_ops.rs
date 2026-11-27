@@ -178,7 +178,9 @@ pub fn apply_saturating_sub(ty: ValueType, lhs: &[u8], rhs: &[u8]) -> Result<Val
     let l = decode_typed(ty, lhs)?;
     let r = decode_typed(ty, rhs)?;
     let out = match (ty, l, r) {
-        (ValueType::U8, TypedValue::U8(a), TypedValue::U8(b)) => TypedValue::U8(a.saturating_sub(b)),
+        (ValueType::U8, TypedValue::U8(a), TypedValue::U8(b)) => {
+            TypedValue::U8(a.saturating_sub(b))
+        }
         (ValueType::U16, TypedValue::U16(a), TypedValue::U16(b)) => {
             TypedValue::U16(a.saturating_sub(b))
         }
@@ -191,7 +193,9 @@ pub fn apply_saturating_sub(ty: ValueType, lhs: &[u8], rhs: &[u8]) -> Result<Val
         (ValueType::U128, TypedValue::U128(a), TypedValue::U128(b)) => {
             TypedValue::U128(a.saturating_sub(b))
         }
-        (ValueType::I8, TypedValue::I8(a), TypedValue::I8(b)) => TypedValue::I8(a.saturating_sub(b)),
+        (ValueType::I8, TypedValue::I8(a), TypedValue::I8(b)) => {
+            TypedValue::I8(a.saturating_sub(b))
+        }
         (ValueType::I16, TypedValue::I16(a), TypedValue::I16(b)) => {
             TypedValue::I16(a.saturating_sub(b))
         }
@@ -211,14 +215,20 @@ pub fn apply_saturating_sub(ty: ValueType, lhs: &[u8], rhs: &[u8]) -> Result<Val
 
 pub(crate) fn apply_compare(ty: ValueType, op: CompareOp, lhs: &[u8], rhs: &[u8]) -> Result<bool> {
     if ty == ValueType::Bool {
-        require!(matches!(op, CompareOp::Eq | CompareOp::Ne), ErrorCode::UnsupportedBinaryOp);
+        require!(
+            matches!(op, CompareOp::Eq | CompareOp::Ne),
+            ErrorCode::UnsupportedBinaryOp
+        );
         let l = decode_typed(ty, lhs)?.as_bool()?;
         let r = decode_typed(ty, rhs)?.as_bool()?;
         return Ok(matches!(op, CompareOp::Eq) == (l == r));
     }
 
     if ty == ValueType::Pubkey {
-        require!(matches!(op, CompareOp::Eq | CompareOp::Ne), ErrorCode::UnsupportedBinaryOp);
+        require!(
+            matches!(op, CompareOp::Eq | CompareOp::Ne),
+            ErrorCode::UnsupportedBinaryOp
+        );
         return compare_typed(ty, op, decode_typed(ty, lhs)?, decode_typed(ty, rhs)?);
     }
 
@@ -326,10 +336,18 @@ pub fn apply_cast(dst: ValueType, src_ty: ValueType, operand: &[u8]) -> Result<V
     );
     let v = decode_typed(src_ty, operand)?;
     let out = match dst {
-        ValueType::U8 => TypedValue::U8(narrow_u128(cast_to_u128(src_ty, v)?, u8::MAX as u128)? as u8),
-        ValueType::U16 => TypedValue::U16(narrow_u128(cast_to_u128(src_ty, v)?, u16::MAX as u128)? as u16),
-        ValueType::U32 => TypedValue::U32(narrow_u128(cast_to_u128(src_ty, v)?, u32::MAX as u128)? as u32),
-        ValueType::U64 => TypedValue::U64(narrow_u128(cast_to_u128(src_ty, v)?, u64::MAX as u128)? as u64),
+        ValueType::U8 => {
+            TypedValue::U8(narrow_u128(cast_to_u128(src_ty, v)?, u8::MAX as u128)? as u8)
+        }
+        ValueType::U16 => {
+            TypedValue::U16(narrow_u128(cast_to_u128(src_ty, v)?, u16::MAX as u128)? as u16)
+        }
+        ValueType::U32 => {
+            TypedValue::U32(narrow_u128(cast_to_u128(src_ty, v)?, u32::MAX as u128)? as u32)
+        }
+        ValueType::U64 => {
+            TypedValue::U64(narrow_u128(cast_to_u128(src_ty, v)?, u64::MAX as u128)? as u64)
+        }
         ValueType::U128 => TypedValue::U128(cast_to_u128(src_ty, v)?),
         ValueType::I8 => TypedValue::I8(value_to_i128(src_ty, v)? as i8),
         ValueType::I16 => TypedValue::I16(value_to_i128(src_ty, v)? as i16),
@@ -537,9 +555,7 @@ fn compare_typed(ty: ValueType, op: CompareOp, l: TypedValue, r: TypedValue) -> 
 
     macro_rules! cmp_float {
         ($a:expr, $b:expr) => {{
-            let ord = $a
-                .partial_cmp(&$b)
-                .ok_or(ErrorCode::FloatUnordered)?;
+            let ord = $a.partial_cmp(&$b).ok_or(ErrorCode::FloatUnordered)?;
             Ok(match op {
                 CompareOp::Eq => ord == std::cmp::Ordering::Equal,
                 CompareOp::Ne => ord != std::cmp::Ordering::Equal,
@@ -564,13 +580,11 @@ fn compare_typed(ty: ValueType, op: CompareOp, l: TypedValue, r: TypedValue) -> 
         (ValueType::I128, TypedValue::I128(a), TypedValue::I128(b)) => cmp_ord!(a, b),
         (ValueType::F32, TypedValue::F32(a), TypedValue::F32(b)) => cmp_float!(a, b),
         (ValueType::F64, TypedValue::F64(a), TypedValue::F64(b)) => cmp_float!(a, b),
-        (ValueType::Pubkey, TypedValue::Pubkey(a), TypedValue::Pubkey(b)) => {
-            Ok(match op {
-                CompareOp::Eq => a == b,
-                CompareOp::Ne => a != b,
-                _ => return Err(ErrorCode::UnsupportedBinaryOp.into()),
-            })
-        }
+        (ValueType::Pubkey, TypedValue::Pubkey(a), TypedValue::Pubkey(b)) => Ok(match op {
+            CompareOp::Eq => a == b,
+            CompareOp::Ne => a != b,
+            _ => return Err(ErrorCode::UnsupportedBinaryOp.into()),
+        }),
         _ => Err(ErrorCode::LoadTypeMismatch.into()),
     }
 }
@@ -581,19 +595,14 @@ where
 {
     use ArithOp::*;
     match op {
-        Add => l
-            .checked_add_op(r)
-            .ok_or(ErrorCode::IntegerOverflow.into()),
+        Add => l.checked_add_op(r).ok_or(ErrorCode::IntegerOverflow.into()),
         Sub => l
             .checked_sub_op(r)
             .ok_or(ErrorCode::IntegerUnderflow.into()),
-        Mul => l
-            .checked_mul_op(r)
-            .ok_or(ErrorCode::IntegerOverflow.into()),
+        Mul => l.checked_mul_op(r).ok_or(ErrorCode::IntegerOverflow.into()),
         Div => {
             require!(r != T::zero(), ErrorCode::DivisionByZero);
-            l.checked_div_op(r)
-                .ok_or(ErrorCode::DivisionByZero.into())
+            l.checked_div_op(r).ok_or(ErrorCode::DivisionByZero.into())
         }
         Min => Ok(if l <= r { l } else { r }),
         Max => Ok(if l >= r { l } else { r }),
@@ -702,7 +711,10 @@ mod tests {
             &encode_typed(ValueType::U64, TypedValue::U64(0)).unwrap(),
         )
         .unwrap_err();
-        assert!(err.to_string().contains("DivisionByZero") || format!("{err:?}").contains("DivisionByZero"));
+        assert!(
+            err.to_string().contains("DivisionByZero")
+                || format!("{err:?}").contains("DivisionByZero")
+        );
     }
 
     #[test]
@@ -768,9 +780,21 @@ mod tests {
 
     #[test]
     fn is_unsigned_narrower_or_equal_checks_width() {
-        assert!(is_unsigned_narrower_or_equal(ValueType::U16, ValueType::U64));
-        assert!(is_unsigned_narrower_or_equal(ValueType::U64, ValueType::U64));
-        assert!(!is_unsigned_narrower_or_equal(ValueType::U128, ValueType::U64));
-        assert!(!is_unsigned_narrower_or_equal(ValueType::I32, ValueType::U64));
+        assert!(is_unsigned_narrower_or_equal(
+            ValueType::U16,
+            ValueType::U64
+        ));
+        assert!(is_unsigned_narrower_or_equal(
+            ValueType::U64,
+            ValueType::U64
+        ));
+        assert!(!is_unsigned_narrower_or_equal(
+            ValueType::U128,
+            ValueType::U64
+        ));
+        assert!(!is_unsigned_narrower_or_equal(
+            ValueType::I32,
+            ValueType::U64
+        ));
     }
 }

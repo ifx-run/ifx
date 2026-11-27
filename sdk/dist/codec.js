@@ -18,6 +18,7 @@ exports.encodeAssertMultiArgs = encodeAssertMultiArgs;
 exports.encodeRawCpiPatch = encodeRawCpiPatch;
 exports.encodePatchList = encodePatchList;
 exports.encodeCpi = encodeCpi;
+exports.encodeReturnDataLets = encodeReturnDataLets;
 exports.encodeIfElseArgs = encodeIfElseArgs;
 const bn_js_1 = __importDefault(require("bn.js"));
 const let_binding_variants_1 = require("./let-binding-variants");
@@ -494,6 +495,22 @@ function encodeCpi(step) {
                 (0, structured_cpi_patch_1.encodeStructuredCpiPatch)(step.patch),
             ]);
     }
+}
+/** `u8` count + `{ ValueType, u16 offset }` entries for `ifx_let_patched_cpi`. */
+function encodeReturnDataLets(lets) {
+    if (lets.length === 0 || lets.length > 255) {
+        throw new Error(`ifx_let_patched_cpi lets length must be 1..=255 (got ${lets.length})`);
+    }
+    const parts = [Buffer.from([lets.length])];
+    for (const item of lets) {
+        if (!Number.isInteger(item.offset) || item.offset < 0 || item.offset > 0xffff) {
+            throw new Error(`return-data let offset out of u16 range: ${item.offset}`);
+        }
+        const off = Buffer.alloc(2);
+        off.writeUInt16LE(item.offset);
+        parts.push(encodeValueType(item.ty), off);
+    }
+    return Buffer.concat(parts);
 }
 function stepsFromArm(arm) {
     if (Array.isArray(arm.steps)) {

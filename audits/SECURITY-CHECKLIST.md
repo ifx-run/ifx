@@ -235,7 +235,7 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 |----|-------|---------------|
 | IFX-SEC-G01 | Instruction discriminators unique (`IX_DISC_*`) | `constants.rs` |
 | IFX-SEC-G02 | `security_txt!` embedded in program binary | `lib.rs` |
-| IFX-SEC-G03 | All seven instructions have explicit `Accounts` structs | `instructions/*.rs` |
+| IFX-SEC-G03 | All nine instructions have explicit `Accounts` structs | `instructions/*.rs` |
 | IFX-SEC-G04 | No `unwrap`/`expect` in instruction hot path (program crate) | grep `programs/ifx/src` |
 | IFX-SEC-G05 | `cargo audit` at **repo root** (`Cargo.lock` is workspace-wide; not under `programs/ifx/`). If fetch fails, see [AUDIT-WORKFLOW.md § cargo audit troubleshooting](./AUDIT-WORKFLOW.md#cargo-audit-troubleshooting) | root `Cargo.toml` / `Cargo.lock` |
 | IFX-SEC-G06 | No undocumented `/// CHECK:` or `UncheckedAccount` in `Accounts` structs | grep `programs/ifx/src/instructions` |
@@ -252,8 +252,10 @@ The [Bootcamp security lesson](https://solana.com/developers/bootcamp/program-pa
 | `ifx_reset_frame` | `authority` (on-curve) | mut | top-level only; off-curve = public |
 | `ifx_let` | `authority` (on-curve) | mut | top-level only; `remaining` for CPI reads |
 | `ifx_assert` | — | read | |
+| `ifx_assert_multi` | — | read | |
 | `ifx_patched_cpi` | — | read | `remaining` for CPI |
 | `ifx_if_else` | — | read | `remaining` when arm CPIs |
+| `ifx_let_patched_cpi` | `authority` (on-curve) | mut | top-level only; `remaining` for CPI |
 
 ---
 
@@ -274,7 +276,7 @@ If `cargo audit` fails while fetching the advisory database, see [AUDIT-WORKFLOW
 | ID | Command / test | Program behavior exercised |
 |----|----------------|----------------------------|
 | IFX-SEC-I01 | `tests/ifx_anchor_security.ts` | Close authority |
-| IFX-SEC-I02 | `tests/ifx.ts`, `tests/ifx_negative.ts`, `tests/ifx_let_coverage.ts`, `tests/ifx_cpi_edges.ts`, `tests/ifx_expr_ops.ts` | assert, tape, if_else, let, CPI edges |
+| IFX-SEC-I02 | `tests/ifx.ts`, `tests/ifx_negative.ts`, `tests/ifx_let_coverage.ts`, `tests/ifx_cpi_edges.ts`, `tests/ifx_expr_ops.ts`, `tests/ifx_let_patched_cpi.ts` | assert, tape, if_else, let, CPI edges, return-data lets |
 | IFX-SEC-I03 | `programs/ifx` `cargo test` (`tape.rs`, `value_ops.rs`, etc.) | Tape/layout invariants |
 | IFX-SEC-I04 | `npm run security:preflight` | Build + `security.txt` embed |
 | IFX-SEC-I05 | `npm test` (full suite) | End-to-end program via Anchor tests |

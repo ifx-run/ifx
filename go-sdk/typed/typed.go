@@ -13,19 +13,19 @@ import (
 type IfxTy string
 
 const (
-	TyBool IfxTy = "bool"
-	TyU8   IfxTy = "u8"
-	TyU16  IfxTy = "u16"
-	TyU32  IfxTy = "u32"
-	TyU64  IfxTy = "u64"
-	TyU128 IfxTy = "u128"
-	TyI8   IfxTy = "i8"
-	TyI16  IfxTy = "i16"
-	TyI32  IfxTy = "i32"
-	TyI64  IfxTy = "i64"
-	TyI128 IfxTy = "i128"
-	TyF32  IfxTy = "f32"
-	TyF64  IfxTy = "f64"
+	TyBool   IfxTy = "bool"
+	TyU8     IfxTy = "u8"
+	TyU16    IfxTy = "u16"
+	TyU32    IfxTy = "u32"
+	TyU64    IfxTy = "u64"
+	TyU128   IfxTy = "u128"
+	TyI8     IfxTy = "i8"
+	TyI16    IfxTy = "i16"
+	TyI32    IfxTy = "i32"
+	TyI64    IfxTy = "i64"
+	TyI128   IfxTy = "i128"
+	TyF32    IfxTy = "f32"
+	TyF64    IfxTy = "f64"
 	TyPubkey IfxTy = "pubkey"
 )
 
@@ -36,6 +36,10 @@ type ScratchValue struct {
 	Ty        IfxTy
 	Remaining []AccountMeta // optional single-let remaining slice
 }
+
+// BindingIndex is the tape slot. Pass the ScratchValue to expr builders
+// (expr.NonZero(sv), expr.Add(a, b)); they read this index.
+func (s ScratchValue) BindingIndex() uint8 { return s.Index }
 
 // AccountMeta is a deduped remaining account entry.
 type AccountMeta struct {

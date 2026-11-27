@@ -20,10 +20,11 @@
 | `ifx_assert_multi` | 顺序求值 `U8LenVec<Expr>`；首条 false 短路 revert |
 | `ifx_patched_cpi` | CPI；从 Frame tape patch 模板 `data`（`Cpi` + `RawCpiPatch`；`patches` 必须非空） |
 | `ifx_if_else` | 条件分支：每 arm 为 `Skip` / `Revert` / CPI 序列 | 对 `cond` 求值；执行 `then_arm` 或 `else_arm`（`IfElseArm`） |
+| `ifx_let_patched_cpi` | 一次 CPI，然后把**这次**调用的 return data 按定宽切片 append | `args.cpi` 为 Static、非空 RawPatched 或 Structured。`args.lets` 为 `u8` 计数加 `{ ty, offset: u16 }`。仅顶层 |
 
-- `ifx_let`、`ifx_reset_frame`、`ifx_close_frame`、`ifx_create_frame` 均须在 **transaction 顶层**（`stack height == 1`）— [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
+- `ifx_let`、`ifx_reset_frame`、`ifx_close_frame`、`ifx_create_frame`、`ifx_let_patched_cpi` 均须在 **transaction 顶层**（`stack height == 1`）— [frame-authority.zh-CN.md](./frame-authority.zh-CN.md)。
 - `ifx_let` / `ifx_patched_cpi` / `ifx_if_else` 的 CPI 使用 **`remaining_accounts`** 下标。
-- on-curve Frame **`authority`** 在 `reset` / `let` / `close` 上要求 **`authority: Signer`**；off-curve = 公共可写。
+- on-curve Frame **`authority`** 在 `reset` / `let` / `close` / `ifx_let_patched_cpi` 上要求 **`authority: Signer`**；off-curve = 公共可写。
 - `ifx_if_else` 在短读借内求 `cond`，释放读锁后再 CPI（见 [frame-authority.zh-CN.md](./frame-authority.zh-CN.md) §5.4）。
 - **SDK 约定：** 业务 tx 中第一次 `ifx_let` 前须 `ifx_reset_frame`，除非该 tx 在同一 **已落地 bundle** 内接续前序 tx 的 binding（则可省略 reset）。`ifx_create_frame` 在 **单独 tx** 中开通。
 
@@ -128,6 +129,7 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 - `ifx_assert_multi(args: AssertMultiArgs)` — 首条 false 则 revert（`AssertFailedMulti`；index 在 return data）
 - `ifx_patched_cpi(arm: Cpi)` — 一条 **RawPatched** 或 **Structured** 步（须 apply patch）
 - `ifx_if_else(args: IfElseArgs)` — `cond` + 两侧 [`IfElseArm`]
+- `ifx_let_patched_cpi(args: LetPatchedCpiArgs)` — 一次 CPI，再把该次 return data 的 `{ ty, offset: u16 }` 切片 append（1–255 条）。仅顶层。Static、非空 RawPatched 或 Structured。日志先 `cpi …`，再 `let $N: ty = return_data[+offset]; //= value`
 - **`IfElseArm` wire：** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] 步
 - **`Cpi` wire kind**（每步首字节）：**`0` Static** · **`1` RawPatched** · **`2` Structured**（见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md)）
   - **Static：** `[0][accounts_start][accounts_len][U16LenVec data]`
@@ -144,7 +146,7 @@ pub struct Value { pub index: u8 }  // binding index（0 起 append 顺序）
 ifx_create_frame
 
 # 业务 tx — 典型
-ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else / ifx_let_patched_cpi → …
 
 # 拆分 — 仅同一已落地 Jito bundle：tx1 reset+let，tx2 let+…（无 reset）
 
@@ -174,5 +176,6 @@ ifx_close_frame
 | `programs/ifx/src/state/tape.rs` | `reset_session`、`append_value`、`plan_record_offsets` |
 | `programs/ifx/src/state/let_exec.rs` | `ifx_let` 求值 |
 | `programs/ifx/src/instructions/reset_frame.rs` | `ifx_reset_frame` |
+| `programs/ifx/src/instructions/let_patched_cpi.rs` | `ifx_let_patched_cpi` |
 
 生成客户端类型：`anchor build` → `target/types/ifx.ts`。

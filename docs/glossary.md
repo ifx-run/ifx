@@ -60,8 +60,10 @@ The **Frame** PDA holds a byte buffer (**tape**) plus a small index table. Names
 | **`ifx_close_frame`** | Reclaim rent | **Close** Frame PDA. Top-level only; **`authority`** signer must match. |
 | **`ifx_let`** | Append bindings | **`let`** = bind a name/value (SSA). Top-level only (`LetNotTopLevel`); on-curve **`authority`** signer when private. |
 | **`ifx_assert`** | Hard-fail if false | **`assert!`**-style condition on **`Expr`**. |
+| **`ifx_assert_multi`** | Hard-fail on first false | Several **`Expr`** guards in one ix; failing index in return data. |
 | **`ifx_patched_cpi`** | CPI with tape-filled `data` | **Patched** = template instruction bytes + overlays from tape before **`invoke`**. |
 | **`ifx_if_else`** | Conditional arm | **`if` / `else`** on **`Expr`**; each arm is an **`IfElseArm`** (`Skip`, `Revert`, or 1–254 **`Cpi`** steps). |
+| **`ifx_let_patched_cpi`** | CPI, then bind its return data | **`let`** slices of **that** call's return data onto the tape. Top-level only. |
 
 Prefix **`ifx_`** matches the program module and keeps instruction names grep-friendly in explorers.
 

@@ -12,11 +12,6 @@ pub struct Let<'info> {
 
 pub fn handler<'info>(ctx: Context<'info, Let<'info>>, args: LetArgs) -> Result<()> {
     let frame = FrameAccount::try_from(ctx.accounts.frame.as_ref())?;
-    let let_remaining =
-        let_remaining_after_write_gate(&frame.authority, ctx.remaining_accounts)?;
-    execute_let(
-        ctx.accounts.frame.as_ref(),
-        let_remaining,
-        args,
-    )
+    let let_remaining = let_remaining_after_write_gate(&frame.authority, ctx.remaining_accounts)?;
+    execute_let(ctx.accounts.frame.as_ref(), let_remaining, args)
 }

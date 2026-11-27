@@ -22,8 +22,9 @@ describe("decodeIfxInstruction", () => {
     expect(ifxIxHint(Buffer.from([99]))).to.be.undefined;
   });
 
-  it("IFX_IX_NAMES covers all discriminators 0..7", () => {
-    expect(IFX_IX_NAMES).to.have.length(8);
+  it("IFX_IX_NAMES covers all discriminators 0..8", () => {
+    expect(IFX_IX_NAMES).to.have.length(9);
     expect(IFX_IX_NAMES[3]).to.equal("ifx_let");
+    expect(IFX_IX_NAMES[8]).to.equal("ifx_let_patched_cpi");
   });
 });

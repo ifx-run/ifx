@@ -21,7 +21,7 @@ import {
   remapBindingAccountIndex,
 } from "./binding";
 import { expr } from "./expr";
-import type { LetArgs, LetBinding, ValueType } from "./types";
+import type { Cpi, Expr, IfElseArgs, LetArgs, LetBinding, ValueType } from "./types";
 import {
   scratchValue,
   tyForIfxTy,
@@ -31,7 +31,7 @@ import {
   type TypedExpr,
 } from "./typed";
 import type { CpiWireBuildResult } from "./cpi";
-import type { IfElseArgs } from "./types";
+import { Ty } from "./ty";
 import {
   buildIxAssert,
   buildIxAssertMulti,
@@ -41,6 +41,7 @@ import {
   createIxCreateFrame,
   createIxIfElse,
   createIxCpi,
+  createIxLetPatchedCpi,
   mergeIxOpts,
   type CreateIxCreateFrameParams,
   type IxOpts,
@@ -50,6 +51,40 @@ import {
   toLetAccountMeta,
 } from "./let-account";
 import { LetIxBuilder } from "./let-builder";
+
+/** Zero literal used only to reserve a tape slot of `ty`. Not submitted as `ifx_let`. */
+function zeroExpr(ty: IfxTy): Expr {
+  switch (ty) {
+    case "bool":
+      return expr.bool(false);
+    case "u8":
+      return expr.u8(0);
+    case "u16":
+      return expr.u16(0);
+    case "u32":
+      return expr.u32(0);
+    case "u64":
+      return expr.u64(0);
+    case "u128":
+      return expr.u128(0);
+    case "i8":
+      return expr.i8(0);
+    case "i16":
+      return expr.i16(0);
+    case "i32":
+      return expr.i32(0);
+    case "i64":
+      return expr.i64(0);
+    case "i128":
+      return expr.i128(0);
+    case "f32":
+      return expr.f32(0);
+    case "f64":
+      return expr.f64(0);
+    case "pubkey":
+      return expr.pubkey(PublicKey.default);
+  }
+}
 
 export type { CreateIxCreateFrameParams } from "./ix";
 
@@ -506,6 +541,27 @@ export class FrameScratch {
   /** Patched CPI (`ifx_patched_cpi`). */
   ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction {
     return createIxCpi(this.frame, built, this.mergeIxOpts(opts));
+  }
+
+  /**
+   * `ifx_let_patched_cpi`: one CPI, then append each return-data slice as a let.
+   * `lets.length` is the number of tape indices reserved (static).
+   * Static CPI: `{ cpi: staticCpi(ix).staticStep, remaining }`.
+   */
+  ixLetPatchedCpi(
+    built: { cpi: Cpi; remaining: AccountMeta[] },
+    lets: readonly { ty: IfxTy; offset: number }[],
+    opts?: IxOpts
+  ): { ix: TransactionInstruction; values: ScratchValue<IfxTy>[] } {
+    const ix = createIxLetPatchedCpi(
+      this.frame,
+      this.authority,
+      built,
+      lets.map((item) => ({ ty: Ty[item.ty](), offset: item.offset })),
+      this.mergeIxOpts(opts)
+    );
+    const values = lets.map((item) => this.plan(binding.eval(zeroExpr(item.ty))));
+    return { ix, values };
   }
 
   /** Conditional CPI arms (`ifx_if_else`). */

@@ -146,12 +146,13 @@ For **private** Frames, **`authority` is usually the same key that already signs
 | `ifx_create_frame` | init | **Yes** | No (payer signs; `authority` is data arg) |
 | `ifx_reset_frame` | yes | **Yes** | **Yes** |
 | `ifx_let` | yes | **Yes** (`LetNotTopLevel` today) | **Yes** |
+| `ifx_let_patched_cpi` | yes | **Yes** (`LetPatchedCpiNotTopLevel`) | **Yes** |
 | `ifx_close_frame` | yes (close) | **Yes** | **Yes** (same as today’s close check) |
 | `ifx_assert` | no | — | — |
 | `ifx_patched_cpi` | no | — | — |
 | `ifx_if_else` | no | — | — |
 
-**Write closure:** every instruction that **mutates** Frame state (`create`, `reset`, `let`, `close`) is **top-level only** and, when `authority` is on-curve, requires **`authority` signer**. Everything else is read-only at the Frame layer.
+**Write closure:** every instruction that **mutates** Frame state (`create`, `reset`, `let`, `let_patched_cpi`, `close`) is **top-level only** and, when `authority` is on-curve, requires **`authority` signer**. Everything else is read-only at the Frame layer.
 
 ---
 
@@ -176,6 +177,16 @@ remaining[1..] — let binding accounts (AccountLoad, CPI sources, …)
 
 Public Frame: `remaining` = let accounts only; binding indices start at `0`.
 
+### `ifx_let_patched_cpi`
+
+```text
+frame          (mut)
+remaining[0]   (signer, when on-curve)  — private Frame write gate
+remaining[1..] — CPI accounts (`accounts_start` is relative to this slice)
+```
+
+Public Frame: CPI accounts start at `remaining[0]`. `args.cpi` is one step. `args.lets` appends each `{ ty, offset }` slice of that call's return data.
+
 ### `ifx_close_frame`
 
 ```text
@@ -193,7 +204,7 @@ Unchanged payer + init; top level only. Instruction arg **`authority`** replaces
 
 ### 5.1 Top level (`stack height == 1`)
 
-All mutating instructions enforce top-level-only: `LetNotTopLevel`, `ResetNotTopLevel`, `CloseNotTopLevel`, `CreateNotTopLevel`.
+All mutating instructions enforce top-level-only: `LetNotTopLevel`, `ResetNotTopLevel`, `CloseNotTopLevel`, `CreateNotTopLevel`, `LetPatchedCpiNotTopLevel`.
 
 Ifx is **not** a library for other programs to CPI-wrap. Wallets and risk tools assume Ifx instructions appear **directly** in the transaction message for static analysis.
 
@@ -325,10 +336,11 @@ Authority gates **third-party poisoning**; it does **not** replace bundle landin
 | Name | When |
 |------|------|
 | `LetNotTopLevel` | `ifx_let` via CPI |
+| `LetPatchedCpiNotTopLevel` | `ifx_let_patched_cpi` via CPI |
 | `ResetNotTopLevel` | `ifx_reset_frame` via CPI |
 | `CloseNotTopLevel` | `ifx_close_frame` via CPI |
 | `CreateNotTopLevel` | `ifx_create_frame` via CPI |
-| `UnauthorizedFrameWrite` | On-curve `authority` missing or wrong signer on `reset` / `let` |
+| `UnauthorizedFrameWrite` | On-curve `authority` missing or wrong signer on `reset` / `let` / `ifx_let_patched_cpi` |
 | `UnauthorizedClose` | Wrong signer on `close` |
 | `InvalidAuthority` | `Pubkey::default()` at create |
 

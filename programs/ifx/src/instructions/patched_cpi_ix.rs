@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     error::ErrorCode,
-    state::{FrameAccount, Cpi},
+    state::{Cpi, FrameAccount},
 };
 
 use super::patched_cpi::invoke_cpi;
@@ -15,7 +15,10 @@ pub struct IfxPatchedCpi<'info> {
 }
 
 pub fn handler<'info>(ctx: Context<'info, IfxPatchedCpi<'info>>, arm: Cpi) -> Result<()> {
-    require!(arm.requires_patch_apply(), ErrorCode::InvalidPatchedCpiPatches);
+    require!(
+        arm.requires_patch_apply(),
+        ErrorCode::InvalidPatchedCpiPatches
+    );
     let remaining = ctx.remaining_accounts;
     let frame = FrameAccount::try_from(ctx.accounts.frame.as_ref())?;
     invoke_cpi(&frame, remaining, &arm)

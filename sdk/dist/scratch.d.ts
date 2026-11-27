@@ -1,9 +1,8 @@
 import { AccountMeta, Connection, PublicKey, TransactionInstruction, type Commitment } from "@solana/web3.js";
 import { type DecodedFrame } from "./layout";
-import type { LetArgs, LetBinding } from "./types";
+import type { Cpi, IfElseArgs, LetArgs, LetBinding } from "./types";
 import { type Cond, type IfxTy, type ScratchValue, type TypedExpr } from "./typed";
 import type { CpiWireBuildResult } from "./cpi";
-import type { IfElseArgs } from "./types";
 import { type CreateIxCreateFrameParams, type IxOpts } from "./ix";
 import { LetAccountInput } from "./let-account";
 import { LetIxBuilder } from "./let-builder";
@@ -144,6 +143,21 @@ export declare class FrameScratch {
     ixAssertMulti(conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
     /** Patched CPI (`ifx_patched_cpi`). */
     ixCpi(built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
+    /**
+     * `ifx_let_patched_cpi`: one CPI, then append each return-data slice as a let.
+     * `lets.length` is the number of tape indices reserved (static).
+     * Static CPI: `{ cpi: staticCpi(ix).staticStep, remaining }`.
+     */
+    ixLetPatchedCpi(built: {
+        cpi: Cpi;
+        remaining: AccountMeta[];
+    }, lets: readonly {
+        ty: IfxTy;
+        offset: number;
+    }[], opts?: IxOpts): {
+        ix: TransactionInstruction;
+        values: ScratchValue<IfxTy>[];
+    };
     /** Conditional CPI arms (`ifx_if_else`). */
     ixIfElse(args: IfElseArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;
     /** @internal */

@@ -6,11 +6,10 @@ use crate::{
     state::types::{Expr, ValueType},
     state::value_codec::{decode_bool, encode_typed, TypedValue, ValueBytes},
     state::value_ops::{
-        apply_and, apply_arith, apply_bps_mul_ceil,
-        apply_bps_mul_floor, apply_cast, apply_clamp, apply_compare, apply_div_ceil, apply_div_floor,
-        apply_is_zero, apply_mul_div_ceil, apply_mul_div_floor, apply_neg, apply_non_zero,
-        apply_not, apply_or, apply_saturating_sub, is_bps_operand_ty, is_unsigned_narrower_or_equal,
-        ArithOp, CompareOp,
+        apply_and, apply_arith, apply_bps_mul_ceil, apply_bps_mul_floor, apply_cast, apply_clamp,
+        apply_compare, apply_div_ceil, apply_div_floor, apply_is_zero, apply_mul_div_ceil,
+        apply_mul_div_floor, apply_neg, apply_non_zero, apply_not, apply_or, apply_saturating_sub,
+        is_bps_operand_ty, is_unsigned_narrower_or_equal, ArithOp, CompareOp,
     },
 };
 
@@ -149,7 +148,11 @@ pub fn eval_expr(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Re
             let h = eval_expr(frame, ty, hi)?;
             apply_clamp(ty, &v, &l, &h)
         }
-        Expr::Select { cond, then_expr, else_expr } => {
+        Expr::Select {
+            cond,
+            then_expr,
+            else_expr,
+        } => {
             let cond_ty = infer_expr_ty(frame, cond)?;
             require!(cond_ty == ValueType::Bool, ErrorCode::ExprTypeMismatch);
             let branch_ty = infer_binary_ty(frame, then_expr, else_expr)?;
@@ -224,7 +227,12 @@ fn infer_muldiv_ab_ty(frame: &impl FrameReader, a: &Expr, b: &Expr) -> Result<Va
     Ok(ta)
 }
 
-fn infer_clamp_ty(frame: &impl FrameReader, value: &Expr, lo: &Expr, hi: &Expr) -> Result<ValueType> {
+fn infer_clamp_ty(
+    frame: &impl FrameReader,
+    value: &Expr,
+    lo: &Expr,
+    hi: &Expr,
+) -> Result<ValueType> {
     let tv = infer_expr_ty(frame, value)?;
     let tl = infer_expr_ty(frame, lo)?;
     let th = infer_expr_ty(frame, hi)?;
@@ -233,11 +241,7 @@ fn infer_clamp_ty(frame: &impl FrameReader, value: &Expr, lo: &Expr, hi: &Expr) 
     Ok(tv)
 }
 
-fn eval_promoted(
-    frame: &impl FrameReader,
-    dst_ty: ValueType,
-    expr: &Expr,
-) -> Result<ValueBytes> {
+fn eval_promoted(frame: &impl FrameReader, dst_ty: ValueType, expr: &Expr) -> Result<ValueBytes> {
     let src_ty = infer_expr_ty(frame, expr)?;
     require!(
         is_unsigned_narrower_or_equal(src_ty, dst_ty),

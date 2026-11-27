@@ -17,10 +17,10 @@ Ifx 的 Go 链下客户端：在 [`solana-go`](https://github.com/gagliardetto/s
 
 ## 安装
 
-**当前版本：** **`v0.1.3`**（默认主网；与 `@ifx-run/sdk@0.1.3`、`ifx-sdk@0.1.3` 对齐）。
+**当前版本：** **`v0.1.4`**（默认主网；与 `@ifx-run/sdk@0.1.4`、`ifx-sdk@0.1.4` 对齐）。
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.3
+go get github.com/ifx-run/ifx/go-sdk@v0.1.4
 ```
 
 模块路径：`github.com/ifx-run/ifx/go-sdk/...`
@@ -108,14 +108,18 @@ if err != nil {
 }
 ixs = append(ixs, letIx)
 
-assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(target.Index)))
+assertIx, err := s.IxAssert(expr.NonZero(target))
 if err != nil {
     return err
 }
 ixs = append(ixs, assertIx)
 
-// 组装 Transaction，签名，发送
+// 组装 Transaction。发送前：
+//   raw, _ := tx.MarshalBinary()
+//   fmt.Println(base64.StdEncoding.EncodeToString(raw))
 ```
+
+把这段 base64（或同一段字节的 base58）贴进 [ifx.run/explorer](https://ifx.run/explorer)，查看每条 Ifx 指令。可以不签名。
 
 ### 生产环境：看日志，不要 decode Frame
 
@@ -137,7 +141,7 @@ if err != nil {
 letIx, err := s.IxLet(bal)
 ```
 
-需要读账户时，`ScratchValue.Remaining` 带上 remaining meta（单账户 let 在索引 0）。后续表达式引用：`expr.Ref(bal.Index)`。
+需要读账户时，`ScratchValue.Remaining` 带上 remaining meta（单账户 let 在索引 0）。后续表达式直接传入这个值：`expr.NonZero(bal)`、`expr.Add(bal, expr.U64(1))`。
 
 `IxAssert` / `if_else` 的条件可以是 **`expr.Node`（bool）** 或 **bool 类型的 `ScratchValue`**。
 

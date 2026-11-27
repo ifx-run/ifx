@@ -11,12 +11,8 @@ pub fn assemble_structured_cpi(
     program_id: &Pubkey,
     frame: &impl FrameReader,
 ) -> Result<Vec<u8>> {
-    ifx_core::structured_cpi::assemble_structured_cpi(
-        patch,
-        program_id,
-        &FrameCtx(frame),
-    )
-    .map_err(map_structured_cpi_err)
+    ifx_core::structured_cpi::assemble_structured_cpi(patch, program_id, &FrameCtx(frame))
+        .map_err(map_structured_cpi_err)
 }
 
 struct FrameCtx<'a, F: FrameReader>(&'a F);

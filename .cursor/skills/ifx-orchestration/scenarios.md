@@ -51,6 +51,10 @@ ix + patches   // structuredCpi or rawCpi — data from lets
 
 Use when CPI bytes or lamports are unknown until this tx (ATA rent, Token-2022 fee, quoted size vs execution).
 
+## Return data
+
+A later `ifx_let` cannot read `set_return_data` from an earlier CPI. Use `ixLetPatchedCpi`: one CPI, then fixed-width `{ ty, offset }` slices onto the tape (`1..=255`). Top-level only — not inside `if_else`. Copy `tests/ifx_let_patched_cpi.ts`. Input values that exist before the CPI stay a prior `ifx_let`.
+
 ## L1 — skip vs do
 
 Same as L0, then `ixIfElse({ cond, then, else })`. Optional step stays in the **skeleton**; `Skip` is the no-op. Same cond → one `if_else`. No Ifx write ix in arms.

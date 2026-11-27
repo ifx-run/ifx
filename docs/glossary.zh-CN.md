@@ -60,8 +60,10 @@
 | **`ifx_close_frame`** | 收回 rent | **Close** Frame PDA。仅顶层；**`authority`** signer 须匹配。 |
 | **`ifx_let`** | 追加 binding | **`let`** = 绑定名字/值（SSA）。仅顶层（`LetNotTopLevel`）；私有 Frame 时 on-curve **`authority`** signer。 |
 | **`ifx_assert`** | 条件不满足则 revert | 对 **`Expr`** 做 **`assert!`** 式检查。 |
+| **`ifx_assert_multi`** | 首条不满足则 revert | 一条 ix 里多条 **`Expr`** guard；失败下标在 return data。 |
 | **`ifx_patched_cpi`** | 从 tape 填 CPI `data` 再 invoke | **Patched** = 模板指令字节 + 运行前覆盖。 |
 | **`ifx_if_else`** | 条件分支 | **`if` / `else`** 作用于 **`Expr`**；每侧为 **`IfElseArm`**（`Skip`、`Revert`，或 1–254 个 **`Cpi`** 步）。 |
+| **`ifx_let_patched_cpi`** | CPI 后绑定其 return data | 把**这次**调用的 return data 切片 **`let`** 到 tape。仅顶层。 |
 
 前缀 **`ifx_`** 与 program 模块一致，便于在浏览器里检索。
 

@@ -10,25 +10,27 @@ import (
 type IfxIxName string
 
 const (
-	IxNameCreateFrame  IfxIxName = "ifx_create_frame"
-	IxNameCloseFrame   IfxIxName = "ifx_close_frame"
-	IxNameResetFrame   IfxIxName = "ifx_reset_frame"
-	IxNameLet          IfxIxName = "ifx_let"
-	IxNameAssert       IfxIxName = "ifx_assert"
-	IxNameAssertMulti  IfxIxName = "ifx_assert_multi"
-	IxNamePatchedCpi   IfxIxName = "ifx_patched_cpi"
-	IxNameIfElse       IfxIxName = "ifx_if_else"
+	IxNameCreateFrame   IfxIxName = "ifx_create_frame"
+	IxNameCloseFrame    IfxIxName = "ifx_close_frame"
+	IxNameResetFrame    IfxIxName = "ifx_reset_frame"
+	IxNameLet           IfxIxName = "ifx_let"
+	IxNameAssert        IfxIxName = "ifx_assert"
+	IxNameAssertMulti   IfxIxName = "ifx_assert_multi"
+	IxNamePatchedCpi    IfxIxName = "ifx_patched_cpi"
+	IxNameIfElse        IfxIxName = "ifx_if_else"
+	IxNameLetPatchedCpi IfxIxName = "ifx_let_patched_cpi"
 )
 
 var discToName = map[uint8]IfxIxName{
-	constants.IxDiscCreateFrame:  IxNameCreateFrame,
-	constants.IxDiscCloseFrame:   IxNameCloseFrame,
-	constants.IxDiscResetFrame:   IxNameResetFrame,
-	constants.IxDiscLet:          IxNameLet,
-	constants.IxDiscAssert:       IxNameAssert,
-	constants.IxDiscAssertMulti:  IxNameAssertMulti,
-	constants.IxDiscPatchedCpi:   IxNamePatchedCpi,
-	constants.IxDiscIfElse:       IxNameIfElse,
+	constants.IxDiscCreateFrame:   IxNameCreateFrame,
+	constants.IxDiscCloseFrame:    IxNameCloseFrame,
+	constants.IxDiscResetFrame:    IxNameResetFrame,
+	constants.IxDiscLet:           IxNameLet,
+	constants.IxDiscAssert:        IxNameAssert,
+	constants.IxDiscAssertMulti:   IxNameAssertMulti,
+	constants.IxDiscPatchedCpi:    IxNamePatchedCpi,
+	constants.IxDiscIfElse:        IxNameIfElse,
+	constants.IxDiscLetPatchedCpi: IxNameLetPatchedCpi,
 }
 
 // DecodedIfxInstruction is the result of DecodeIfxInstruction.

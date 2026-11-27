@@ -171,4 +171,24 @@ pub mod ifx {
     pub fn ifx_if_else<'info>(ctx: Context<'info, IfElse<'info>>, args: IfElseArgs) -> Result<()> {
         if_else::handler(ctx, args)
     }
+
+    /// One CPI, then `let` fixed-width slices of its return data onto the Frame tape.
+    ///
+    /// `args.cpi` is one [`Cpi`] step (Static, RawPatched with at least one patch, or
+    /// Structured). `args.lets` is non-empty: each entry is a [`ValueType`] and a
+    /// constant byte `offset` into that call's return data. Width is `ty.size()`
+    /// (little-endian). The lets are appended in order and can be read by a later
+    /// `ifx_let` / `ifx_assert` / `ifx_if_else`.
+    ///
+    /// **Constraints:** transaction top level (stack height 1). Not valid inside
+    /// `ifx_if_else`. **Private** Frame: `remaining_accounts[0]` = `authority` signer;
+    /// CPI accounts follow. **Public** Frame: CPI accounts start at `[0]`.
+    /// Does not observe return data of a top-level instruction Ifx did not invoke.
+    #[instruction(discriminator = [IX_DISC_LET_PATCHED_CPI])]
+    pub fn ifx_let_patched_cpi<'info>(
+        ctx: Context<'info, IfxLetPatchedCpi<'info>>,
+        args: LetPatchedCpiArgs,
+    ) -> Result<()> {
+        let_patched_cpi::handler(ctx, args)
+    }
 }

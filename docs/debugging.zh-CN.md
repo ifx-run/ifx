@@ -14,6 +14,7 @@
 | `ifx_reset_frame` | `frame.reset()` |
 | `ifx_close_frame` | `drop(frame)` |
 | `ifx_let` | `let $N: ty = …; //= value` |
+| `ifx_let_patched_cpi` | 先 `cpi …`，再每个切片一行：`let $N: ty = return_data[+offset]; //= value` |
 | `ifx_assert` | `assert!(cond); // ok` 或 revert |
 | `ifx_patched_cpi` | `cpi …` — RawPatched：`patch +K <- $N`；Structured：`patch field <- $N` |
 | `ifx_if_else` | `if cond then … else …` |
@@ -29,6 +30,14 @@
 
 ```text
 let $0: u64 = eval(...); //= 42
+```
+
+`ifx_let_patched_cpi` 先打 CPI 行（`cpi accts[…] …`，与 `ifx_patched_cpi` 相同），再为每个捕获切片打一行 `let`。`+offset` 是这次 return data 里的字节偏移：
+
+```text
+cpi accts[0..1] data=16 static
+let $0: u64 = return_data[+0]; //= 42
+let $1: u64 = return_data[+8]; //= 7
 ```
 
 ---

@@ -191,11 +191,11 @@ func TestMinimalFrameLocalnet(t *testing.T) {
 	}
 
 	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
-		Payer:          wallet.PublicKey(),
-		FrameID:        frameID,
+		Payer:     wallet.PublicKey(),
+		FrameID:   frameID,
 		Authority: wallet.PublicKey(),
 		TapeLen:   512,
-		ProgramID:      constants.LocalnetProgramID,
+		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -217,7 +217,7 @@ func TestMinimalFrameLocalnet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index)))
+	assertIx, err := s.IxAssert(expr.NonZero(one))
 	if err != nil {
 		t.Fatal(err)
 	}

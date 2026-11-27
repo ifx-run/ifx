@@ -9,6 +9,7 @@ skip-lint = false
 
 [programs.localnet]
 ifx = "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD"
+return_echo = "DrC6aMeryjNBs2kmf7yE87MtWj8rwL1YEkWioK4xosJP"
 
 [programs.devnet]
 ifx = "ifxdR1RBRCsyXy7eRXGMxc2KEYWhoHSYvpP18yJ5vTc"

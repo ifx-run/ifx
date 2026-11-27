@@ -55,8 +55,8 @@ func PlanSponsoredBuyInstructions(
 		return nil, err
 	}
 	ataCost, err := letAta.LetEval(expr.Sub(
-		expr.Ref(ataLamportsAfterCreate.Index),
-		expr.Ref(ataLamportsBaseline.Index),
+		ataLamportsAfterCreate,
+		ataLamportsBaseline,
 	))
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func PlanSponsoredBuyInstructions(
 		return nil, err
 	}
 	settle, err := letPostSwap.LetEval(expr.Add(
-		expr.Ref(ataCost.Index),
+		ataCost,
 		expr.U64(txSigFee),
 	))
 	if err != nil {
@@ -83,10 +83,10 @@ func PlanSponsoredBuyInstructions(
 	}
 	buyLamports, err := letPostSwap.LetEval(expr.Sub(
 		expr.Sub(
-			expr.Ref(userLamportsAfterSwap.Index),
-			expr.Ref(userLamportsBaseline.Index),
+			userLamportsAfterSwap,
+			userLamportsBaseline,
 		),
-		expr.Ref(settle.Index),
+		settle,
 	))
 	if err != nil {
 		return nil, err
@@ -99,10 +99,10 @@ func PlanSponsoredBuyInstructions(
 
 	assertIx, err := s.IxAssert(expr.Ge(
 		expr.Sub(
-			expr.Ref(userLamportsAfterSwap.Index),
-			expr.Ref(userLamportsBaseline.Index),
+			userLamportsAfterSwap,
+			userLamportsBaseline,
 		),
-		expr.Add(expr.Ref(ataCost.Index), expr.U64(txSigFee)),
+		expr.Add(ataCost, expr.U64(txSigFee)),
 	))
 	if err != nil {
 		return nil, err

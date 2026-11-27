@@ -5,6 +5,7 @@ import {
   IX_DISC_CREATE_FRAME,
   IX_DISC_IF_ELSE,
   IX_DISC_LET,
+  IX_DISC_LET_PATCHED_CPI,
   IX_DISC_PATCHED_CPI,
   IX_DISC_RESET_FRAME,
 } from "./constants";
@@ -19,6 +20,7 @@ export const IFX_IX_NAMES = [
   "ifx_assert_multi",
   "ifx_patched_cpi",
   "ifx_if_else",
+  "ifx_let_patched_cpi",
 ] as const;
 
 export type IfxIxName = (typeof IFX_IX_NAMES)[number];
@@ -32,6 +34,7 @@ const DISC_TO_NAME: ReadonlyMap<number, IfxIxName> = new Map([
   [IX_DISC_ASSERT_MULTI, "ifx_assert_multi"],
   [IX_DISC_PATCHED_CPI, "ifx_patched_cpi"],
   [IX_DISC_IF_ELSE, "ifx_if_else"],
+  [IX_DISC_LET_PATCHED_CPI, "ifx_let_patched_cpi"],
 ]);
 
 /** Result of {@link decodeIfxInstruction}. */

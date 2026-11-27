@@ -36,30 +36,67 @@ pub enum LamportsSpacePatch {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AmountDecimalsFeePatch {
     /// Amount from Frame; decimals + fee literals.
-    AmountOnly { amount: Value, decimals: u8, fee: u64 },
+    AmountOnly {
+        amount: Value,
+        decimals: u8,
+        fee: u64,
+    },
     /// Decimals from Frame; amount + fee literals.
-    DecimalsOnly { amount: u64, decimals: Value, fee: u64 },
+    DecimalsOnly {
+        amount: u64,
+        decimals: Value,
+        fee: u64,
+    },
     /// Fee from Frame; amount + decimals literals.
-    FeeOnly { amount: u64, decimals: u8, fee: Value },
+    FeeOnly {
+        amount: u64,
+        decimals: u8,
+        fee: Value,
+    },
     /// Amount + decimals from Frame; fee literal.
-    AmountDecimals { amount: Value, decimals: Value, fee: u64 },
+    AmountDecimals {
+        amount: Value,
+        decimals: Value,
+        fee: u64,
+    },
     /// Amount + fee from Frame; decimals literal.
-    AmountFee { amount: Value, decimals: u8, fee: Value },
+    AmountFee {
+        amount: Value,
+        decimals: u8,
+        fee: Value,
+    },
     /// Decimals + fee from Frame; amount literal.
-    DecimalsFee { amount: u64, decimals: Value, fee: Value },
+    DecimalsFee {
+        amount: u64,
+        decimals: Value,
+        fee: Value,
+    },
     /// Amount, decimals, and fee all from Frame.
-    AllFromFrame { amount: Value, decimals: Value, fee: Value },
+    AllFromFrame {
+        amount: Value,
+        decimals: Value,
+        fee: Value,
+    },
 }
 
 /// Token-2022 TransferFee `SetTransferFee`.
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SetTransferFeePatch {
     /// **basis_points** from Frame; **maximum_fee** literal.
-    BpsOnly { basis_points: Value, maximum_fee: u64 },
+    BpsOnly {
+        basis_points: Value,
+        maximum_fee: u64,
+    },
     /// basis_points literal; **maximum_fee** from Frame.
-    MaxOnly { basis_points: u16, maximum_fee: Value },
+    MaxOnly {
+        basis_points: u16,
+        maximum_fee: Value,
+    },
     /// Both basis_points and maximum_fee from Frame.
-    Both { basis_points: Value, maximum_fee: Value },
+    Both {
+        basis_points: Value,
+        maximum_fee: Value,
+    },
 }
 
 /// Pubkey field: Frame binding or wire literal (literal has no ALT).
@@ -94,8 +131,11 @@ pub enum UnwrapLamportsPatch {
 /// SPL `InitializeMint*` — dynamic `decimals`; optional freeze via [`FreezeAuthPatch`].
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InitializeMintPatch {
+    /// Decimals byte, read from a Frame binding.
     pub decimals: Value,
+    /// Mint authority: Frame binding or a 32-byte literal.
     pub mint_authority: PubkeyValue,
+    /// Freeze authority: none, a Frame binding, or a 32-byte literal.
     pub freeze: FreezeAuthPatch,
 }
 
@@ -140,8 +180,7 @@ impl LamportsSpacePatch {
             Self::LamportsOnly { lamports, .. } => sink.patch_binding("lamports", *lamports),
             Self::SpaceOnly { space, .. } => sink.patch_binding("space", *space),
             Self::Both { lamports, space } => {
-                sink.patch_binding("lamports", *lamports)
-                    && sink.patch_binding("space", *space)
+                sink.patch_binding("lamports", *lamports) && sink.patch_binding("space", *space)
             }
         }
     }
@@ -152,8 +191,7 @@ impl AmountDecimalsPatch {
         match self {
             Self::AmountOnly { amount, .. } => sink.patch_binding("amount", *amount),
             Self::Both { amount, decimals } => {
-                sink.patch_binding("amount", *amount)
-                    && sink.patch_binding("decimals", *decimals)
+                sink.patch_binding("amount", *amount) && sink.patch_binding("decimals", *decimals)
             }
             Self::DecimalsOnly { decimals, .. } => sink.patch_binding("decimals", *decimals),
         }
@@ -166,10 +204,9 @@ impl AmountDecimalsFeePatch {
             Self::AmountOnly { amount, .. } => sink.patch_binding("amount", *amount),
             Self::DecimalsOnly { decimals, .. } => sink.patch_binding("decimals", *decimals),
             Self::FeeOnly { fee, .. } => sink.patch_binding("fee", *fee),
-            Self::AmountDecimals { amount, decimals, .. } => {
-                sink.patch_binding("amount", *amount)
-                    && sink.patch_binding("decimals", *decimals)
-            }
+            Self::AmountDecimals {
+                amount, decimals, ..
+            } => sink.patch_binding("amount", *amount) && sink.patch_binding("decimals", *decimals),
             Self::AmountFee { amount, fee, .. } => {
                 sink.patch_binding("amount", *amount) && sink.patch_binding("fee", *fee)
             }
@@ -180,9 +217,11 @@ impl AmountDecimalsFeePatch {
                 amount,
                 decimals,
                 fee,
-            } => sink.patch_binding("amount", *amount)
-                && sink.patch_binding("decimals", *decimals)
-                && sink.patch_binding("fee", *fee),
+            } => {
+                sink.patch_binding("amount", *amount)
+                    && sink.patch_binding("decimals", *decimals)
+                    && sink.patch_binding("fee", *fee)
+            }
         }
     }
 }
@@ -195,8 +234,10 @@ impl SetTransferFeePatch {
             Self::Both {
                 basis_points,
                 maximum_fee,
-            } => sink.patch_binding("basis_points", *basis_points)
-                && sink.patch_binding("maximum_fee", *maximum_fee),
+            } => {
+                sink.patch_binding("basis_points", *basis_points)
+                    && sink.patch_binding("maximum_fee", *maximum_fee)
+            }
         }
     }
 }

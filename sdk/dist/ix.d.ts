@@ -1,6 +1,6 @@
 import { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { ACCOUNT_DISC_FRAME } from "./constants";
-import type { IfElseArgs, LetArgs } from "./types";
+import type { Cpi, IfElseArgs, LetArgs, ValueType } from "./types";
 import type { CpiWireBuildResult } from "./cpi";
 import type { Cond } from "./typed";
 export declare const IX_DISCRIMINATOR: {
@@ -11,6 +11,7 @@ export declare const IX_DISCRIMINATOR: {
     readonly ifxAssert: Buffer<ArrayBuffer>;
     readonly ifxAssertMulti: Buffer<ArrayBuffer>;
     readonly ifxPatchedCpi: Buffer<ArrayBuffer>;
+    readonly ifxLetPatchedCpi: Buffer<ArrayBuffer>;
     readonly ifxIfElse: Buffer<ArrayBuffer>;
 };
 export { ACCOUNT_DISC_FRAME };
@@ -45,4 +46,17 @@ export declare function buildIxAssert(frame: PublicKey, cond: Cond, opts?: IxOpt
 export declare function buildIxAssertMulti(frame: PublicKey, conds: readonly Cond[], opts?: IxOpts): TransactionInstruction;
 /** Unconditional patched CPI (`ifx_patched_cpi`); use {@link cpi}(…).build(). */
 export declare function createIxCpi(frame: PublicKey, built: CpiWireBuildResult, opts?: IxOpts): TransactionInstruction;
+/**
+ * `ifx_let_patched_cpi`: one CPI, then `let` fixed-width slices of its return data.
+ *
+ * Static CPI is allowed. RawPatched still needs at least one patch.
+ * `lets` is non-empty; each offset is a constant `u16` and the width is `ty`.
+ */
+export declare function createIxLetPatchedCpi(frame: PublicKey, authority: PublicKey, built: {
+    cpi: Cpi;
+    remaining: AccountMeta[];
+}, lets: readonly {
+    ty: ValueType;
+    offset: number;
+}[], opts?: IxOpts): TransactionInstruction;
 export declare function createIxIfElse(frame: PublicKey, args: IfElseArgs, remainingAccounts?: AccountMeta[] | PublicKey[], opts?: IxOpts): TransactionInstruction;

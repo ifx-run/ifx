@@ -15,14 +15,15 @@ const (
 	MaxBindingIndex  = 256
 	AccountDiscFrame = 6
 
-	IxDiscCreateFrame = 0
-	IxDiscCloseFrame  = 1
-	IxDiscResetFrame  = 2
-	IxDiscLet         = 3
-	IxDiscAssert      = 4
-	IxDiscAssertMulti = 5
-	IxDiscPatchedCpi  = 6
-	IxDiscIfElse      = 7
+	IxDiscCreateFrame   = 0
+	IxDiscCloseFrame    = 1
+	IxDiscResetFrame    = 2
+	IxDiscLet           = 3
+	IxDiscAssert        = 4
+	IxDiscAssertMulti   = 5
+	IxDiscPatchedCpi    = 6
+	IxDiscIfElse        = 7
+	IxDiscLetPatchedCpi = 8
 )
 
 var (

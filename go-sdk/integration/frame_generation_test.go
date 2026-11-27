@@ -181,7 +181,7 @@ func TestFrameGenerationContinuationLocalnet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertIx, err := cont.IxAssert(expr.Eq(expr.Ref(gen.Index), expr.U64(snap.Generation)))
+	assertIx, err := cont.IxAssert(expr.Eq(gen, expr.U64(snap.Generation)))
 	if err != nil {
 		t.Fatal(err)
 	}

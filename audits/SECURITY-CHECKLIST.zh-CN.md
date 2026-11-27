@@ -174,7 +174,7 @@ BC35–BC43 映射 A/C/B 节（missing owner/signer、任意 CPI、reinit、PDA 
 |----|--------|----------|
 | IFX-SEC-G01 | 指令 discriminator 唯一 | `constants.rs` |
 | IFX-SEC-G02 | `security_txt!` 嵌入 | `lib.rs` |
-| IFX-SEC-G03 | 七条指令均有 Accounts 结构 | `instructions/` |
+| IFX-SEC-G03 | 九条指令均有 Accounts 结构 | `instructions/` |
 | IFX-SEC-G04 | 热路径无 unwrap/expect | grep（仅测试/IDL 除外） |
 | IFX-SEC-G05 | 在**仓库根**跑 `cargo audit`（`Cargo.lock` 在 workspace 根，不在 `programs/ifx/`）。fetch 失败见 [AUDIT-WORKFLOW.zh-CN.md § cargo audit 故障排查](./AUDIT-WORKFLOW.zh-CN.md#cargo-audit-故障排查) | 根目录 `Cargo.lock` |
 | IFX-SEC-G06 | `Accounts` 中无未文档化的 `/// CHECK:` / `UncheckedAccount` | grep |

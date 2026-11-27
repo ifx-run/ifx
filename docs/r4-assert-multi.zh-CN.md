@@ -78,7 +78,7 @@ console.log('5x assert', sz(tx5));
 
 ## 4. 指令 discriminator 布局（pre-mainnet 决策）
 
-**当前 wire（R4 已落地）：**
+**R4 重排（disc 4–7，已落地）：**
 
 | disc | 指令 |
 |------|------|
@@ -92,6 +92,8 @@ console.log('5x assert', sz(tx5));
 - assert 族 tag **4 / 5 相邻**，读表与文档更直观。  
 - 无 mainnet 存量 tx；devnet bump **0.4.x-devnet** + CHANGELOG 即可。  
 - **mainnet 前若已有外部 hardcode disc**，再改回 append-only（7）成本更高 — 上线前冻结表。
+
+上表是 R4 重排。其后 append 的 disc **8** 是 `ifx_let_patched_cpi`。当前全集见 [implementation.zh-CN.md](./implementation.zh-CN.md)。
 
 `lib.rs` 源码顺序可与 wire 一致：`ifx_assert` 紧接 `ifx_assert_multi`，不必把 handler 放在文件末尾。
 

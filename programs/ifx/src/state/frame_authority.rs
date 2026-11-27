@@ -19,10 +19,7 @@ pub fn require_frame_ix_top_level(code: ErrorCode) -> Result<()> {
 }
 
 /// When `stored` is on-curve, `provided` must match and sign.
-pub fn verify_frame_write_authority(
-    stored: &Pubkey,
-    provided: &AccountInfo<'_>,
-) -> Result<()> {
+pub fn verify_frame_write_authority(stored: &Pubkey, provided: &AccountInfo<'_>) -> Result<()> {
     if !frame_authority_requires_signer(stored) {
         return Ok(());
     }
@@ -32,16 +29,11 @@ pub fn verify_frame_write_authority(
 }
 
 /// `ifx_reset_frame`: when `stored` is on-curve, `remaining[0]` must match and sign.
-pub fn verify_reset_write_authority(
-    stored: &Pubkey,
-    remaining: &[AccountInfo<'_>],
-) -> Result<()> {
+pub fn verify_reset_write_authority(stored: &Pubkey, remaining: &[AccountInfo<'_>]) -> Result<()> {
     if !frame_authority_requires_signer(stored) {
         return Ok(());
     }
-    let auth = remaining
-        .first()
-        .ok_or(ErrorCode::UnauthorizedFrameWrite)?;
+    let auth = remaining.first().ok_or(ErrorCode::UnauthorizedFrameWrite)?;
     verify_frame_write_authority(stored, auth)
 }
 
@@ -53,9 +45,7 @@ pub fn let_remaining_after_write_gate<'info>(
     if !frame_authority_requires_signer(stored) {
         return Ok(remaining);
     }
-    let auth = remaining
-        .first()
-        .ok_or(ErrorCode::UnauthorizedFrameWrite)?;
+    let auth = remaining.first().ok_or(ErrorCode::UnauthorizedFrameWrite)?;
     verify_frame_write_authority(stored, auth)?;
     Ok(&remaining[1..])
 }

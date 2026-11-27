@@ -14,6 +14,7 @@ Use these lines in explorers, simulators, and wallets to show **what the program
 | `ifx_reset_frame` | `frame.reset()` |
 | `ifx_close_frame` | `drop(frame)` |
 | `ifx_let` | `let $N: ty = …; //= value` |
+| `ifx_let_patched_cpi` | `cpi …` then one line per slice: `let $N: ty = return_data[+offset]; //= value` |
 | `ifx_assert` | `assert!(cond); // ok` or revert |
 | `ifx_patched_cpi` | `cpi …` — RawPatched: `patch +K <- $N`; Structured: `patch field <- $N` |
 | `ifx_if_else` | `if cond then … else …` |
@@ -29,6 +30,14 @@ Example after one `letConstU64`:
 
 ```text
 let $0: u64 = eval(...); //= 42
+```
+
+`ifx_let_patched_cpi` logs the CPI line first (`cpi accts[…] …`, same as `ifx_patched_cpi`), then one `let` per captured slice. `+offset` is the byte offset into that call's return data:
+
+```text
+cpi accts[0..1] data=16 static
+let $0: u64 = return_data[+0]; //= 42
+let $1: u64 = return_data[+8]; //= 7
 ```
 
 ---

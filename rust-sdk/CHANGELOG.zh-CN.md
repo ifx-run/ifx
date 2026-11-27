@@ -2,9 +2,15 @@
 
 # 更新日志
 
-Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 在 `ifx-core@0.1.2`。
+Rust crate [`ifx-sdk`](https://crates.io/crates/ifx-sdk)。链上 wire 在 `ifx-core@0.1.4`。
 
 ## [Unreleased]
+
+## [0.1.4] - 2026-11-27
+
+### 新增
+
+- **`ifx_let_patched_cpi`**（discriminator **8**）：一次 CPI，然后把这次调用的 return data 按定宽切片 append。仅顶层。需 program redeploy（**`ifx` / `ifx-core` 0.1.4**）。
 
 ## [0.1.3] - 2026-07-18
 

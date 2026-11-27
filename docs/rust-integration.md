@@ -34,7 +34,7 @@ ifx-core  ◄──  ifx (program)     ← on-chain execution
     └──  ifx-sdk (rust-sdk/)    ← off-chain tx planning (NOT ifx program)
 ```
 
-**`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk@0.1.3` + `idl/ifx.json`) and Go (`go-sdk@v0.1.3` + bundled IDL): wire truth in a shared library, not the deployed program binary. Pin **`0.1.3`** across all three clients on the same git revision.
+**`ifx-sdk` does not depend on `ifx`.** Same split as TypeScript (`@ifx-run/sdk@0.1.4` + `idl/ifx.json`) and Go (`go-sdk@v0.1.4` + bundled IDL): wire truth in a shared library, not the deployed program binary. Pin **`0.1.4`** across all three clients on the same git revision.
 
 ### `ifx-core` features (incremental)
 
@@ -80,13 +80,13 @@ Rust backends should use **`ifx-sdk`** — not path-depend on the **`ifx`** prog
 
 ## On-chain: do not wrap Ifx inside your program
 
-Ifx is **not** a library for other programs to CPI into. `ifx_create_frame`, `ifx_reset_frame`, `ifx_let`, and `ifx_close_frame` all require **transaction top level** (stack height 1); the program returns `LetNotTopLevel`, `ResetNotTopLevel`, etc. otherwise.
+Ifx is **not** a library for other programs to CPI into. `ifx_create_frame`, `ifx_reset_frame`, `ifx_let`, `ifx_close_frame`, and `ifx_let_patched_cpi` all require **transaction top level** (stack height 1); the program returns `LetNotTopLevel`, `ResetNotTopLevel`, `LetPatchedCpiNotTopLevel`, etc. otherwise.
 
 **Recommended integration:** plan the transaction off-chain with an SDK and place your ix and Ifx ix **side by side** at the top level, e.g.:
 
 ```text
 your swap / settlement ix
-  + ifx_reset_frame → ifx_let → ifx_if_else / ifx_patched_cpi / ifx_assert
+  + ifx_reset_frame → ifx_let → ifx_if_else / ifx_patched_cpi / ifx_let_patched_cpi / ifx_assert
 ```
 
 Anchor projects do **not** need a path dependency on the `ifx` program crate and should **not** `invoke` Ifx from their own program.
@@ -103,6 +103,7 @@ Anchor projects do **not** need a path dependency on the `ifx` program crate and
 | `Cpi` step | Wire kind **`0/1/2`** + payload | **Static** / **RawPatched** (`U16LenVec` data + patches) / **Structured** (`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`, no template) — [structured-cpi-patches.md](./structured-cpi-patches.md) |
 | `ifx_patched_cpi` ix data | **`Cpi`** (Anchor arg) | Wire kind **`0/1/2`** + payload — see [structured-cpi-patches.md](./structured-cpi-patches.md) |
 | `ifx_if_else` ix data | **`IfElseArgs`** (Anchor arg) | `Expr` cond + two custom-wire [`IfElseArm`] sides |
+| `ifx_let_patched_cpi` ix data | **`LetPatchedCpiArgs`** | `Cpi` then `u8` count + `{ ValueType, offset: u16 }` (1–255). Top-level only |
 | `Value` | `index: u8` | Binding index (0-based append order) |
 | `RawCpiPatch` | `{ data_offset: u16, source: Value }` | **RawPatched only** — patch template `data` before invoke |
 
@@ -151,7 +152,7 @@ When `patches` is non-empty, bytes copy from `Frame::tape` (via `payload_at[sour
 
 ```toml
 [dependencies]
-ifx-sdk = { version = "0.1.3", features = ["layout"] }  # crates.io: ifx-sdk + ifx-core@0.1.2
+ifx-sdk = { version = "0.1.4", features = ["layout"] }  # crates.io: ifx-sdk + ifx-core@0.1.4
 # or during development:
 ifx-core = { path = "../ifx/crates/ifx-core", features = ["wire", "layout"] }
 ```
@@ -170,7 +171,7 @@ ifx-core = { path = "../ifx/crates/ifx-core", features = ["wire", "layout"] }
 
 | Doc | Contents |
 |-----|----------|
-| [errors.md](./errors.md) | Full error code table (6000–6035) |
+| [errors.md](./errors.md) | Full error code table (6000–6044) |
 | [debugging.md](./debugging.md) | Program log pseudocode format |
 | [implementation.md](./implementation.md) | Instructions, limits, types |
 

@@ -41,12 +41,10 @@ impl<'info> FrameAccount<'info> {
             return Err(anchor_lang::error::ErrorCode::AccountNotInitialized.into());
         }
         if info.owner != &Frame::owner() {
-            return Err(
-                anchor_lang::error::Error::from(
-                    anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram,
-                )
-                .with_pubkeys((*info.owner, Frame::owner())),
-            );
+            return Err(anchor_lang::error::Error::from(
+                anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram,
+            )
+            .with_pubkeys((*info.owner, Frame::owner())));
         }
         let data = info.try_borrow_data()?;
         let layout = FrameLayout::parse(&data).map_err(Error::from)?;

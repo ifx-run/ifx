@@ -2,7 +2,7 @@
   "address": "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD",
   "metadata": {
     "name": "ifx",
-    "version": "0.1.2",
+    "version": "0.1.4",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
@@ -223,6 +223,42 @@
           "type": {
             "defined": {
               "name": "LetArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ifx_let_patched_cpi",
+      "docs": [
+        "One CPI, then `let` fixed-width slices of its return data onto the Frame tape.",
+        "",
+        "`args.cpi` is one [`Cpi`] step (Static, RawPatched with at least one patch, or",
+        "Structured). `args.lets` is non-empty: each entry is a [`ValueType`] and a",
+        "constant byte `offset` into that call's return data. Width is `ty.size()`",
+        "(little-endian). The lets are appended in order and can be read by a later",
+        "`ifx_let` / `ifx_assert` / `ifx_if_else`.",
+        "",
+        "**Constraints:** transaction top level (stack height 1). Not valid inside",
+        "`ifx_if_else`. **Private** Frame: `remaining_accounts[0]` = `authority` signer;",
+        "CPI accounts follow. **Public** Frame: CPI accounts start at `[0]`.",
+        "Does not observe return data of a top-level instruction Ifx did not invoke."
+      ],
+      "discriminator": [
+        8
+      ],
+      "accounts": [
+        {
+          "name": "frame",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "LetPatchedCpiArgs"
             }
           }
         }
@@ -487,6 +523,31 @@
       "code": 6039,
       "name": "AssertFailedMulti",
       "msg": "Assertion failed in ifx_assert_multi"
+    },
+    {
+      "code": 6040,
+      "name": "LetPatchedCpiNotTopLevel",
+      "msg": "ifx_let_patched_cpi must be invoked at transaction top level (stack height 1)"
+    },
+    {
+      "code": 6041,
+      "name": "InvalidReturnDataLets",
+      "msg": "ifx_let_patched_cpi requires at least one return-data let"
+    },
+    {
+      "code": 6042,
+      "name": "ReturnDataMissing",
+      "msg": "CPI return data is missing"
+    },
+    {
+      "code": 6043,
+      "name": "ReturnDataProgramMismatch",
+      "msg": "CPI return data program id does not match the invoked program"
+    },
+    {
+      "code": 6044,
+      "name": "ReturnDataTooShort",
+      "msg": "CPI return data is shorter than offset plus type width"
     }
   ],
   "types": [
@@ -500,9 +561,12 @@
         "fields": [
           {
             "name": "conds",
+            "docs": [
+              "Boolean expressions checked in order. At least one. Count prefix is a `u8` (1..=255)."
+            ],
             "type": {
               "defined": {
-                "name": "ifx::state::u8_len_vec::U8LenVec<ifx_core::wire::expr::Expr>",
+                "name": "U8LenVecExpr",
                 "generics": [
                   {
                     "kind": "type",
@@ -539,6 +603,9 @@
             "fields": [
               {
                 "name": "value",
+                "docs": [
+                  "Tape binding. `value.index` is the binding slot."
+                ],
                 "type": {
                   "defined": {
                     "name": "Value"
@@ -630,6 +697,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Boolean expression to negate."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -643,6 +713,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Signed expression to negate."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -656,6 +729,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Expression compared with zero."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -669,6 +745,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Expression compared with zero."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -682,6 +761,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u8`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -695,6 +777,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u16`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -708,6 +793,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u32`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -721,6 +809,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u64`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -734,6 +825,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `u128`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -747,6 +841,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i8`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -760,6 +857,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i16`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -773,6 +873,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i32`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -786,6 +889,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i64`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -799,6 +905,9 @@
             "fields": [
               {
                 "name": "operand",
+                "docs": [
+                  "Integer expression cast to `i128`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -812,6 +921,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -820,6 +932,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -833,6 +948,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -841,6 +959,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -854,6 +975,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -862,6 +986,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -875,6 +1002,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -883,6 +1013,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -896,6 +1029,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -904,6 +1040,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -917,6 +1056,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -925,6 +1067,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -938,6 +1083,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -946,6 +1094,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -959,6 +1110,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -967,6 +1121,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -980,6 +1137,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -988,6 +1148,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1001,6 +1164,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1009,6 +1175,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1022,6 +1191,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1030,6 +1202,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1043,6 +1218,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1051,6 +1229,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1064,6 +1245,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1072,6 +1256,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1085,6 +1272,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1093,6 +1283,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1106,6 +1299,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1114,6 +1310,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1127,6 +1326,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1135,6 +1337,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1148,6 +1353,9 @@
             "fields": [
               {
                 "name": "lhs",
+                "docs": [
+                  "Left-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1156,6 +1364,9 @@
               },
               {
                 "name": "rhs",
+                "docs": [
+                  "Right-hand expression."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1169,6 +1380,9 @@
             "fields": [
               {
                 "name": "amount",
+                "docs": [
+                  "Amount expression (`u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1177,6 +1391,9 @@
               },
               {
                 "name": "bps",
+                "docs": [
+                  "Fee in basis points (`u8`, `u16`, `u32`, or `u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1190,6 +1407,9 @@
             "fields": [
               {
                 "name": "amount",
+                "docs": [
+                  "Amount expression (`u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1198,6 +1418,9 @@
               },
               {
                 "name": "bps",
+                "docs": [
+                  "Fee in basis points (`u8`, `u16`, `u32`, or `u64`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1211,6 +1434,9 @@
             "fields": [
               {
                 "name": "a",
+                "docs": [
+                  "First factor (`u64` or `u128`, same type as `b`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1219,6 +1445,9 @@
               },
               {
                 "name": "b",
+                "docs": [
+                  "Second factor, same type as `a`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1227,6 +1456,9 @@
               },
               {
                 "name": "c",
+                "docs": [
+                  "Divisor. Same type as `a`, or any narrower unsigned."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1240,6 +1472,9 @@
             "fields": [
               {
                 "name": "a",
+                "docs": [
+                  "First factor (`u64` or `u128`, same type as `b`)."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1248,6 +1483,9 @@
               },
               {
                 "name": "b",
+                "docs": [
+                  "Second factor, same type as `a`."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1256,6 +1494,9 @@
               },
               {
                 "name": "c",
+                "docs": [
+                  "Divisor. Same type as `a`, or any narrower unsigned."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1269,6 +1510,9 @@
             "fields": [
               {
                 "name": "value",
+                "docs": [
+                  "Expression to clamp."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1277,6 +1521,9 @@
               },
               {
                 "name": "lo",
+                "docs": [
+                  "Inclusive lower bound."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1285,6 +1532,9 @@
               },
               {
                 "name": "hi",
+                "docs": [
+                  "Inclusive upper bound."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1298,6 +1548,9 @@
             "fields": [
               {
                 "name": "cond",
+                "docs": [
+                  "Boolean expression that selects the branch."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1306,6 +1559,9 @@
               },
               {
                 "name": "then_expr",
+                "docs": [
+                  "Result when `cond` is true."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1314,6 +1570,9 @@
               },
               {
                 "name": "else_expr",
+                "docs": [
+                  "Result when `cond` is false."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1346,6 +1605,9 @@
         "fields": [
           {
             "name": "authority",
+            "docs": [
+              "Account allowed to close this Frame. When on-curve, it must sign writes."
+            ],
             "type": "pubkey"
           },
           {
@@ -1387,6 +1649,9 @@
           },
           {
             "name": "tape",
+            "docs": [
+              "Append-only scratch bytes. Length is fixed at create (`tape_len`)."
+            ],
             "type": "bytes"
           }
         ]
@@ -1402,6 +1667,9 @@
         "fields": [
           {
             "name": "cond",
+            "docs": [
+              "Boolean expression that selects the arm."
+            ],
             "type": {
               "defined": {
                 "name": "Expr"
@@ -1410,6 +1678,9 @@
           },
           {
             "name": "then_arm",
+            "docs": [
+              "Arm run when `cond` is true."
+            ],
             "type": {
               "defined": {
                 "name": "IfElseArm"
@@ -1418,6 +1689,9 @@
           },
           {
             "name": "else_arm",
+            "docs": [
+              "Arm run when `cond` is false."
+            ],
             "type": {
               "defined": {
                 "name": "IfElseArm"
@@ -1466,9 +1740,12 @@
         "fields": [
           {
             "name": "bindings",
+            "docs": [
+              "Bindings evaluated in order and appended to the tape. Count prefix is a `u8` (1..=255)."
+            ],
             "type": {
               "defined": {
-                "name": "ifx_core::u8_len_vec::U8LenVec<ifx_core::wire::let_binding::LetBinding>",
+                "name": "U8LenVecLetBinding",
                 "generics": [
                   {
                     "kind": "type",
@@ -1500,6 +1777,9 @@
             "fields": [
               {
                 "name": "ty",
+                "docs": [
+                  "Caller-supplied type of the copied bytes."
+                ],
                 "type": {
                   "defined": {
                     "name": "ValueType"
@@ -1508,14 +1788,23 @@
               },
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               },
               {
                 "name": "offset",
+                "docs": [
+                  "Start byte of the slice in the account data."
+                ],
                 "type": "u32"
               },
               {
                 "name": "expected_program_owner",
+                "docs": [
+                  "Index of the remaining account whose address must equal the data account's owner."
+                ],
                 "type": "u8"
               }
             ]
@@ -1525,6 +1814,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1534,6 +1826,9 @@
             "fields": [
               {
                 "name": "expr",
+                "docs": [
+                  "Expression evaluated and appended to the tape."
+                ],
                 "type": {
                   "defined": {
                     "name": "Expr"
@@ -1562,6 +1857,9 @@
             "fields": [
               {
                 "name": "data_len",
+                "docs": [
+                  "Data length passed to `Rent::minimum_balance`."
+                ],
                 "type": "u32"
               }
             ]
@@ -1571,6 +1869,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1580,6 +1881,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1589,6 +1893,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1598,6 +1905,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1607,6 +1917,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1616,6 +1929,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1625,6 +1941,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1634,6 +1953,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1643,6 +1965,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1652,6 +1977,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1661,6 +1989,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1670,6 +2001,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1679,6 +2013,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1688,6 +2025,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1697,6 +2037,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1706,6 +2049,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1715,6 +2061,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1724,6 +2073,9 @@
             "fields": [
               {
                 "name": "bytes",
+                "docs": [
+                  "32-byte public key literal."
+                ],
                 "type": {
                   "array": [
                     "u8",
@@ -1744,6 +2096,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1753,6 +2108,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1762,6 +2120,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1771,6 +2132,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1780,6 +2144,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1789,6 +2156,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1798,6 +2168,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1807,6 +2180,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1816,6 +2192,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1825,6 +2204,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1834,6 +2216,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1843,6 +2228,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1852,6 +2240,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1861,6 +2252,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1870,6 +2264,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1879,6 +2276,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1888,6 +2288,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1897,6 +2300,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1906,6 +2312,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1915,6 +2324,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1924,6 +2336,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1933,6 +2348,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1942,6 +2360,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1951,6 +2372,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1960,6 +2384,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1969,6 +2396,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1978,6 +2408,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1987,6 +2420,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -1996,6 +2432,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2005,6 +2444,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2014,6 +2456,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2023,6 +2468,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2032,6 +2480,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2041,6 +2492,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2050,6 +2504,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2059,6 +2516,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2068,6 +2528,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2077,6 +2540,9 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
@@ -2086,9 +2552,135 @@
             "fields": [
               {
                 "name": "account_index",
+                "docs": [
+                  "Index into post-gate `remaining_accounts`."
+                ],
                 "type": "u8"
               }
             ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "LetPatchedCpiArgs",
+      "docs": [
+        "Arguments for `ifx_let_patched_cpi`: one CPI, then at least one return-data let."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cpi",
+            "docs": [
+              "CPI invoked before the lets. RawPatched requires at least one patch."
+            ],
+            "type": {
+              "defined": {
+                "name": "Cpi"
+              }
+            }
+          },
+          {
+            "name": "lets",
+            "docs": [
+              "Return-data slices appended in order. Non-empty. Count prefix is a `u8` (1..=255)."
+            ],
+            "type": {
+              "defined": {
+                "name": "U8LenVecReturnDataLet",
+                "generics": [
+                  {
+                    "kind": "type",
+                    "type": {
+                      "defined": {
+                        "name": "ReturnDataLet"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReturnDataLet",
+      "docs": [
+        "One fixed-width slice of the CPI return data, appended as a `let`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ty",
+            "docs": [
+              "Value type of the copied bytes. Width is `ty.size()` little-endian bytes."
+            ],
+            "type": {
+              "defined": {
+                "name": "ValueType"
+              }
+            }
+          },
+          {
+            "name": "offset",
+            "docs": [
+              "Byte offset into the return data. Length is `ty.size()`."
+            ],
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "U8LenVecExpr",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: Expr.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "U8LenVecLetBinding",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: LetBinding.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "U8LenVecReturnDataLet",
+      "docs": [
+        "Sequence with a u8 element count (max 255). Element type: ReturnDataLet.",
+        "On-chain bytes are count:u8 then each element in Borsh order. This IDL struct has no fields; Anchor has no u8-count vector. Encode with the Ifx SDK codecs."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": []
+      }
+    },
+    {
+      "name": "Value",
+      "docs": [
+        "Reference to a bound value by **binding index** (0-based append order)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "docs": [
+              "Binding index into `Frame::payload_at` / `tape` (0-based append order)."
+            ],
+            "type": "u8"
           }
         ]
       }

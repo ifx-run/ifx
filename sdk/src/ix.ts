@@ -14,6 +14,7 @@ import {
   IX_DISC_CREATE_FRAME,
   IX_DISC_IF_ELSE,
   IX_DISC_PATCHED_CPI,
+  IX_DISC_LET_PATCHED_CPI,
   IX_DISC_LET,
   IX_DISC_RESET_FRAME,
   MAX_ASSERT_MULTI_CONDS,
@@ -24,14 +25,15 @@ import {
 } from "./constants";
 import {
   encodeCpi,
+  encodeReturnDataLets,
   encodeIfElseArgs,
   encodeExpr,
   encodeLetArgs,
   encodeAssertMultiArgs,
 } from "./codec";
 import { prependWriteAuthorityRemaining } from "./frame-authority";
-import { framePda } from "./layout";
-import type { Expr, IfElseArgs, LetArgs } from "./types";
+import { framePda, valueTypeSize } from "./layout";
+import type { Cpi, Expr, IfElseArgs, LetArgs, ValueType } from "./types";
 import type { CpiWireBuildResult } from "./cpi";
 import { cpiRequiresPatchApply } from "./types";
 import type { Cond } from "./typed";
@@ -45,6 +47,7 @@ export const IX_DISCRIMINATOR = {
   ifxAssert: Buffer.from([IX_DISC_ASSERT]),
   ifxAssertMulti: Buffer.from([IX_DISC_ASSERT_MULTI]),
   ifxPatchedCpi: Buffer.from([IX_DISC_PATCHED_CPI]),
+  ifxLetPatchedCpi: Buffer.from([IX_DISC_LET_PATCHED_CPI]),
   ifxIfElse: Buffer.from([IX_DISC_IF_ELSE]),
 } as const;
 
@@ -257,6 +260,55 @@ export function createIxCpi(
     data: Buffer.concat([
       IX_DISCRIMINATOR.ifxPatchedCpi,
       encodeCpi(built.cpi),
+    ]),
+  });
+}
+
+/** Solana `set_return_data` ceiling. A let past this cannot succeed. */
+const SOLANA_MAX_RETURN_DATA = 1024;
+
+/**
+ * `ifx_let_patched_cpi`: one CPI, then `let` fixed-width slices of its return data.
+ *
+ * Static CPI is allowed. RawPatched still needs at least one patch.
+ * `lets` is non-empty; each offset is a constant `u16` and the width is `ty`.
+ */
+export function createIxLetPatchedCpi(
+  frame: PublicKey,
+  authority: PublicKey,
+  built: { cpi: Cpi; remaining: AccountMeta[] },
+  lets: readonly { ty: ValueType; offset: number }[],
+  opts: IxOpts = {}
+): TransactionInstruction {
+  if (lets.length === 0 || lets.length > 255) {
+    throw new Error(
+      `ifx_let_patched_cpi requires 1..=255 return-data lets (got ${lets.length})`
+    );
+  }
+  if (built.cpi.kind === "rawPatched" && !cpiRequiresPatchApply(built.cpi)) {
+    throw new Error(
+      "ifx_let_patched_cpi raw CPI requires at least one patch; use staticCpi(...).staticStep when instruction data is fixed"
+    );
+  }
+  for (const item of lets) {
+    const width = valueTypeSize(item.ty);
+    if (item.offset + width > SOLANA_MAX_RETURN_DATA) {
+      throw new Error(
+        `return-data let offset ${item.offset} + ${width} exceeds ${SOLANA_MAX_RETURN_DATA}`
+      );
+    }
+  }
+  const programId = opts.programId ?? DEFAULT_IFX_PROGRAM_ID;
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: frame, isSigner: false, isWritable: true },
+      ...prependWriteAuthorityRemaining(authority, built.remaining),
+    ],
+    data: Buffer.concat([
+      IX_DISCRIMINATOR.ifxLetPatchedCpi,
+      encodeCpi(built.cpi),
+      encodeReturnDataLets(lets),
     ]),
   });
 }

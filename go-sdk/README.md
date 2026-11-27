@@ -17,10 +17,10 @@ Prefer `FrameScratch` in application code; use `ix.BuildCreateFrame` and friends
 
 ## Install
 
-**Current release:** **`v0.1.3`** (mainnet default; aligned with `@ifx-run/sdk@0.1.3` and `ifx-sdk@0.1.3`).
+**Current release:** **`v0.1.4`** (mainnet default; aligned with `@ifx-run/sdk@0.1.4` and `ifx-sdk@0.1.4`).
 
 ```bash
-go get github.com/ifx-run/ifx/go-sdk@v0.1.3
+go get github.com/ifx-run/ifx/go-sdk@v0.1.4
 ```
 
 Module path: `github.com/ifx-run/ifx/go-sdk/...`
@@ -53,9 +53,13 @@ s := scratch.NewFrameScratch(plan.Frame, &tapeLen, constants.DevnetProgramID, pl
 
 target, _ := s.LetConstU64(10)
 letIx, _ := s.IxLet(target)
-assertIx, _ := s.IxAssert(expr.NonZero(expr.Ref(target.Index)))
-// Assemble transaction, sign, send
+assertIx, _ := s.IxAssert(expr.NonZero(target))
+// Assemble the transaction. Before send:
+//   raw, _ := tx.MarshalBinary()
+//   fmt.Println(base64.StdEncoding.EncodeToString(raw))
 ```
+
+Paste that base64 (or the same bytes in base58) into [ifx.run/explorer](https://ifx.run/explorer) to read each Ifx instruction. Signing is optional.
 
 ### Production: logs, not Frame decode
 
@@ -65,7 +69,7 @@ Confirm behavior via **Ifx transaction logs** (conditions, CPI arms, patch offse
 
 ## Single vs multi binding
 
-**Single:** `s.LetLamports(user)` → `s.IxLet(sv)` → later `expr.Ref(sv.Index)`.
+**Single:** `s.LetLamports(user)` → `s.IxLet(sv)` → later pass `sv` into `expr` (`expr.NonZero(sv)`, `expr.Add(sv, expr.U64(1))`).
 
 **Multi:** `s.LetBuilder()` → several `Lamports` / `SplTokenAmount` / … → `b.BuildIx()` (remaining deduped).
 

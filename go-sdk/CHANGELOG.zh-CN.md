@@ -6,6 +6,13 @@ Go SDK（`github.com/ifx-run/ifx/go-sdk`）。与 `@ifx-run/sdk`、`ifx-sdk` 同
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-27
+
+### 新增
+
+- **`ifx_let_patched_cpi`**（discriminator **8**）：一次 CPI，然后把这次调用的 return data 按定宽切片 append。仅顶层。需 program redeploy（**`ifx` / `ifx-core` 0.1.4**）。
+- **`expr` 构造函数**接受已规划的 binding（`ScratchValue`）。调用方直接传入该值，不必写 `.Index`。`Ref(0)` 仍接受原始下标。
+
 ## [0.1.3] - 2026-07-18
 
 ### 变更

@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use super::layout_map::map_layout_err;
 use crate::state::types::ValueType;
 
-pub use ifx_core::layout::{MAX_VALUE_LEN, TypedValue, ValueBytes};
+pub use ifx_core::layout::{TypedValue, ValueBytes, MAX_VALUE_LEN};
 
 pub fn copy_from(ty: ValueType, src: &[u8]) -> Result<ValueBytes> {
     ifx_core::layout::ValueBytes::copy_from(ty, src).map_err(map_layout_err)

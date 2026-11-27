@@ -19,6 +19,8 @@ SDK helpers: [`@ifx-run/sdk`](../sdk/README.md) / [`ifx-sdk`](../rust-sdk/README
 
 `AccountDataSlice`: owner-checked raw read — `remaining[account_index].owner` must equal `remaining[expected_program_owner].key()`.
 
+`Eval` reads bindings already on the tape. A later `ifx_let` cannot see `set_return_data` from an earlier CPI. Capture that blob with `ifx_let_patched_cpi` (CPI and the `{ ty, offset }` slices in the same instruction). Values the callee wrote into an account (token `amount`, and so on) stay typed lets.
+
 ---
 
 ## Sysvar — tags 3–8

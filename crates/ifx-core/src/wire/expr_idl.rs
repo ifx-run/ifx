@@ -15,5 +15,11 @@ impl IdlBuild for super::Expr {
     }
 
     /// Do not recurse into `Expr`; operator enums are folded into `Expr` variants.
-    fn insert_types(_types: &mut std::collections::BTreeMap<String, IdlTypeDef>) {}
+    /// `Value` is a separate struct referenced by the `Value` variant.
+    fn insert_types(types: &mut std::collections::BTreeMap<String, IdlTypeDef>) {
+        if let Some(ty) = super::Value::create_type() {
+            types.insert(super::Value::get_full_path(), ty);
+            super::Value::insert_types(types);
+        }
+    }
 }

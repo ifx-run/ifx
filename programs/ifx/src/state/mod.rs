@@ -1,40 +1,39 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    constants::{
-        index_cap_for_tape_len, ACCOUNT_DISC_FRAME, MAX_FRAME_TAPE_LEN, MIN_TAPE_LEN,
-    },
+    constants::{index_cap_for_tape_len, ACCOUNT_DISC_FRAME, MAX_FRAME_TAPE_LEN, MIN_TAPE_LEN},
     error::ErrorCode,
 };
 
 #[cfg(feature = "idl-build")]
-mod u8_len_vec_idl;
-#[cfg(feature = "idl-build")]
 mod u16_len_vec_idl;
+#[cfg(feature = "idl-build")]
+mod u8_len_vec_idl;
 
-pub mod patch_list;
-pub mod structured_cpi_payload;
-pub mod structured_cpi_patch;
 pub mod cpi;
-pub mod if_else_arm;
 pub mod frame_access;
 pub mod frame_account;
 pub mod frame_authority;
 pub mod frame_error;
 pub mod frame_layout;
+pub mod if_else_arm;
 pub mod layout_map;
 pub mod let_binding_exec;
 pub mod let_exec;
+pub mod patch_list;
 pub mod stake_load;
-pub mod upgradeable_load;
+pub mod structured_cpi_patch;
+pub mod structured_cpi_payload;
 pub mod tape;
 pub mod types;
-pub mod u8_len_vec;
 pub mod u16_len_vec;
+pub mod u8_len_vec;
+pub mod upgradeable_load;
 pub mod value_codec;
 pub mod value_ops;
 pub mod value_type_tag;
 
+pub use cpi::{Cpi, CPI_WIRE_RAW_PATCHED, CPI_WIRE_STATIC, CPI_WIRE_STRUCTURED};
 pub use frame_access::{FrameMut, FrameReader, FrameRef, FrameWriter};
 pub use frame_account::FrameAccount;
 pub use frame_authority::{
@@ -42,22 +41,21 @@ pub use frame_authority::{
     verify_frame_write_authority, verify_reset_write_authority,
 };
 pub use let_exec::{eval_bool, eval_expr, execute_let, infer_expr_ty};
-pub use tape::plan_record_offsets;
 pub use patch_list::PatchList;
-pub use cpi::{Cpi, CPI_WIRE_RAW_PATCHED, CPI_WIRE_STATIC, CPI_WIRE_STRUCTURED};
 pub use structured_cpi_patch::StructuredCpiPatch;
 pub use structured_cpi_payload::{
     AmountDecimalsFeePatch, AmountDecimalsPatch, FreezeAuthPatch, InitializeMintPatch,
-    PubkeyValue,
-    LamportsSpacePatch, SetTransferFeePatch,
+    LamportsSpacePatch, PubkeyValue, SetTransferFeePatch,
 };
-pub use u8_len_vec::U8LenVec;
-pub use u16_len_vec::U16LenVec;
+pub use tape::plan_record_offsets;
 pub use types::*;
+pub use u16_len_vec::U16LenVec;
+pub use u8_len_vec::U8LenVec;
 
 /// Transaction-scoped SSA frame; `tape` is an append-only byte buffer per session.
 #[account(discriminator = [ACCOUNT_DISC_FRAME])]
 pub struct Frame {
+    /// Account allowed to close this Frame. When on-curve, it must sign writes.
     pub authority: Pubkey,
     /// Next append byte position in `tape` after `ifx_reset_frame` (or `ifx_create_frame`).
     pub cursor: u32,
@@ -69,6 +67,7 @@ pub struct Frame {
     pub generation: u64,
     /// `payload_at[i]` = byte offset of binding `i` payload in `tape`.
     pub payload_at: Vec<u16>,
+    /// Append-only scratch bytes. Length is fixed at create (`tape_len`).
     pub tape: Vec<u8>,
 }
 

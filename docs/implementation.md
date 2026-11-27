@@ -20,10 +20,11 @@ Describes the **Anchor program currently in this repo** (`programs/ifx`). Transa
 | `ifx_assert_multi` | Evaluate `U8LenVec<Expr>` in order; short-circuit on first false |
 | `ifx_patched_cpi` | CPI; patch template `data` from Frame tape (`Cpi` + `RawCpiPatch`; requires non-empty patches) |
 | `ifx_if_else` | Conditional branch: `Skip` / `Revert` / CPI sequence per arm | Evaluates `cond`; runs `then_arm` or `else_arm` (`IfElseArm`) |
+| `ifx_let_patched_cpi` | One CPI, then append fixed-width slices of **that** call's return data | `args.cpi` is Static, non-empty RawPatched, or Structured. `args.lets` is `u8` count + `{ ty, offset: u16 }`. Top level only |
 
-- `ifx_let`, `ifx_reset_frame`, `ifx_close_frame`, and `ifx_create_frame` must run at **transaction top level** (`stack height == 1`) — [frame-authority.md](./frame-authority.md).
+- `ifx_let`, `ifx_reset_frame`, `ifx_close_frame`, `ifx_create_frame`, and `ifx_let_patched_cpi` must run at **transaction top level** (`stack height == 1`) — [frame-authority.md](./frame-authority.md).
 - CPI in `ifx_let` / `ifx_patched_cpi` / `ifx_if_else` uses **`remaining_accounts`** indices.
-- On-curve Frame **`authority`** requires **`authority: Signer`** on `reset` / `let` / `close`; off-curve = public writes.
+- On-curve Frame **`authority`** requires **`authority: Signer`** on `reset` / `let` / `close` / `ifx_let_patched_cpi`; off-curve = public writes.
 - `ifx_if_else` evaluates `cond` in a short read borrow, then runs CPI without holding the frame read lock (see [frame-authority.md](./frame-authority.md) §5.4).
 - **SDK convention:** Before the first `ifx_let` in a business tx, call `ifx_reset_frame` unless this tx continues bindings from an earlier tx in the **same landed bundle** (then omit reset). Provision with `ifx_create_frame` in a **separate tx**.
 
@@ -134,6 +135,7 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 - `ifx_assert_multi(args: AssertMultiArgs)` — revert on first false (`AssertFailedMulti`; index in return data)
 - `ifx_patched_cpi(arm: Cpi)` — one **RawPatched** or **Structured** step (requires patch apply)
 - `ifx_if_else(args: IfElseArgs)` — `cond` + two [`IfElseArm`] sides
+- `ifx_let_patched_cpi(args: LetPatchedCpiArgs)` — one CPI, then append `{ ty, offset: u16 }` slices of that call's return data (1–255). Top-level only. Static, non-empty RawPatched, or Structured. Logs `cpi …` then `let $N: ty = return_data[+offset]; //= value`
 - **`IfElseArm` wire:** `0x00` skip · `0xff` revert · `1..254` = N × [`Cpi`] step
 - **`Cpi` wire kind** (first byte per step): **`0` Static** · **`1` RawPatched** · **`2` Structured** ([`structured-cpi-patches.md`](./structured-cpi-patches.md))
   - **Static:** `[0][accounts_start][accounts_len][U16LenVec data]` — invoke template as-is
@@ -152,7 +154,7 @@ Comparisons: `infer_expr_ty` on subtrees; lhs/rhs types must match.
 ifx_create_frame
 
 # Business tx — typical
-ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else → …
+ifx_reset_frame → ifx_let → ifx_assert / ifx_assert_multi / ifx_patched_cpi / ifx_if_else / ifx_let_patched_cpi → …
 
 # Split — same landed Jito bundle only: tx1 reset+let, tx2 let+… (no reset)
 
@@ -184,5 +186,6 @@ Error codes: [errors.md](./errors.md) (Anchor codes 6000+).
 | `programs/ifx/src/state/tape.rs` | `reset_session`, `append_value`, `plan_record_offsets` (packed) |
 | `programs/ifx/src/state/let_exec.rs` | `ifx_let` evaluation |
 | `programs/ifx/src/instructions/reset_frame.rs` | `ifx_reset_frame` |
+| `programs/ifx/src/instructions/let_patched_cpi.rs` | `ifx_let_patched_cpi` |
 
 Generate client types: `anchor build` → `target/types/ifx.ts`.

@@ -5,5 +5,6 @@
 #[cfg_attr(not(feature = "anchor-wire"), derive(borsh::BorshSerialize, borsh::BorshDeserialize))]
 #[cfg_attr(feature = "anchor-wire", derive(anchor_lang::AnchorSerialize, anchor_lang::AnchorDeserialize))]
 pub struct Value {
+    /// Binding index into `Frame::payload_at` / `tape` (0-based append order).
     pub index: u8,
 }

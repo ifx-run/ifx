@@ -10,7 +10,7 @@ import (
 func ToCondExpr(c interface{}) (expr.Node, error) {
 	switch v := c.(type) {
 	case ScratchValue:
-		return expr.Ref(v.Index), nil
+		return expr.Ref(v), nil
 	case expr.Node:
 		return v, nil
 	default:

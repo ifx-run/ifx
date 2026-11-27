@@ -56,6 +56,8 @@ Add CU regression when implementing R4.
 
 Freeze before mainnet; if external integrators hardcode discs, fall back to append-only (7) instead.
 
+This table is the R4 renumber (discs 4–7). Disc **8** (`ifx_let_patched_cpi`) was appended later. Current set: [implementation.md](./implementation.md).
+
 **Payload:** `[5][AssertMultiArgs { conds: U8LenVec<Expr> }]`
 
 ---

@@ -70,6 +70,8 @@ export const IX_DISC_ASSERT = 4;
 export const IX_DISC_ASSERT_MULTI = 5;
 export const IX_DISC_PATCHED_CPI = 6;
 export const IX_DISC_IF_ELSE = 7;
+/** One CPI, then `let` fixed-width return-data slices (`ifx_let_patched_cpi`). */
+export const IX_DISC_LET_PATCHED_CPI = 8;
 
 /** 1-byte `Frame` account type discriminator. */
 export const ACCOUNT_DISC_FRAME = 6;

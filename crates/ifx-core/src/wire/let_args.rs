@@ -9,6 +9,7 @@ use super::let_binding::LetBinding;
 /// Parallel bindings for a single top-level `ifx_let`.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
 pub struct LetArgs {
+    /// Bindings evaluated in order and appended to the tape. Count prefix is a `u8` (1..=255).
     pub bindings: U8LenVec<LetBinding>,
 }
 
@@ -20,9 +21,7 @@ mod tests {
     #[test]
     fn anchor_encode_spl_token_amount_matches_sdk() {
         let args = LetArgs {
-            bindings: U8LenVec(vec![LetBinding::SplTokenAccountAmount {
-                account_index: 0,
-            }]),
+            bindings: U8LenVec(vec![LetBinding::SplTokenAccountAmount { account_index: 0 }]),
         };
         let mut buf = Vec::new();
         args.serialize(&mut buf).unwrap();

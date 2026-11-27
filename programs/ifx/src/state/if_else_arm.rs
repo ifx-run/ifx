@@ -7,15 +7,30 @@ mod wire_tests {
     use super::*;
     use anchor_lang::AnchorDeserialize;
 
-    use crate::state::{Cpi, CPI_WIRE_RAW_PATCHED, CPI_WIRE_STATIC, Expr, IfElseArgs};
+    use crate::state::{Cpi, Expr, IfElseArgs, CPI_WIRE_RAW_PATCHED, CPI_WIRE_STATIC};
 
     fn sdk_static_cpi_if_else_bytes() -> Vec<u8> {
         vec![
-            0x01, 0x01, // ConstBool(true)
+            0x01,
+            0x01, // ConstBool(true)
             0x01, // then arm: 1 step
-            CPI_WIRE_STATIC, 0x00, 0x03, // Cpi::Static accounts_start, accounts_len
-            0x0c, 0x00, // data u16 len = 12
-            0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            CPI_WIRE_STATIC,
+            0x00,
+            0x03, // Cpi::Static accounts_start, accounts_len
+            0x0c,
+            0x00, // data u16 len = 12
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0xb8,
+            0x0b,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
             0x00, // else arm skip
         ]
     }
@@ -67,8 +82,23 @@ mod wire_tests {
     #[test]
     fn deserializes_single_static_cpi_step() {
         let step: &[u8] = &[
-            CPI_WIRE_STATIC, 0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00,
+            CPI_WIRE_STATIC,
+            0x00,
+            0x03,
+            0x0c,
+            0x00,
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0xb8,
+            0x0b,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
         ];
         let mut slice = step;
         Cpi::deserialize(&mut slice).expect("Cpi");
@@ -78,9 +108,8 @@ mod wire_tests {
     #[test]
     fn deserializes_sdk_generic_patched_hex_from_node() {
         let bytes: Vec<u8> = vec![
-            0x01, 0x01, 0x01, 0x01, 0x00, 0x04, 0x0a, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x09, 0x00, 0x00,
-            0x00,
+            0x01, 0x01, 0x01, 0x01, 0x00, 0x04, 0x0a, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00,
         ];
         let mut slice = bytes.as_slice();
         IfElseArgs::deserialize(&mut slice).expect("sdk generic patched from node");
@@ -152,10 +181,20 @@ mod wire_tests {
     #[test]
     fn deserializes_sdk_wsol_structured_then_static_if_else_args() {
         let bytes: Vec<u8> = vec![
-            0x01, 0x01,
+            0x01,
+            0x01,
             0x02,
-            0x02, 0x00, 0x03, 0x00, 0x00,
-            0x00, 0x03, 0x02, 0x01, 0x00, 0x11,
+            0x02,
+            0x00,
+            0x03,
+            0x00,
+            0x00,
+            0x00,
+            0x03,
+            0x02,
+            0x01,
+            0x00,
+            0x11,
             IF_ELSE_ARM_SKIP,
         ];
         let mut slice = bytes.as_slice();
@@ -166,8 +205,24 @@ mod wire_tests {
     #[test]
     fn patched_cpi_does_not_consume_trailing_byte() {
         let bytes = vec![
-            CPI_WIRE_STATIC, 0x00, 0x03, 0x0c, 0x00, 0x02, 0x00, 0x00, 0x00, 0xb8, 0x0b, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            CPI_WIRE_STATIC,
+            0x00,
+            0x03,
+            0x0c,
+            0x00,
+            0x02,
+            0x00,
+            0x00,
+            0x00,
+            0xb8,
+            0x0b,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
         ];
         let mut slice = bytes.as_slice();
         Cpi::deserialize(&mut slice).expect("Cpi");

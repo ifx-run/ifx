@@ -43,9 +43,7 @@ impl FrameReader for Frame {
         let payload_offset = self.resolve_payload_offset(index)?;
         let pay = payload_offset as usize;
         require!(pay >= 1, ErrorCode::InvalidValueIndex);
-        let ty_off = pay
-            .checked_sub(1)
-            .ok_or(ErrorCode::InvalidValueIndex)?;
+        let ty_off = pay.checked_sub(1).ok_or(ErrorCode::InvalidValueIndex)?;
         require!(ty_off < self.tape.len(), ErrorCode::TapeOutOfBounds);
         tag_to_value_type(self.tape[ty_off])
     }
@@ -94,9 +92,7 @@ impl FrameWriter for Frame {
         require!(index <= u8::MAX as u16, ErrorCode::IndexCapReached);
         self.payload_at[index as usize] = payload_offset as u16;
         self.cursor = end;
-        self.index_count = index
-            .checked_add(1)
-            .ok_or(ErrorCode::IndexCapReached)?;
+        self.index_count = index.checked_add(1).ok_or(ErrorCode::IndexCapReached)?;
         Ok(index as u8)
     }
 }

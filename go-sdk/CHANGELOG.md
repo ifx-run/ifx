@@ -6,6 +6,13 @@ Go SDK (`github.com/ifx-run/ifx/go-sdk`) changes. Aligned with `@ifx-run/sdk` an
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-27
+
+### Added
+
+- **`ifx_let_patched_cpi`** (discriminator **8**): one CPI, then append fixed-width slices of that call's return data. Top-level only. Requires program redeploy (**`ifx` / `ifx-core` 0.1.4**).
+- **`expr` builders** accept a planned binding (`ScratchValue`). Callers pass the value; `.Index` is not required. `Ref(0)` still accepts a raw index.
+
 ## [0.1.3] - 2026-07-18
 
 ### Changed

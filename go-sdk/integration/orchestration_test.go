@@ -29,11 +29,11 @@ func TestOrchestrationLocalnet(t *testing.T) {
 	}
 
 	plan, err := scratch.PlanNewFrame(scratch.PlanNewFrameParams{
-		Payer:          payer,
-		FrameID:        frameID,
+		Payer:     payer,
+		FrameID:   frameID,
 		Authority: payer,
 		TapeLen:   512,
-		ProgramID:      constants.LocalnetProgramID,
+		ProgramID: constants.LocalnetProgramID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -82,7 +82,7 @@ func TestOrchestrationLocalnet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(slot.Index)))
+	assertIx, err := s.IxAssert(expr.NonZero(slot))
 	if err != nil {
 		t.Fatal(err)
 	}

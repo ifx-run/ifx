@@ -24,7 +24,7 @@ Ifx 的 Rust 链下客户端：组装 **Ifx 指令**（`ifx_create_frame`、`ifx
 
 ## 安装
 
-**当前版本：** [**`0.1.3`**](https://crates.io/crates/ifx-sdk)（`ifx-core@0.1.2`；默认主网；与 `@ifx-run/sdk@0.1.3`、`go-sdk@v0.1.3` 对齐）。
+**当前版本：** [**`0.1.4`**](https://crates.io/crates/ifx-sdk)（`ifx-core@0.1.4`；默认主网；与 `@ifx-run/sdk@0.1.4`、`go-sdk@v0.1.4` 对齐）。
 
 ```bash
 cargo add ifx-sdk
@@ -39,8 +39,8 @@ ifx-sdk = { path = "../rust-sdk" }
 在 `Cargo.toml` 中锁定：
 
 ```toml
-ifx-sdk = { version = "0.1.3" }
-ifx-core = { version = "0.1.2" }
+ifx-sdk = { version = "0.1.4" }
+ifx-core = { version = "0.1.4" }
 ```
 
 ## 快速开始
@@ -78,7 +78,8 @@ let reset_ix = s.ix_reset();
 let target = s.let_const_u64(10)?;
 let let_ix = s.ix_let_single(&target)?;
 let assert_ix = s.ix_assert(&expr::non_zero(expr::r(&target)))?;
-// 组装 transaction，签名，发送
+// 组装交易后，把字节的 base64 或 base58 贴到
+// https://ifx.run/explorer 查看每条 Ifx 指令。可以不签名。
 ```
 
 ### 生产环境：看 logs，不要 decode Frame

@@ -46,6 +46,11 @@ Anchor maps each [`ErrorCode`](../programs/ifx/src/error.rs) variant to **`6000 
 | 6037 | `UnauthorizedFrameWrite` | Frame write requires authority signer | Private frame `reset` / `let` without authority signature |
 | 6038 | `SplMintOptionEmpty` | SPL optional field is not set | e.g. unset delegate / mint authority |
 | 6039 | `AssertFailedMulti` | Assertion failed in ifx_assert_multi | `ifx_assert_multi` short-circuited; failing index in **return data** (u8) + pseudocode logs |
+| 6040 | `LetPatchedCpiNotTopLevel` | `ifx_let_patched_cpi` must be top level | CPI-wrapped `ifx_let_patched_cpi` |
+| 6041 | `InvalidReturnDataLets` | `ifx_let_patched_cpi` requires at least one return-data let | Empty `lets` |
+| 6042 | `ReturnDataMissing` | CPI return data is missing | Callee did not `set_return_data` |
+| 6043 | `ReturnDataProgramMismatch` | Return data program id does not match the invoked program | An inner CPI overwrote `get_return_data` |
+| 6044 | `ReturnDataTooShort` | Return data is shorter than offset plus type width | `offset + ty.size()` past the blob |
 
 ### Frame append: two independent limits
 

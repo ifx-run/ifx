@@ -33,4 +33,9 @@ export declare function encodeRawCpiPatch(patch: AnyRecord): Buffer;
 export declare const encodeCpiPatch: typeof encodeRawCpiPatch;
 export declare function encodePatchList(list: PatchList): Buffer;
 export declare function encodeCpi(step: Cpi): Buffer;
+/** `u8` count + `{ ValueType, u16 offset }` entries for `ifx_let_patched_cpi`. */
+export declare function encodeReturnDataLets(lets: readonly {
+    ty: AnyRecord;
+    offset: number;
+}[]): Buffer;
 export declare function encodeIfElseArgs(args: AnyRecord): Buffer;

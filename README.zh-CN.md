@@ -32,11 +32,11 @@
 | --- | --- |
 | **状态** | [Devnet](#网络与-sdk) + **[Mainnet](#网络与-sdk)** 已部署（`ifxmwW…`）；**无第三方付费审计**；[最新内部评估](./audits/internal/2026-06-13-8a42766-ifx-internal-review.zh-CN.md)（2026-06-13，`8a42766`） |
 | **公共 Frame（主网）** | 三个生产地址 · `tapeLen=1024` — 见下方 [主网公共 Frame](#主网公共-frame生产) · 规范 [frame-authority §6.0](./docs/frame-authority.zh-CN.md#60-主网公共-frame-池推荐) · **每笔业务 tx 开头 `ixReset()`** |
-| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.3`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
-| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.3`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` |
-| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.3`** · `cargo add ifx-sdk@0.1.3` |
+| **npm** | [`@ifx-run/sdk`](./sdk/) **`0.1.4`** — `DEFAULT_IFX_PROGRAM_ID` = 主网 |
+| **Go** | [`go-sdk/`](./go-sdk/) **`v0.1.4`** · `go get github.com/ifx-run/ifx/go-sdk@v0.1.4` |
+| **Rust** | [`rust-sdk/`](./rust-sdk/) **`ifx-sdk@0.1.4`** · `cargo add ifx-sdk@0.1.4` |
 | **Cursor / AI agent** | [ifx-orchestration skill](./.cursor/skills/ifx-orchestration/SKILL.md) |
-| **浏览器** | [ifx.run/explorer](https://ifx.run/explorer) — 粘贴交易 wire 或签名，离线解码 Ifx 指令，包括 SIMD-0385 v1 |
+| **浏览器** | [ifx.run/explorer](https://ifx.run/explorer) — 粘贴交易的 base64 / base58 / hex（或签名）。在浏览器里解开 Ifx 指令。见 [发送前先看指令](#发送前先看指令)。 |
 
 ### 主网公共 Frame（生产）
 
@@ -69,7 +69,7 @@ Explorer：[Fr8dvc…](https://solscan.io/account/Fr8dvcgrSYKjpvJd471hQD2QuEjF76
 
 ```bash
 npm install @ifx-run/sdk @anchor-lang/core @solana/web3.js bn.js
-go get github.com/ifx-run/ifx/go-sdk@v0.1.3
+go get github.com/ifx-run/ifx/go-sdk@v0.1.4
 cargo add ifx-sdk
 ```
 
@@ -165,6 +165,19 @@ tx.add(scratch.ixLet(one));
 tx.add(scratch.ixAssert(expr.nonZero(one)));
 await provider.sendAndConfirm(tx);
 ```
+
+### 发送前先看指令
+
+Solscan 能看到这笔交易调用了 Ifx 程序，解不开指令数据，let、表达式和 CPI 分支都是一串字节。[ifx.run](https://ifx.run/explorer) 在浏览器里把这些字节解出来。
+
+把上面例子里的交易序列化。可以不签名：
+
+```ts
+const wire = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+console.log(wire.toString("base64")); // 同一段字节的 base58 或 hex 也可以
+```
+
+把这串贴进 [ifx.run/explorer](https://ifx.run/explorer)。贴 wire 时解码留在本机；只有按签名去拉交易才会访问 RPC。
 
 **在 localnet 跑**（克隆本仓库）：
 
@@ -512,6 +525,7 @@ Ifx 为**非盈利开源**项目 — 无漏洞赏金，**无付费第三方 firm
 
 | 从这里开始 | |
 |------------|---|
+| [ifx.run/explorer](https://ifx.run/explorer) | 粘贴 base64 / base58 / hex 交易，查看每条 Ifx 指令 |
 | [sdk/README.zh-CN.md](./sdk/README.zh-CN.md) | TypeScript API、`FrameScratch`、`expr`、CPI |
 | [go-sdk/README.zh-CN.md](./go-sdk/README.zh-CN.md) | Go API（同层 planner；不包装 RPC / 钱包） |
 | [rust-sdk/README.zh-CN.md](./rust-sdk/README.zh-CN.md) | Rust API（`ifx-sdk`；同层 planner；不包装 RPC / 钱包） |

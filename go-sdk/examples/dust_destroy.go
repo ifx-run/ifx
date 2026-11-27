@@ -51,7 +51,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 	}
 	out = append(out, letIx)
 
-	dust := expr.Lt(expr.Ref(amount.Index), expr.U64(DustThresholdRaw))
+	dust := expr.Lt(amount, expr.U64(DustThresholdRaw))
 
 	burnTpl := spltoken.BurnCheckedInstruction(tokenAccount, mint, owner, accts.OwnerSigner)
 	burn, err := patchedcpi.RawCpi(
@@ -63,7 +63,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 		return nil, err
 	}
 	burnArgs, err := ifelse.Args(
-		expr.And(dust, expr.NonZero(expr.Ref(amount.Index))),
+		expr.And(dust, expr.NonZero(amount)),
 		ifelse.Cpi(burn.Cpi),
 		ifelse.Skip,
 	)
@@ -82,7 +82,7 @@ func PlanDustDestroyInstructions(s *scratch.FrameScratch, accts DustDestroyAccou
 		return nil, err
 	}
 	harvestArgs, err := ifelse.Args(
-		expr.And(dust, expr.NonZero(expr.Ref(withheld.Index))),
+		expr.And(dust, expr.NonZero(withheld)),
 		ifelse.Cpi(harvestCpi),
 		ifelse.Skip,
 	)

@@ -2,7 +2,7 @@
 
 use crate::constants::{
     IX_DISC_ASSERT, IX_DISC_ASSERT_MULTI, IX_DISC_CLOSE_FRAME, IX_DISC_CREATE_FRAME,
-    IX_DISC_IF_ELSE, IX_DISC_LET, IX_DISC_PATCHED_CPI, IX_DISC_RESET_FRAME,
+    IX_DISC_IF_ELSE, IX_DISC_LET, IX_DISC_LET_PATCHED_CPI, IX_DISC_PATCHED_CPI, IX_DISC_RESET_FRAME,
 };
 use crate::error::ScratchError;
 
@@ -17,6 +17,7 @@ pub enum IfxIxName {
     AssertMulti,
     PatchedCpi,
     IfElse,
+    LetPatchedCpi,
 }
 
 impl IfxIxName {
@@ -30,6 +31,7 @@ impl IfxIxName {
             Self::AssertMulti => "ifx_assert_multi",
             Self::PatchedCpi => "ifx_patched_cpi",
             Self::IfElse => "ifx_if_else",
+            Self::LetPatchedCpi => "ifx_let_patched_cpi",
         }
     }
 }
@@ -54,6 +56,7 @@ pub fn decode_ifx_instruction(data: &[u8]) -> Result<DecodedIfxInstruction, Scra
         IX_DISC_ASSERT_MULTI => IfxIxName::AssertMulti,
         IX_DISC_PATCHED_CPI => IfxIxName::PatchedCpi,
         IX_DISC_IF_ELSE => IfxIxName::IfElse,
+        IX_DISC_LET_PATCHED_CPI => IfxIxName::LetPatchedCpi,
         _ => {
             return Err(ScratchError::Encode(format!(
                 "unknown Ifx instruction discriminator: {disc}"

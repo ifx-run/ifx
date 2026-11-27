@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     error::ErrorCode,
     pseudocode,
-    state::{eval_bool, FrameAccount, IfElseArm, IfElseArgs},
+    state::{eval_bool, FrameAccount, IfElseArgs, IfElseArm},
 };
 
 use super::patched_cpi::invoke_cpi;
@@ -36,11 +36,7 @@ pub fn handler<'info>(ctx: Context<'info, IfElse<'info>>, args: IfElseArgs) -> R
     let remaining = ctx.remaining_accounts;
     let frame = FrameAccount::try_from(ctx.accounts.frame.as_ref())?;
     let cond = frame.with_read(|tape| eval_bool(&tape, &args.cond))?;
-    let taken = if cond {
-        &args.then_arm
-    } else {
-        &args.else_arm
-    };
+    let taken = if cond { &args.then_arm } else { &args.else_arm };
     pseudocode::log_if_else(&args.cond, cond, &args.then_arm, &args.else_arm);
     execute_arm(&frame, remaining, taken)
 }

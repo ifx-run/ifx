@@ -34,7 +34,7 @@ ifx-core  ◄──  ifx (program)     ← 链上执行
     └──  ifx-sdk (rust-sdk/)    ← 集成方链下组 tx（不依赖 ifx program）
 ```
 
-**`ifx-sdk` 不依赖 `ifx`。** 与 TypeScript（`@ifx-run/sdk@0.1.3` + IDL）和 Go（`go-sdk@v0.1.3` + bundled IDL）同一分层。三端 **`0.1.3`** 应对齐同一 git revision。
+**`ifx-sdk` 不依赖 `ifx`。** 与 TypeScript（`@ifx-run/sdk@0.1.4` + IDL）和 Go（`go-sdk@v0.1.4` + bundled IDL）同一分层。三端 **`0.1.4`** 应对齐同一 git revision。
 
 ### `ifx-core` feature（增量抽取）
 
@@ -80,13 +80,13 @@ Rust 后端应使用 **`ifx-sdk`** 组 tx — **不要** 为链下 path 依赖 *
 
 ## 链上：不把 Ifx 包进你的 program
 
-Ifx **不是** 供其它合约 CPI 调用的库。`ifx_create_frame`、`ifx_reset_frame`、`ifx_let`、`ifx_close_frame` 均要求 **交易顶层**（stack height 1）；链上会 `LetNotTopLevel` / `ResetNotTopLevel` 等。
+Ifx **不是** 供其它合约 CPI 调用的库。`ifx_create_frame`、`ifx_reset_frame`、`ifx_let`、`ifx_close_frame`、`ifx_let_patched_cpi` 均要求 **交易顶层**（stack height 1）；链上会 `LetNotTopLevel` / `ResetNotTopLevel` / `LetPatchedCpiNotTopLevel` 等。
 
 **推荐集成：** 链下用 SDK 组 tx，在同一笔交易里把你的 ix 与 Ifx ix **并列** 放在顶层，例如：
 
 ```text
 你的 swap / 结算 ix
-  + ifx_reset_frame → ifx_let → ifx_if_else / ifx_patched_cpi / ifx_assert
+  + ifx_reset_frame → ifx_let → ifx_if_else / ifx_patched_cpi / ifx_let_patched_cpi / ifx_assert
 ```
 
 Anchor 项目 **不需要** path 依赖 `ifx` program crate，也 **不需要** 在合约里 `invoke` Ifx。
@@ -103,6 +103,7 @@ Anchor 项目 **不需要** path 依赖 `ifx` program crate，也 **不需要** 
 | `Cpi` 步 | wire kind **`0/1/2`** + payload | **Static** / **RawPatched**（`U16LenVec` data + patches）/ **Structured**（`[2][accounts_start][accounts_len][StructuredCpiPatch Borsh…]`，无模板）— [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md) |
 | `ifx_patched_cpi` ix data | **`Cpi`**（Anchor 参数） | wire kind **`0/1/2`** + payload — 见 [structured-cpi-patches.zh-CN.md](./structured-cpi-patches.zh-CN.md) |
 | `ifx_if_else` ix data | **`IfElseArgs`**（Anchor 参数） | `Expr` cond + 两侧 custom-wire [`IfElseArm`] |
+| `ifx_let_patched_cpi` ix data | **`LetPatchedCpiArgs`** | `Cpi` 后接 `u8` 计数 + `{ ValueType, offset: u16 }`（1–255）。仅顶层 |
 | `Value` | `index: u8` | binding index（0 起 append 顺序） |
 | `RawCpiPatch` | `{ data_offset: u16, source: Value }` | **仅 RawPatched** — invoke 前 patch 模板 `data` |
 
@@ -139,6 +140,6 @@ Patch 经 `payload_at[source.index]` 从 `Frame::tape` 拷贝到 `Cpi.data`（`p
 
 | 文档 | 内容 |
 |------|------|
-| [errors.zh-CN.md](./errors.zh-CN.md) | 错误码表（6000–6035） |
+| [errors.zh-CN.md](./errors.zh-CN.md) | 错误码表（6000–6044） |
 | [debugging.zh-CN.md](./debugging.zh-CN.md) | 伪代码 log |
 | [implementation.zh-CN.md](./implementation.zh-CN.md) | 指令与 Frame 布局 |

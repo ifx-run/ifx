@@ -10,32 +10,32 @@ const CodeBase = 6000
 
 // Code names match programs/ifx Anchor errors (6000 + enum index).
 const (
-	LetNotTopLevel              = 6000
-	TapeOutOfBounds             = 6001
-	UnauthorizedClose           = 6002
-	InvalidAuthority            = 6003
-	InvalidTapeLen              = 6004
-	AssertFailed                = 6005
-	IfElseRevert                = 6006
-	InvalidAccountIndex         = 6007
-	InvalidAccountRange         = 6008
-	AccountDataTooShort         = 6009
-	IntegerOverflow             = 6010
-	IntegerUnderflow            = 6011
-	DivisionByZero              = 6012
-	UnsupportedBinaryOp         = 6013
-	UnsupportedUnaryOp          = 6014
-	FloatUnordered              = 6015
-	LoadTypeMismatch            = 6016
-	ExprTypeMismatch            = 6017
-	InvalidExprOperand          = 6018
-	PatchDataOutOfRange         = 6019
-	InvalidValueTypeTag         = 6020
-	InvalidValueIndex           = 6021
-	IndexCapReached             = 6022
-	AccountOwnerMismatch        = 6023
-	AccountDataLenMismatch      = 6024
-	SplTokenUnpackFailed        = 6025
+	LetNotTopLevel               = 6000
+	TapeOutOfBounds              = 6001
+	UnauthorizedClose            = 6002
+	InvalidAuthority             = 6003
+	InvalidTapeLen               = 6004
+	AssertFailed                 = 6005
+	IfElseRevert                 = 6006
+	InvalidAccountIndex          = 6007
+	InvalidAccountRange          = 6008
+	AccountDataTooShort          = 6009
+	IntegerOverflow              = 6010
+	IntegerUnderflow             = 6011
+	DivisionByZero               = 6012
+	UnsupportedBinaryOp          = 6013
+	UnsupportedUnaryOp           = 6014
+	FloatUnordered               = 6015
+	LoadTypeMismatch             = 6016
+	ExprTypeMismatch             = 6017
+	InvalidExprOperand           = 6018
+	PatchDataOutOfRange          = 6019
+	InvalidValueTypeTag          = 6020
+	InvalidValueIndex            = 6021
+	IndexCapReached              = 6022
+	AccountOwnerMismatch         = 6023
+	AccountDataLenMismatch       = 6024
+	SplTokenUnpackFailed         = 6025
 	Token2022ExtensionNotPresent = 6026
 	SplToken2022UnpackFailed     = 6027
 	CastOverflow                 = 6028
@@ -50,6 +50,11 @@ const (
 	UnauthorizedFrameWrite       = 6037
 	SplMintOptionEmpty           = 6038
 	AssertFailedMulti            = 6039
+	LetPatchedCpiNotTopLevel     = 6040
+	InvalidReturnDataLets        = 6041
+	ReturnDataMissing            = 6042
+	ReturnDataProgramMismatch    = 6043
+	ReturnDataTooShort           = 6044
 )
 
 var nameByCode = map[int]string{
@@ -93,6 +98,11 @@ var nameByCode = map[int]string{
 	UnauthorizedFrameWrite:       "UnauthorizedFrameWrite",
 	SplMintOptionEmpty:           "SplMintOptionEmpty",
 	AssertFailedMulti:            "AssertFailedMulti",
+	LetPatchedCpiNotTopLevel:     "LetPatchedCpiNotTopLevel",
+	InvalidReturnDataLets:        "InvalidReturnDataLets",
+	ReturnDataMissing:            "ReturnDataMissing",
+	ReturnDataProgramMismatch:    "ReturnDataProgramMismatch",
+	ReturnDataTooShort:           "ReturnDataTooShort",
 }
 
 // CodeForName returns the numeric Anchor code for a known error name.

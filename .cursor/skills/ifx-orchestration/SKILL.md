@@ -16,7 +16,7 @@ Ifx is an **on-chain** program. SDKs only encode IR. Branches run at execution (
 
 **Use Ifx** when an amount or branch depends on mid-tx chain state, or CPI `data` must be patched from a `let`. **Do not** if every field is known at build (`tx.add`) or you need durable app state (Frame is scratch).
 
-Pin **`@ifx-run/sdk@0.1.3`** / `ifx-sdk@0.1.3` / `go-sdk@v0.1.3`. Mainnet **is** deployed. npm default `programId` = **mainnet**, not devnet.
+Pin **`@ifx-run/sdk@0.1.4`** / `ifx-sdk@0.1.4` / `go-sdk@v0.1.4`. Mainnet **is** deployed. npm default `programId` = **mainnet**, not devnet. `ifx_let_patched_cpi` (disc 8) needs program **`ifx` / `ifx-core` 0.1.4** on that cluster. Program, `ifx-core`, IDL, and the three SDKs share one version.
 
 ## Hard gates — stop and ask
 
@@ -87,7 +87,9 @@ export function buildSwapSponsoredClose(/* params */): TransactionInstruction[] 
 
 Business tx always: `tx.add(scratch.ixReset());` then the documented ixs. Provisioning (`planPublicFrame` + `ixCreate`) is a **separate** tx.
 
-`if_else` arm: `skip` / `revert` / `arm.cpis([...])` (1–254 steps, mixed static/structured/raw). Same cond → one `ixIfElse`, not many. No Ifx write ix (`reset`/`let`/`close`/`create`) inside an arm.
+`if_else` arm: `skip` / `revert` / `arm.cpis([...])` (1–254 steps, mixed static/structured/raw). Same cond → one `ixIfElse`, not many. No Ifx write ix (`reset`/`let`/`close`/`create`/`let_patched_cpi`) inside an arm.
+
+Return data is visible only inside the instruction that performed the `invoke`. Capture it with `ixLetPatchedCpi`: one CPI (Static, non-empty RawPatched, or Structured), then fixed-width `{ ty, offset }` slices (1–255) onto the tape. A later `ifx_let` cannot see that blob. Offset is a constant `u16`; width is `ty.size()`. Top-level only.
 
 ## Copy from (extend, don't invent)
 
@@ -131,5 +133,6 @@ Set `programId` on `FrameScratch`. Go: only on scratch (no per-ix override).
 | Structured / raw CPI | [structured-cpi-patches.md](../../../docs/structured-cpi-patches.md), [raw-cpi-patches.md](../../../docs/raw-cpi-patches.md) |
 | Bundles | [docs/bundles.md](../../../docs/bundles.md) |
 | Lets / errors / logs | `docs/typed-let-bindings.md`, `docs/errors.md`, `docs/debugging.md` |
+| Unsigned tx wire | Paste base64 / base58 / hex at [ifx.run/explorer](https://ifx.run/explorer) to read Ifx instructions before send |
 | Landed v1 sizes | [README](../../../README.md#landed-v1-transactions-beyond-the-1232-b-packet) |
-| Install | `npm i @ifx-run/sdk@0.1.3` · `go get github.com/ifx-run/ifx/go-sdk@v0.1.3` · `cargo add ifx-sdk@0.1.3` |
+| Install | `npm i @ifx-run/sdk@0.1.4` · `go get github.com/ifx-run/ifx/go-sdk@v0.1.4` · `cargo add ifx-sdk@0.1.4` |

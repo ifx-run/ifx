@@ -11,7 +11,8 @@ Review **after** implementing. Spec and procedure: [SKILL.md](SKILL.md).
 - [ ] `ixReset` first on every business tx; public Frame + `tapeLen: 1024`
 - [ ] Cluster `programId` set (devnet is not the npm default)
 - [ ] CPI: structured vs raw vs `tx.add`; no empty patches
-- [ ] No Ifx write ix in `if_else` arms
+- [ ] No Ifx write ix in `if_else` arms (`reset` / `let` / `close` / `create` / `let_patched_cpi`)
+- [ ] CPI return data captured with `ifx_let_patched_cpi`, not a later `ifx_let`
 - [ ] Amounts from `let` + patch, not quote-frozen
 - [ ] No production `fetchDecodedFrame` / `refreshFromChain`
 - [ ] No forward refs in one `ixLet`; no `bundle_id` as landed

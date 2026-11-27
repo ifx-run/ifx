@@ -7,6 +7,7 @@ import (
 	"github.com/ifx-run/ifx/go-sdk/codec"
 	"github.com/ifx-run/ifx/go-sdk/constants"
 	"github.com/ifx-run/ifx/go-sdk/expr"
+	"github.com/ifx-run/ifx/go-sdk/typed"
 )
 
 func TestPlanPublicFrameSetsFrameAuthority(t *testing.T) {
@@ -133,7 +134,7 @@ func TestMinimalBusinessWire(t *testing.T) {
 	if letData[0] != constants.IxDiscLet {
 		t.Fatalf("disc %d", letData[0])
 	}
-	assertIx, err := s.IxAssert(expr.NonZero(expr.Ref(one.Index)))
+	assertIx, err := s.IxAssert(expr.NonZero(one))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,6 +146,47 @@ func TestMinimalBusinessWire(t *testing.T) {
 		t.Fatalf("disc %d", assertData[0])
 	}
 	_ = codec.LetArgs{}
+}
+
+func TestIxLetPatchedCpiReservesTwoLets(t *testing.T) {
+	frame := solana.NewWallet().PublicKey()
+	auth := solana.NewWallet().PublicKey()
+	program := solana.NewWallet().PublicKey()
+	s := NewFrameScratch(frame, intPtr(512), constants.LocalnetProgramID, auth)
+	step := codec.Cpi{
+		AccountsStart: 0,
+		AccountsLen:   1,
+		Data:          []byte{1, 2, 3, 4, 5, 6, 7, 8},
+	}
+	remaining := []typed.AccountMeta{{Pubkey: program.String()}}
+	lets := []codec.ReturnDataLet{
+		{Ty: typed.TyU64, Offset: 0},
+		{Ty: typed.TyU64, Offset: 8},
+	}
+	ix, values, err := s.IxLetPatchedCpi(step, remaining, lets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := ix.Data()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data[0] != constants.IxDiscLetPatchedCpi || data[14] != 2 || data[15] != 4 {
+		t.Fatalf("wire %v", data)
+	}
+	if values[0].Index != 0 || values[1].Index != 1 {
+		t.Fatalf("indices %d %d", values[0].Index, values[1].Index)
+	}
+	accs := ix.Accounts()
+	if len(accs) != 3 || !accs[0].IsWritable || !accs[1].IsSigner || !accs[2].PublicKey.Equals(program) {
+		t.Fatalf("accounts %+v", accs)
+	}
+	if _, _, err := s.IxLetPatchedCpi(step, remaining, nil); err == nil {
+		t.Fatal("expected empty lets to fail")
+	}
+	if s.NextIndex != 2 {
+		t.Fatalf("next index %d", s.NextIndex)
+	}
 }
 
 func intPtr(n int) *int { return &n }

@@ -13,7 +13,7 @@ use anchor_lang::solana_program::program::invoke;
 use crate::{
     error::ErrorCode,
     pseudocode,
-    state::{frame_access::FrameReader, FrameAccount, Cpi, RawCpiPatch},
+    state::{frame_access::FrameReader, Cpi, FrameAccount, RawCpiPatch},
 };
 
 use super::structured_cpi::assemble_structured_cpi;
@@ -34,12 +34,7 @@ pub fn invoke_cpi<'info>(
             accounts_start,
             accounts_len,
             data,
-        } => invoke_raw(
-            remaining,
-            *accounts_start,
-            *accounts_len,
-            data.as_slice(),
-        ),
+        } => invoke_raw(remaining, *accounts_start, *accounts_len, data.as_slice()),
         Cpi::RawPatched {
             accounts_start,
             accounts_len,
@@ -48,7 +43,8 @@ pub fn invoke_cpi<'info>(
         } => {
             let mut buf = data.to_vec();
             if !patches.is_empty() {
-                frame.with_read(|tape| apply_generic_patches(&tape, &mut buf, patches.as_slice()))?;
+                frame
+                    .with_read(|tape| apply_generic_patches(&tape, &mut buf, patches.as_slice()))?;
             }
             invoke_raw(remaining, *accounts_start, *accounts_len, &buf)
         }
@@ -57,15 +53,15 @@ pub fn invoke_cpi<'info>(
             accounts_len,
             patch,
         } => {
-            let program_id =
-                program_id_from_remaining(remaining, *accounts_start, *accounts_len)?;
-            let data = frame.with_read(|tape| assemble_structured_cpi(patch, &program_id, &tape))?;
+            let program_id = program_id_from_remaining(remaining, *accounts_start, *accounts_len)?;
+            let data =
+                frame.with_read(|tape| assemble_structured_cpi(patch, &program_id, &tape))?;
             invoke_raw(remaining, *accounts_start, *accounts_len, &data)
         }
     }
 }
 
-fn program_id_from_remaining<'info>(
+pub(crate) fn program_id_from_remaining<'info>(
     remaining: &'info [AccountInfo<'info>],
     accounts_start: u8,
     accounts_len: u8,
