@@ -12,3 +12,6 @@ name = "return_echo"
 
 [dependencies]
 solana-program = "=3.0.0"
+
+# Own workspace so the root `cargo build-sbf -p ifx` does not require this .so.
+[workspace]

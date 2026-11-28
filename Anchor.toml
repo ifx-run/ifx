@@ -7,6 +7,9 @@ package_manager = "npm"
 resolution = true
 skip-lint = false
 
+[workspace]
+members = ["programs/ifx"]
+
 [programs.localnet]
 ifx = "ifxLDKXy8Z5Hk4C9rDTnMStFXzRmpGQkGUCHfYWv5zD"
 return_echo = "DrC6aMeryjNBs2kmf7yE87MtWj8rwL1YEkWioK4xosJP"

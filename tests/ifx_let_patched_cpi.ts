@@ -1,5 +1,7 @@
 import * as anchor from "@anchor-lang/core";
 import { expect } from "chai";
+import { execFileSync } from "child_process";
+import { existsSync } from "fs";
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 
@@ -28,6 +30,33 @@ describe("ifx_let_patched_cpi", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const payer = (provider.wallet as anchor.Wallet).payer;
+
+  before(async () => {
+    const info = await provider.connection.getAccountInfo(RETURN_ECHO_PROGRAM_ID);
+    if (info?.executable) return;
+    const so = "target/deploy/return_echo.so";
+    const kp = "target/deploy/return_echo-keypair.json";
+    if (!existsSync(so) || !existsSync(kp)) {
+      throw new Error(`${so} is missing; pretest builds programs/return-echo`);
+    }
+    const wallet =
+      process.env.ANCHOR_WALLET ?? `${process.env.HOME}/.config/solana/id.json`;
+    execFileSync(
+      "solana",
+      [
+        "program",
+        "deploy",
+        so,
+        "--program-id",
+        kp,
+        "--url",
+        provider.connection.rpcEndpoint,
+        "--keypair",
+        wallet,
+      ],
+      { stdio: "inherit" }
+    );
+  });
 
   it("lets two u64 slices from one CPI return", async () => {
     const { scratch, ixCreate } = planLocalFrame({

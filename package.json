@@ -23,7 +23,7 @@
     "idl:generate": "npm run keys:sync && anchor build && cp target/idl/ifx.json idl/ifx.json",
     "idl:sync": "mkdir -p target/idl target/types && cp idl/ifx.json target/idl/ifx.json && cp idl/ifx.json sdk/src/idl/ifx.json && sh scripts/anchor.sh idl type idl/ifx.json -o target/types/ifx.ts && sh scripts/anchor.sh idl type idl/ifx.json -o sdk/src/idl/ifx.ts",
     "examples:typecheck": "tsc -p tsconfig.examples.json",
-    "pretest": "npm run keys:sync && npm run keys:verify && npm run idl:sync && sh scripts/anchor.sh build --no-idl && CARGO_TARGET_DIR=$PWD/target cargo build-sbf -- -p ifx && cd sdk && npm run build && cd .. && npm run examples:typecheck",
+    "pretest": "npm run keys:sync && npm run keys:verify && npm run idl:sync && sh scripts/anchor.sh build --no-idl && CARGO_TARGET_DIR=$PWD/target cargo build-sbf -- -p ifx && CARGO_TARGET_DIR=$PWD/target cargo build-sbf --manifest-path programs/return-echo/Cargo.toml --sbf-out-dir target/deploy && cd sdk && npm run build && cd .. && npm run examples:typecheck",
     "sdk:pack": "npm run idl:sync && cd sdk && npm run rebuild && npm pack",
     "sdk:publish": "npm run idl:sync && cd sdk && npm publish",
     "test": "anchor test",

@@ -2,8 +2,11 @@
 members = [
     "crates/ifx-core",
     "rust-sdk",
-    "programs/*",
+    "programs/ifx",
 ]
+# return-echo is a localnet fixture with its own workspace. Keeping it here makes
+# `cargo build-sbf -p ifx` post-process a missing return_echo.so.
+exclude = ["programs/return-echo"]
 resolver = "2"
 
 # solana-verify reads this to pick the verifiable-build Docker image (must match Anchor.toml solana_version).
