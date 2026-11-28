@@ -10,8 +10,16 @@ publish = false
 crate-type = ["cdylib", "lib"]
 name = "return_echo"
 
+[features]
+# `entrypoint!` checks these. CI sets `-D warnings`, so they must be real features.
+custom-heap = []
+custom-panic = []
+
 [dependencies]
 solana-program = "=3.0.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
 
 # Own workspace so the root `cargo build-sbf -p ifx` does not require this .so.
 [workspace]
